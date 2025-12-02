@@ -61,7 +61,7 @@ const thumbnailVariants = cva(
   {
     variants: {
       isSelected: {
-        true: "shadow-1xl scale-[1.2]", // 확대 비율을 줄여 잘림 방지
+        true: "shadow-1xl scale-[1.05]", // 확대 비율을 줄여 잘림 방지
         false: "border-gray-300 hover:border-gray-400 scale-100",
       },
       // 성별에 따른 테두리 색상만 변경
