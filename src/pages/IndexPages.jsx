@@ -47,11 +47,10 @@ export default function Main() {
   };
   // 3. 버튼 텍스트 가운데 정렬을 위한 스타일 조정
   const buttonStyle =
-    "flex flex-col gap-10 justify-center py-14 text-xl font-medium rounded-xl text-center";
-
+    "flex flex-1 flex-col justify-center text-xl font-medium rounded-xl text-center";
   return (
     <>
-      <div className="flex h-[600px] w-[1024px] mx-auto bg-gray-100 p-4 rounded-xl shadow-lg">
+      <div className="flex w-full h-full mx-auto bg-gray-100 p-4 rounded-xl shadow-lg">
         {/** SECTION:페르소나 (20%) */}
         <div
           className={`w-1/5 flex flex-col items-center justify-start rounded-l-xl ${
@@ -66,7 +65,7 @@ export default function Main() {
             />
 
             {/* 썸네일 그리드 영역: h-full 대신 명확한 max-height 지정 및 중앙 정렬 */}
-            <div className="grid grid-cols-1 gap-3 overflow-y-auto">
+            <div className="grid grid-cols-1 gap-3 overflow-y-hidden mt-4 mb-2">
               {filteredPersonas.map((p) => (
                 <PersonaThumbnail
                   key={p.id}
@@ -90,17 +89,15 @@ export default function Main() {
         </div>
 
         {/** SECTION: 버튼 영역 (25%) */}
-        <div className="w-1/4 p-4 flex flex-col space-y-4 justify-around rounded-r-xl">
-          {/* 버튼 예시 */}
+        <div className="w-1/4 flex flex-col h-full p-4 gap-2 bg-gray-300 rounded-r-xl">
           {buttonLabels.map((v, i) => (
             <Button
               key={i}
               onClick={() => handleClickEvent(v.value)}
               size="sm"
-              className={cn(buttonStyle, `bg-${v.color}-500`)} // cn 유틸리티를 사용하여 className 결합
+              className={cn(buttonStyle, `bg-${v.color}-500`)} 
             >
-              {/* 5. 텍스트 가운데 정렬 추가: text-center */}
-              <p className="text-5xl whitespace-normal">{v.label}</p>
+              <p className="whitespace-normal text-center text-4xl">{v.label}</p>
             </Button>
           ))}
         </div>
