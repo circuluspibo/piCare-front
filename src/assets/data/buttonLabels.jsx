@@ -2,7 +2,7 @@ export const buttonLabels = [
   {
     label: "언어훈련",
     value: "language",
-    color: "orange",
+    color: "slate",
   },
   {
     label: "신체훈련",
@@ -17,6 +17,6 @@ export const buttonLabels = [
   {
     label: "실내공기",
     value: "IAQ",
-    color: "yellow",
+    color: "teal",
   },
 ];
