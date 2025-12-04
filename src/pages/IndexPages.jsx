@@ -63,8 +63,7 @@ export default function Main() {
               {filteredPersonas.map((p) => (
                 <PersonaThumbnail
                   key={p.id}
-                  src={p.src}
-                  alt={p.id}
+                  icon={p.icon}
                   gender={p.gender}
                   isSelected={selectedPersona.id === p.id}
                   onClick={() => setSelectedPersona(p)}

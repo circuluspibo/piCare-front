@@ -1,34 +1,32 @@
-const persona_base_url = "/persona/";
-
 export const PERSONAS = [
   {
     id: "grandma",
     gender: "female",
-    src: `${persona_base_url}/grandma.png`,
+    icon: "👵🏻",
   },
   {
     id: "grandpa",
     gender: "male",
-    src: `${persona_base_url}/grandpa.png`,
+    icon: "👴🏻",
   },
   {
     id: "woman",
     gender: "female",
-    src: `${persona_base_url}/woman.png`,
+    icon: "👩🏻",
   },
   {
     id: "man",
     gender: "male",
-    src: `${persona_base_url}/man.png`,
+    icon: "🧔🏻‍♂️",
   },
   {
     id: "girl",
     gender: "female",
-    src: `${persona_base_url}/girl.png`,
+    icon: "👧🏻",
   },
   {
     id: "boy",
     gender: "male",
-    src: `${persona_base_url}/boy.png`,
+    icon: "👦🏻",
   },
 ];

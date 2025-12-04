@@ -90,24 +90,20 @@ const thumbnailVariants = cva(
 );
 
 const PersonaThumbnail = React.forwardRef(
-  ({ src, alt, isSelected, gender, onClick, className, ...props }, ref) => {
+  ({ icon, isSelected, gender, onClick, className, ...props }, ref) => {
     return (
       <button
         type="button"
         onClick={onClick}
         className={cn(
-          "flex items-center justify-center w-full", // <- 크기 확대
+          "flex items-center justify-center w-full",
           thumbnailVariants({ isSelected, gender, className })
         )}
         ref={ref}
         {...props}
       >
-        <div className="w-full h-full p-2 flex items-center justify-center">
-          <img
-            src={src}
-            alt={alt}
-            className="max-w-full max-h-full object-contain"
-          />
+        <div className="w-full h-full p-2 flex items-center justify-center text-9xl">
+          {icon}
         </div>
       </button>
     );
