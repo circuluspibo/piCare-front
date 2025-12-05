@@ -68,7 +68,6 @@ const thumbnailVariants = cva(
       gender: {
         male: "border-blue-500 ring-blue-400 bg-blue-200",
         female: "border-pink-500 ring-pink-400 bg-pink-200",
-        type1: "boder-gray-500 ring-gray-400 bg-white",
       },
     },
     defaultVariants: {
