@@ -163,7 +163,7 @@ export default {
   safelist: [
     {
       pattern:
-        /^(bg|border|from|to|text)-(amber|rose|purple|blue|teal|lime|orange|slate|yellow)-(50|100|200|300|400|500|600|700|800|900)$/,
+        /^(bg|border|from|to|text)-(amber|rose|purple|blue|teal|lime|orange|slate|yellow|indigo|violet|cyan)-(50|100|200|300|400|500|600|700|800|900)$/,
     },
     {
       pattern:

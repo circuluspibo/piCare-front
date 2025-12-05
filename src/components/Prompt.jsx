@@ -258,14 +258,14 @@ export default function Prompt() {
   };
 
   return (
-    <div className="flex flex-col h-full p-4">
+    <div className="flex flex-col h-full">
       <div
         ref={scrollRef}
         className="flex-grow overflow-y-auto p-4 space-y-4 bg-gray-50 rounded-lg shadow-inner"
       >
         {questionList.length === 0 && (
           <div className="flex justify-center items-center h-full">
-            <p className="text-6xl text-gray-600 font-semibold">
+            <p className="text-5xl text-gray-600 font-semibold">
               {initGreeting}
             </p>
           </div>

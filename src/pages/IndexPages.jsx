@@ -44,7 +44,7 @@ export default function Main() {
         </div>
 
         {/** SECTION: 프롬프트/챗봇 (65%) */}
-        <div className="w-8/12 bg-white p-6 border-x border-gray-300 shadow-inner">
+        <div className="w-8/12 bg-white p-3 border-x border-gray-300 shadow-inner">
           <div className="text-xl text-gray-600 h-full">
             <Prompt />
           </div>

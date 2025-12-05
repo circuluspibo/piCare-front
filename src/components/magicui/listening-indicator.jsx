@@ -44,7 +44,7 @@ function MicToggleButton({ onStart, onStop }) {
     "flex items-center justify-center w-full rounded-xl px-2 py-2 shadow-lg transition-colors duration-300",
     {
       "bg-red-600 hover:bg-red-700": isListening,
-      "bg-emerald-500 hover:bg-emerald-600": !isListening,
+      "bg-blue-600 hover:bg-blue-700": !isListening,
     }
   );
 
