@@ -11,15 +11,11 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
-      },
-      registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "180.png", "192.png", "512.png"],
+      // Manifest 파일 설정
       manifest: {
-        name: "또박한글 포털",
-        short_name: "또박한글 포털",
-        description: "또박한글 포털",
+        name: "또박한글 미니 포털",
+        short_name: "또박한글",
+        description: "또박한글 미니 포털",
         start_url: "/",
         display: "standalone",
         background_color: "#ffffff",
@@ -37,9 +33,34 @@ export default defineConfig({
           },
         ],
       },
-      devOptions: {
-        enabled: true,
+
+      // Service Worker 설정
+      registerType: "autoUpdate",
+      workbox: {
+        // 정적파일 캐싱
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp}"],
+
+        // Runtime caching
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-cache",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1년 동안 유지
+              },
+            },
+          },
+        ],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
       },
+      includeAssets: ["favicon.ico", "180.png", "192.png", "512.png"],
+
+      // devOptions: {
+      //   enabled: true,
+      // },
     }),
   ],
   server: {

@@ -1,9 +1,10 @@
 import * as React from "react";
 import { cva } from "class-variance-authority";
+import * as LucideIcons from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// --- 1. PersonaSelector (전체 컨테이너) ---
-const PersonaSelector = React.forwardRef(
+// 컨테이너
+const PersonaContainer = React.forwardRef(
   ({ className, children, ...props }, ref) => {
     return (
       <div
@@ -20,7 +21,7 @@ const PersonaSelector = React.forwardRef(
     );
   }
 );
-PersonaSelector.displayName = "PersonaSelector";
+PersonaContainer.displayName = "PersonaContainer";
 
 // 성별 선택 토글
 const PersonaToggle = ({ selectedGender, onToggle }) => {
@@ -55,19 +56,19 @@ const PersonaToggle = ({ selectedGender, onToggle }) => {
 };
 PersonaToggle.displayName = "PersonaToggle";
 
-// 이미지 썸네일
 const thumbnailVariants = cva(
   "cursor-pointer transition-all duration-300 transform relative overflow-hidden",
   {
     variants: {
       isSelected: {
-        true: "shadow-1xl scale-[0.95]", // 확대 비율을 줄여 잘림 방지
+        true: "shadow-1xl scale-[0.95]", // 확대 비율을 줄여 잘림 방지s
         false: "border-gray-300 hover:border-gray-400 scale-100",
       },
       // 성별에 따른 테두리 색상만 변경
       gender: {
-        male: "border-blue-500 ring-blue-300",
-        female: "border-pink-500 ring-pink-300",
+        male: "border-blue-500 ring-blue-400 bg-blue-200",
+        female: "border-pink-500 ring-pink-400 bg-pink-200",
+        type1: "boder-gray-500 ring-gray-400 bg-white",
       },
     },
     defaultVariants: {
@@ -88,7 +89,7 @@ const thumbnailVariants = cva(
     ],
   }
 );
-
+// Persona
 const PersonaThumbnail = React.forwardRef(
   ({ icon, isSelected, gender, onClick, className, ...props }, ref) => {
     return (
@@ -96,13 +97,13 @@ const PersonaThumbnail = React.forwardRef(
         type="button"
         onClick={onClick}
         className={cn(
-          "flex items-center justify-center w-full",
+          `flex items-center justify-center w-full rounded-full shadow-inner`,
           thumbnailVariants({ isSelected, gender, className })
         )}
         ref={ref}
         {...props}
       >
-        <div className="w-full h-full p-2 flex items-center justify-center text-9xl">
+        <div className="w-full h-full p-1 flex items-center justify-center text-8xl">
           {icon}
         </div>
       </button>
@@ -111,5 +112,4 @@ const PersonaThumbnail = React.forwardRef(
 );
 PersonaThumbnail.displayName = "PersonaThumbnail";
 
-// --- 4. Export ---
-export { PersonaSelector, PersonaThumbnail, PersonaToggle };
+export { PersonaContainer, PersonaThumbnail, PersonaToggle };

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
-// --- 1. 음파 진동 아이콘 컴포넌트 ---
+// Soundwave
 const SoundWaveIcon = () => (
   <div className="relative flex items-center justify-center">
     {/* 파동 링: animate-ping으로 확장하며 사라지는 효과 */}
@@ -25,7 +25,7 @@ const SoundWaveIcon = () => (
   </div>
 );
 
-// --- 2. 토글 기능이 적용된 버튼 컴포넌트 ---
+// Toggle
 function MicToggleButton({ onStart, onStop }) {
   const [isListening, setIsListening] = useState(false);
 
@@ -54,10 +54,9 @@ function MicToggleButton({ onStart, onStop }) {
       onClick={handleButtonClick}
       whileTap={{ scale: 0.98 }}
     >
-      {/* AnimatePresence로 아이콘/텍스트 전환 애니메이션 처리 */}
       <AnimatePresence mode="wait" initial={false}>
         {isListening ? (
-          // **듣기 종료 (빨간색) 상태**
+          // SECTION: 듣기종료
           <motion.div
             key="listening"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -67,10 +66,10 @@ function MicToggleButton({ onStart, onStop }) {
             className="flex items-center text-white"
           >
             <SoundWaveIcon />
-            <p className="text-center text-4xl ml-4">듣기 종료</p>
+            <p className="text-center font-medium text-7xl">듣기 종료</p>
           </motion.div>
         ) : (
-          // **말하기 (에메랄드색) 상태**
+          // SECTION: 말하기
           <motion.div
             key="mic"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -80,7 +79,7 @@ function MicToggleButton({ onStart, onStop }) {
             className="flex items-center text-white"
           >
             <Mic className="w-20 h-20" />
-            <p className="text-center text-4xl ml-4">말하기</p>
+            <p className="text-center font-medium text-7xl">말하기</p>
           </motion.div>
         )}
       </AnimatePresence>
