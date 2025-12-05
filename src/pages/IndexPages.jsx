@@ -1,66 +1,36 @@
 import Prompt from "@/components/Prompt";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  PersonaSelector,
-  PersonaThumbnail,
-  PersonaToggle,
-} from "@/components/ui/persona";
-import { useState, useMemo } from "react";
+import { PersonaContainer, PersonaThumbnail } from "@/components/ui/persona";
+import { useState } from "react";
 import { PERSONAS } from "@/assets/data/personaData";
 import { buttonLabels } from "@/assets/data/buttonLabels";
+import { IconRenderer } from "@/components/ui/IconRenderer";
 
 export default function Main() {
-  const [selectedGender, setSelectedGender] = useState("male");
   const [selectedPersona, setSelectedPersona] = useState(PERSONAS[0]);
 
-  const filteredPersonas = useMemo(() => {
-    return PERSONAS.filter((p) => p.gender === selectedGender);
-  }, [selectedGender]);
-
-  const usingHref = (url) => {
-    window.location.href = url;
-  };
+  // 버튼 이벤트 헨들러
   const handleClickEvent = (value) => {
-    switch (value) {
-      case "language": {
-        const hrefURL = import.meta.env.VITE_HANI_URL;
-        if (hrefURL) {
-          usingHref(hrefURL);
-        }
-        return;
-      }
-      default: {
-        return console.log("not yet");
-      }
+    if (value === "language") {
+      const url = import.meta.env.VITE_HANI_URL;
+      // console.log("url = ", url);
+      return (window.location.href = url);
+    } else {
+      console.log("Working on...");
     }
   };
-  const handleToggleEvent = (gender) => {
-    setSelectedGender(gender);
 
-    const newFiltered = PERSONAS.filter((p) => p.gender === gender);
-    setSelectedPersona(newFiltered[0]);
-  };
-
-  const buttonStyle =
-    "flex flex-1 flex-col justify-center text-xl font-medium rounded-xl text-center";
   return (
     <>
-      <div className="flex w-full h-full mx-auto bg-gray-100 p-4 rounded-xl shadow-lg">
-        {/** SECTION:페르소나 (20%) */}
+      <div className="flex w-full h-full mx-auto bg-gray-100 p-2 rounded-xl shadow-lg">
+        {/** SECTION:페르소나 (10%) */}
         <div
-          className={`w-1/5 flex flex-col items-center justify-start rounded-l-xl ${
-            selectedGender === "male" ? "bg-blue-100" : "bg-pink-100"
-          } `}
+          className={`w-1/10 flex flex-col items-center justify-start rounded-l-xl`}
         >
-          <PersonaSelector>
-            <PersonaToggle
-              selectedGender={selectedGender}
-              onToggle={(v) => handleToggleEvent(v)}
-            />
-
-            <div className="grid grid-cols-1 gap-3 overflow-hidden mt-4 mb-2">
-              {filteredPersonas.map((p) => (
+          <PersonaContainer>
+            <div className="grid grid-cols-1 gap-1 overflow-hidden p-1">
+              {PERSONAS.map((p) => (
                 <PersonaThumbnail
                   key={p.id}
                   icon={p.icon}
@@ -70,11 +40,11 @@ export default function Main() {
                 />
               ))}
             </div>
-          </PersonaSelector>
+          </PersonaContainer>
         </div>
 
-        {/** SECTION: 프롬프트/챗봇 (55%) */}
-        <div className="w-7/12 bg-white p-6 border-x border-gray-300 shadow-inner">
+        {/** SECTION: 프롬프트/챗봇 (65%) */}
+        <div className="w-8/12 bg-white p-6 border-x border-gray-300 shadow-inner">
           <div className="text-xl text-gray-600 h-full">
             <Prompt />
           </div>
@@ -87,11 +57,17 @@ export default function Main() {
               key={i}
               onClick={() => handleClickEvent(v.value)}
               size="sm"
-              className={cn(buttonStyle, `bg-${v.color}-900`)}
+              className={cn(
+                "flex flex-1 flex-col justify-center text-xl font-medium rounded-xl text-center",
+                `bg-${v.color}-900`
+              )}
             >
-              <p className="whitespace-normal text-center text-5xl ">
-                {v.label}
-              </p>
+              <div className="flex flex row items-center gap-2">
+                <IconRenderer icon={v.icon} />
+                <p className="whitespace-normal text-center text-7xl ">
+                  {v.label}
+                </p>
+              </div>
             </Button>
           ))}
         </div>

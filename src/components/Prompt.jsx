@@ -114,7 +114,7 @@ export default function Prompt() {
     setTtsQueue((prev) => [...prev, text]);
   }, []);
 
-  // 녹음 및 STT 로직
+  // NOTE: 녹음 및 정지 핸들러
   const handleStartRecording = async () => {
     if (isRecording) return;
     let chunks = [];
@@ -174,7 +174,6 @@ export default function Prompt() {
       setIsRecording(false);
     }
   };
-
   const handleStopRecording = () => {
     if (!isRecording) return;
     setIsRecording(false);
@@ -266,7 +265,7 @@ export default function Prompt() {
       >
         {questionList.length === 0 && (
           <div className="flex justify-center items-center h-full">
-            <p className="text-3xl text-gray-600 font-semibold">
+            <p className="text-6xl text-gray-600 font-semibold">
               {initGreeting}
             </p>
           </div>
