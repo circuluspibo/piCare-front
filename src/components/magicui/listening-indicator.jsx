@@ -43,8 +43,8 @@ function MicToggleButton({ onStart, onStop }) {
   const buttonClass = cn(
     "flex items-center justify-center w-full rounded-xl px-2 py-2 shadow-lg transition-colors duration-300",
     {
-      "bg-red-600 hover:bg-red-700": isListening,
-      "bg-blue-600 hover:bg-blue-700": !isListening,
+      "bg-yellow-700 hover:bg-yellow-500": isListening,
+      "bg-indigo-700 hover:bg-indigo-500": !isListening,
     }
   );
 
