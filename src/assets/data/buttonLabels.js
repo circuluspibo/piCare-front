@@ -3,24 +3,24 @@ export const buttonLabels = [
     label: "언어",
     value: "language",
     icon: "BookOpen",
-    color: "slate",
+    color: "orange",
   },
   {
     label: "신체",
     value: "body",
     icon: "Dumbbell",
-    color: "blue",
+    color: "lime",
   },
   {
     label: "그림",
     value: "aiImage",
     icon: "Image",
-    color: "purple",
+    color: "violet",
   },
-  {
-    label: "환경",
-    value: "IAQ",
-    icon: "Wind",
-    color: "teal",
-  },
+  // {
+  //   label: "실내",
+  //   value: "IAQ",
+  //   icon: "Wind",
+  //   color: "cyan",
+  // },
 ];

@@ -23,13 +23,13 @@ export default function Main() {
 
   return (
     <>
-      <div className="flex w-full h-full mx-auto bg-gray-100 p-2 rounded-xl shadow-lg">
+      <div className="flex w-full h-full mx-auto bg-gray-100 p-2 rounded-xl shadow-lg overflow-hidden">
         {/** SECTION:페르소나 (10%) */}
         <div
           className={`w-1/10 flex flex-col items-center justify-start rounded-l-xl`}
         >
           <PersonaContainer>
-            <div className="grid grid-cols-1 gap-1 overflow-hidden p-1">
+            <div className="grid grid-cols-1 gap-1 overflow-hidden p-1 h-full">
               {PERSONAS.map((p) => (
                 <PersonaThumbnail
                   key={p.id}
@@ -58,13 +58,13 @@ export default function Main() {
               onClick={() => handleClickEvent(v.value)}
               size="sm"
               className={cn(
-                "flex flex-1 flex-col justify-center text-xl font-medium rounded-xl text-center",
-                `bg-${v.color}-900`
+                "flex flex-1 flex-col justify-center text-xl font-bold rounded-xl text-center",
+                `bg-${v.color}-200 text-${v.color}-700`
               )}
             >
               <div className="flex flex row items-center gap-2">
                 <IconRenderer icon={v.icon} />
-                <p className="whitespace-normal text-center text-7xl ">
+                <p className="whitespace-normal text-center text-6xl ">
                   {v.label}
                 </p>
               </div>

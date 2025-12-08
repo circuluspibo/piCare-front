@@ -96,15 +96,13 @@ const PersonaThumbnail = React.forwardRef(
         type="button"
         onClick={onClick}
         className={cn(
-          `flex items-center justify-center w-full rounded-full shadow-inner p-3`,
+          `flex items-center justify-center rounded-full shadow-inner p-3`,
           thumbnailVariants({ isSelected, gender, className })
         )}
         ref={ref}
         {...props}
       >
-        <div className="w-full h-full flex items-center justify-center text-7xl">
-          {icon}
-        </div>
+        <div className="flex items-center justify-center text-5xl">{icon}</div>
       </button>
     );
   }
