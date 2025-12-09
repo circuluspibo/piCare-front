@@ -7,13 +7,13 @@ export const buttonLabels = [
   },
   {
     label: "신체",
-    value: "body",
+    value: "excercise",
     icon: "Dumbbell",
     color: "lime",
   },
   {
     label: "그림",
-    value: "aiImage",
+    value: "draw",
     icon: "Image",
     color: "violet",
   },

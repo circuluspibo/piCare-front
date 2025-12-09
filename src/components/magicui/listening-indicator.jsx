@@ -26,7 +26,7 @@ const SoundWaveIcon = () => (
 );
 
 // Toggle
-function MicToggleButton({ onStart, onStop }) {
+function MicToggleButton({ onStart, onStop, micSize }) {
   const [isListening, setIsListening] = useState(false);
 
   const handleButtonClick = () => {
@@ -63,10 +63,10 @@ function MicToggleButton({ onStart, onStop }) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
-            className="flex items-center text-white"
+            className={`flex items-center text-white ${micSize}`}
           >
             <SoundWaveIcon />
-            <p className="text-center font-medium text-7xl">듣기 종료</p>
+            <p className="text-center font-medium">듣기 종료</p>
           </motion.div>
         ) : (
           // SECTION: 말하기
@@ -76,10 +76,10 @@ function MicToggleButton({ onStart, onStop }) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
-            className="flex items-center text-white"
+            className={`flex items-center text-white ${micSize}`}
           >
             <Mic className="w-20 h-20" />
-            <p className="text-center font-medium text-7xl">말하기</p>
+            <p className="text-center font-medium">말하기</p>
           </motion.div>
         )}
       </AnimatePresence>

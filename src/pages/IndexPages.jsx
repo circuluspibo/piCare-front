@@ -6,18 +6,28 @@ import { useState } from "react";
 import { PERSONAS } from "@/assets/data/personaData";
 import { buttonLabels } from "@/assets/data/buttonLabels";
 import { IconRenderer } from "@/components/ui/IconRenderer";
+import { useNavigate } from "react-router-dom";
 
 export default function Main() {
+  const navigation = useNavigate();
   const [selectedPersona, setSelectedPersona] = useState(PERSONAS[0]);
 
   // 버튼 이벤트 헨들러
   const handleClickEvent = (value) => {
-    if (value === "language") {
-      const url = import.meta.env.VITE_HANI_URL;
-      // console.log("url = ", url);
-      return (window.location.href = url);
-    } else {
-      console.log("Working on...");
+    switch (value) {
+      case "language": {
+        const url = import.meta.env.VITE_HANI_URL;
+        return (window.location.href = url);
+      }
+      case "excercise": {
+        return navigation("/exercise");
+      }
+      case "draw": {
+        return navigation("/draw");
+      }
+      default: {
+        return;
+      }
     }
   };
 
