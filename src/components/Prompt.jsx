@@ -1,8 +1,17 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import MicToggleButton from "./magicui/listening-indicator";
 import LANGUAGE_SYSTEMS from "@/utils/LanguageSystem";
+import {
+  playTtsSentence,
+  startMotion,
+  stopMotion,
+  fetchStt,
+  fetchChatStream,
+} from "../api";
 
-export default function Prompt() {
+export default function Prompt({
+  textSize = { text: "text-5xl", mic: "text-7xl" },
+}) {
   // 참조 관리
   const mediaRecorderRef = useRef(null);
   const scrollRef = useRef(null);
@@ -22,8 +31,6 @@ export default function Prompt() {
   const currentLang = "ko";
   const currentSystem = LANGUAGE_SYSTEMS[currentLang];
   const currentVoice = 33;
-  const apiBaseURL = import.meta.env.VITE_API_BASE_URL;
-  const ttsBaseURL = import.meta.env.VITE_TTS_BASE_URL;
 
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
@@ -47,61 +54,29 @@ export default function Prompt() {
   }, []);
 
   // TTS 재생 및 큐 로직
-  const playTtsSentence = useCallback(
-    async (text) => {
-      const ttsUrl =
-        `${ttsBaseURL}/tts?` +
-        new URLSearchParams({
-          text,
-          voice: `${currentVoice - 1}`,
-          lang: currentLang,
-          static: "0",
-          isPlay: "0",
-        });
-
-      return new Promise((resolve) => {
-        const audio = new Audio(ttsUrl);
-        audio.onended = resolve;
-        audio.onerror = resolve;
-        audio.play().catch(resolve);
-      });
-    },
-    [ttsBaseURL, currentVoice, currentLang]
+  const playTts = useCallback(
+    (text) => playTtsSentence(text, currentLang, currentVoice),
+    []
   );
 
-  // TTS API 호출 및 모션 제어
+  // TTS API 호출 및 모션 제어 (API 호출 부분이 startMotion, stopMotion으로 대체됨)
   const processTtsQueue = useCallback(async () => {
-    // 이미 재생 중이거나 큐가 비어있으면 실행하지 않음
     if (ttsQueue.length === 0 || isPlayingTts) return;
 
-    // 큐 처리를 시작하면서 재생 상태로 변경
     setIsPlayingTts(true);
     const queueSnapshot = [...ttsQueue];
     setTtsQueue([]);
 
-    // 모션 API 호출
-    const time = Date.now();
-    const motionApiUrl = `http://127.0.0.1:8000/motion${
-      time % 4 === 1
-        ? "?name=test1"
-        : time % 4 === 2
-        ? "?name=test2"
-        : time % 4 === 3
-        ? "?name=test3"
-        : ""
-    }`;
-    fetch(motionApiUrl).catch((e) => console.error("Motion API Error:", e));
+    startMotion().catch((e) => console.error("Motion API Error:", e));
 
     for (const text of queueSnapshot) {
-      await playTtsSentence(text);
+      await playTts(text);
     }
 
-    // 재생 완료 후 Stop API 호출 및 상태 해제
-    fetch(`http://127.0.0.1:8000/stop`).catch((e) =>
-      console.error("Stop API Error:", e)
-    );
+    // 재생 완료 후 Stop API 호출 및 상태 해제 (모듈 함수 사용)
+    stopMotion().catch((e) => console.error("Stop API Error:", e));
     setIsPlayingTts(false);
-  }, [ttsQueue, isPlayingTts, playTtsSentence]);
+  }, [ttsQueue, isPlayingTts, playTts]);
 
   // processTtsQueue 함수 호출
   useEffect(() => {
@@ -133,26 +108,10 @@ export default function Prompt() {
 
       recorder.addEventListener("stop", async () => {
         const audioBlob = new Blob(chunks, { type: "audio/ogg;codecs=opus" });
-        const formData = new FormData();
-        formData.append("file", audioBlob, "voice.ogg");
 
         try {
-          const res = await fetch(
-            `${apiBaseURL}/stt?lang=${currentLang}&isPlay=0`,
-            { method: "POST", body: formData }
-          );
-
-          if (!res.ok) {
-            throw new Error(`STT ERROR: ${res.status}`);
-          }
-
-          const result = await res.json();
-          let recognizedText = "";
-          if (result.text && result.text.trim()) {
-            recognizedText = result.text.trim();
-          } else if (result.data && result.data.trim()) {
-            recognizedText = result.data.trim();
-          }
+          // STT API 호출 (모듈 함수 사용)
+          const recognizedText = await fetchStt(audioBlob, currentLang);
 
           if (recognizedText) {
             setQuestionList((prev) => [...prev, recognizedText]);
@@ -189,53 +148,22 @@ export default function Prompt() {
   const sendMessage = async (message) => {
     if (!message) return;
     setFullResponse("");
+    let accumulatedResponse = "";
     let lastSentenceEnd = 0;
 
     setIsPlayingTts(false);
+    setTtsQueue([]); // 새로운 메시지 시작 시 기존 TTS 큐 초기화
 
     try {
-      const res = await fetch(
-        `${apiBaseURL}/txt2chat?` +
-          new URLSearchParams({
-            prompt: message,
-            system: currentSystem,
-            isPlay: "0",
-            lang: currentLang,
-          })
-      );
-
-      if (!res.ok) {
-        throw new Error(`NETWORK ERROR: ${res.status}`);
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let accumulatedResponse = "";
-
       const sentenceRegex = /([^.!?\n]*[.!?\n]\s*)/g;
 
-      while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) {
-          const remainingText = accumulatedResponse
-            .slice(lastSentenceEnd)
-            .trim();
-          if (remainingText) {
-            addToTtsQueue(remainingText);
-          }
-
-          setAnswerList((prev) => [...prev, accumulatedResponse]);
-
-          break;
-        }
-
-        const chunk = decoder.decode(value, { stream: true });
+      // Chat Stream API 호출 (모듈 함수 사용)
+      await fetchChatStream(message, currentSystem, currentLang, (chunk) => {
         accumulatedResponse += chunk;
-
         setFullResponse(accumulatedResponse);
         scrollToBottom();
 
+        // 청크를 문장 단위로 분리하여 TTS 큐에 추가
         let processedLength = 0;
         const segmentToAnalyze = accumulatedResponse.slice(lastSentenceEnd);
         let match;
@@ -247,11 +175,16 @@ export default function Prompt() {
           if (sentence) {
             addToTtsQueue(sentence);
           }
-          // 길이 누적
           processedLength += match[0].length;
         }
         lastSentenceEnd += processedLength;
+      });
+
+      const remainingText = accumulatedResponse.slice(lastSentenceEnd).trim();
+      if (remainingText) {
+        addToTtsQueue(remainingText);
       }
+      setAnswerList((prev) => [...prev, accumulatedResponse]);
     } catch (error) {
       console.error(`TEXT MESSAGE ERROR : `, error);
     }
@@ -265,7 +198,7 @@ export default function Prompt() {
       >
         {questionList.length === 0 && (
           <div className="flex justify-center items-center h-full">
-            <p className="text-5xl text-gray-600 font-semibold">
+            <p className={`${textSize.text} text-gray-600 font-semibold`}>
               {initGreeting}
             </p>
           </div>
@@ -313,6 +246,7 @@ export default function Prompt() {
         <MicToggleButton
           onStart={handleStartRecording}
           onStop={handleStopRecording}
+          micSize={textSize.mic}
           isListening={isRecording}
         />
       </div>

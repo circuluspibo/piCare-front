@@ -12,17 +12,23 @@ import {
   createRoutesFromElements,
 } from "react-router-dom";
 
+import IndexLayout from "@/Layouts/IndexLayout";
 // Pages
 import NotFound from "@/pages/NotFound";
-import { Loading } from "./components/Loading";
-import IndexLayout from "./Layouts/IndexLayout";
-import Main from "./pages/IndexPages";
+import Main from "@/pages/IndexPages";
+import ExercisePage from "@/pages/ExercisePage";
+import DrawPage from "@/pages/DrawPage";
+
+// Components
+import { Loading } from "@/components/Loading";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route element={<IndexLayout />} errorElement={<NotFound />}>
       {/** 메인 페이지 */}
       <Route path="/" element={<Main />} />
+      <Route path="/exercise" element={<ExercisePage />} />
+      <Route path="/draw" element={<DrawPage />} />
     </Route>
   )
 );
