@@ -13,11 +13,6 @@ export default function DrawPage() {
   const [tool, setTool] = useState("pencil");
   const [isDrawing, setIsDrawing] = useState(false);
 
-  const promptSize = {
-    text: "text-3xl",
-    mic: "text-5xl",
-  };
-
   // 마우스/터치 위치 계산 함수
   const getPos = useCallback((e) => {
     if (
@@ -184,16 +179,16 @@ export default function DrawPage() {
             <div className="flex flex-col gap-2 text-2xl">
               <div className="w-full">
                 <button
-                  className={`px-3 py-2 rounded w-1/2 ${
-                    tool === "pencil" ? "bg-gray-200 font-bold" : "bg-white"
+                  className={`px-3 py-2 rounded w-1/2 hover:bg-yellow-200 ${
+                    tool === "pencil" ? "bg-green-200 font-bold" : "bg-gray-200"
                   }`}
                   onClick={() => setTool("pencil")}
                 >
                   ✏️ 연필
                 </button>
                 <button
-                  className={`px-3 py-2 rounded w-1/2 ${
-                    tool === "eraser" ? "bg-gray-200 font-bold" : "bg-white"
+                  className={`px-3 py-2 rounded w-1/2 hover:bg-yellow-200 ${
+                    tool === "eraser" ? "bg-green-200 font-bold" : "bg-gray-200"
                   }`}
                   onClick={() => setTool("eraser")}
                 >
@@ -201,7 +196,7 @@ export default function DrawPage() {
                 </button>
               </div>
               <button
-                className="px-3 py-2 rounded bg-red-100"
+                className="px-3 py-2 rounded bg-red-100 hover:bg-yellow-200"
                 onClick={clearCanvas}
               >
                 🗑️ 모두 지우기
@@ -210,7 +205,7 @@ export default function DrawPage() {
           </div>
 
           <div className="border p-3 rounded-md flex-1 overflow-hidden">
-            <Prompt textSize={promptSize} />
+            <Prompt text={"text-3xl"} micText={"text-6xl"} />
           </div>
         </div>
       </div>
