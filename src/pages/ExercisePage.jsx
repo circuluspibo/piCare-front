@@ -68,7 +68,7 @@ export default function ExercisePage() {
   // };
 
   const resetGame = useCallback(() => {
-    console.log("resetGame");
+    // console.log("resetGame");
     setIsStart(false);
     setIsFinish(false);
     setShowDialog(false);
@@ -204,7 +204,6 @@ export default function ExercisePage() {
   // onResults (MediaPipe 콜백)
   const onResults = useCallback(
     (results) => {
-      console.log("onResults");
       const marks = results.poseLandmarks;
       const canvasEl = canvasRef.current;
 
@@ -255,7 +254,7 @@ export default function ExercisePage() {
 
       if (side) {
         // 포즈 감지!
-        console.log("Pose Detected:", side);
+        // console.log("Pose Detected:", side);
         isPoseDetectedRef.current = true;
         lastTimeRef.current = Date.now();
 
@@ -356,7 +355,6 @@ export default function ExercisePage() {
   // 최초 게임 시작 트리거
   useEffect(() => {
     if (isStart) {
-      console.log("useEffect isStart");
       // piboTell("총 20번의 시도로 게임을 시작할게!");
       startRef.current && startRef.current();
     }

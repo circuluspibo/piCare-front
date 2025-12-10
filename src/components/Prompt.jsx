@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useContext } from "react";
 import MicToggleButton from "./magicui/listening-indicator";
 import LANGUAGE_SYSTEMS from "@/utils/LanguageSystem";
 import {
@@ -8,10 +8,9 @@ import {
   fetchStt,
   fetchChatStream,
 } from "../api";
+import { GlobalContext } from "@/contexts/GlobalContext";
 
-export default function Prompt({
-  textSize = { text: "text-5xl", mic: "text-7xl" },
-}) {
+export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
   // 참조 관리
   const mediaRecorderRef = useRef(null);
   const scrollRef = useRef(null);
@@ -27,10 +26,9 @@ export default function Prompt({
   const [questionTimes, setQuestionTimes] = useState([]);
 
   // 유틸리티
+  const { currentLang, personaVoice } = useContext(GlobalContext);
   const initGreeting = "무엇을 도와드릴까요?";
-  const currentLang = "ko";
   const currentSystem = LANGUAGE_SYSTEMS[currentLang];
-  const currentVoice = 33;
 
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
@@ -55,8 +53,8 @@ export default function Prompt({
 
   // TTS 재생 및 큐 로직
   const playTts = useCallback(
-    (text) => playTtsSentence(text, currentLang, currentVoice),
-    []
+    (text) => playTtsSentence(text, currentLang, personaVoice),
+    [currentLang, personaVoice]
   );
 
   // TTS API 호출 및 모션 제어 (API 호출 부분이 startMotion, stopMotion으로 대체됨)
@@ -198,7 +196,7 @@ export default function Prompt({
       >
         {questionList.length === 0 && (
           <div className="flex justify-center items-center h-full">
-            <p className={`${textSize.text} text-gray-600 font-semibold`}>
+            <p className={`${text} text-gray-600 font-semibold`}>
               {initGreeting}
             </p>
           </div>
@@ -246,7 +244,7 @@ export default function Prompt({
         <MicToggleButton
           onStart={handleStartRecording}
           onStop={handleStopRecording}
-          micSize={textSize.mic}
+          micText={micText}
           isListening={isRecording}
         />
       </div>

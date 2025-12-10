@@ -21,6 +21,7 @@ import DrawPage from "@/pages/DrawPage";
 
 // Components
 import { Loading } from "@/components/Loading";
+import { GlobalContextProvider } from "./contexts/GlobalContext";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -36,7 +37,9 @@ const router = createBrowserRouter(
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <Suspense fallback={<Loading />}>
-      <RouterProvider router={router} />
+      <GlobalContextProvider>
+        <RouterProvider router={router} />
+      </GlobalContextProvider>
     </Suspense>
   </StrictMode>
 );
