@@ -61,15 +61,15 @@ export default function Main() {
         </div>
 
         {/** SECTION: 버튼 영역 (25%) */}
-        <div className="w-1/4 flex flex-col h-full p-2 gap-2 bg-gray-300 rounded-r-xl">
+        <div className="w-1/4 flex flex-col h-full p-2 gap-2 bg-gray-300 rounded-r-2xl">
           {buttonLabels.map((v, i) => (
             <Button
               key={i}
               onClick={() => handleClickEvent(v.value)}
               size="sm"
               className={cn(
-                "flex flex-1 flex-col justify-center text-xl font-bold rounded-xl text-center",
-                `bg-${v.color}-200 text-${v.color}-700`
+                "flex flex-1 flex-col justify-center text-xl font-bold rounded-2xl text-center shadow-lg ",
+                `bg-${v.color}-200 text-${v.color}-800`
               )}
             >
               <div className="flex flex row items-center gap-2">

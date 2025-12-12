@@ -20,7 +20,7 @@ const SoundWaveIcon = () => (
         repeatType: "reverse",
       }}
     >
-      <Mic className="w-20 h-20 text-white relative z-10" />
+      <Mic className="w-20 h-20 text-black relative z-10" />
     </motion.div>
   </div>
 );
@@ -43,8 +43,8 @@ function MicToggleButton({ onStart, onStop, micText }) {
   const buttonClass = cn(
     "flex items-center justify-center w-full rounded-xl px-2 py-2 shadow-lg transition-colors duration-300",
     {
-      "bg-yellow-700 hover:bg-yellow-500": isListening,
-      "bg-indigo-700 hover:bg-indigo-500": !isListening,
+      "bg-yellow-700 text-black": isListening,
+      "bg-indigo-700 text-white": !isListening,
     }
   );
 
@@ -63,7 +63,7 @@ function MicToggleButton({ onStart, onStop, micText }) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
-            className={`flex items-center text-white ${micText}`}
+            className={`flex items-center ${micText}`}
           >
             <SoundWaveIcon />
             <p className="text-center font-medium">듣기 종료</p>
@@ -76,7 +76,7 @@ function MicToggleButton({ onStart, onStop, micText }) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
-            className={`flex items-center text-white ${micText}`}
+            className={`flex items-center ${micText}`}
           >
             <Mic className="w-20 h-20" />
             <p className="text-center font-medium">말하기</p>

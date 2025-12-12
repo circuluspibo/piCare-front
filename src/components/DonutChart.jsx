@@ -53,7 +53,7 @@ const DonutChart = ({ value, max, color, chartId = "FLAG_donut" }) => {
   }, [value, max]);
 
   return (
-    <div style={{ position: "relative", width: "80px", height: "80px" }}>
+    <div style={{ position: "relative", width: "160px", height: "160px" }}>
       <canvas id={chartId} ref={chartRef}></canvas>
       {/* 중앙 텍스트 표시 */}
       <div
@@ -62,7 +62,7 @@ const DonutChart = ({ value, max, color, chartId = "FLAG_donut" }) => {
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          fontSize: "24px",
+          fontSize: "60px",
           fontWeight: "bold",
           color: color,
         }}
