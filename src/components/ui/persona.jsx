@@ -66,8 +66,8 @@ const thumbnailVariants = cva(
       },
       // 성별에 따른 테두리 색상만 변경
       gender: {
-        male: "border-blue-500 ring-blue-400 bg-blue-200",
-        female: "border-pink-500 ring-pink-400 bg-pink-200",
+        male: "border-blue-400 ring-blue-400 bg-blue-200",
+        female: "border-pink-400 ring-pink-400 bg-pink-200",
       },
     },
     defaultVariants: {
@@ -96,13 +96,15 @@ const PersonaThumbnail = React.forwardRef(
         type="button"
         onClick={onClick}
         className={cn(
-          `flex items-center justify-center rounded-full shadow-inner p-3`,
+          `flex items-center justify-center rounded-full shadow-inner`,
           thumbnailVariants({ isSelected, gender, className })
         )}
         ref={ref}
         {...props}
       >
-        <div className="flex items-center justify-center text-5xl">{icon}</div>
+        <div className="text-[60px] aspect-square flex items-center justify-center">
+          {icon}
+        </div>
       </button>
     );
   }
