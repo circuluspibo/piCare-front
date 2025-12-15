@@ -2,7 +2,7 @@ import Prompt from "@/components/Prompt";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PersonaContainer, PersonaThumbnail } from "@/components/ui/persona";
-import { useState } from "react";
+import { useState, } from "react";
 import { PERSONAS } from "@/assets/data/personaData";
 import { buttonLabels } from "@/assets/data/buttonLabels";
 import { IconRenderer } from "@/components/ui/IconRenderer";
@@ -30,6 +30,7 @@ export default function Main() {
       }
     }
   };
+
 
   return (
     <>

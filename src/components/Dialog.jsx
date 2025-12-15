@@ -49,8 +49,9 @@ export default function Dialog({
         </div>
 
         {/* 액션 버튼 (Actions) */}
+
         <div className="flex justify-center space-x-4">
-          {actions.map((action, index) => (
+          {actions !== undefined && actions.map((action, index) => (
             <button
               key={index}
               onClick={() => {

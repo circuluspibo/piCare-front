@@ -6,7 +6,7 @@ import * as LucideIcons from "lucide-react";
 const IconRenderer = React.forwardRef(({ icon, ...props }, ref) => {
   const IconComponent = LucideIcons[icon];
   return (
-    <IconComponent ref={ref} style={{ width: 72, height: 72 }} {...props} />
+    <IconComponent ref={ref} size={'size-20'}{...props} />
   );
 });
 IconRenderer.displayName = "IconRenderer";

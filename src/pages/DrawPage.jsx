@@ -1,22 +1,43 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo, } from "react";
 import { ArrowBigLeft, Eraser, Pencil, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MicToggleButton from "@/components/magicui/listening-indicator";
 import { IconRenderer } from "@/components/ui/IconRenderer";
+import useVoiceChat from "@/hooks/useVoiceChat";
+import Dialog from "@/components/Dialog";
 
 export default function DrawPage() {
   const navigation = useNavigate();
+  
+  // Canvas
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const parentRef = useRef(null);
-
-  const PENCIL_WIDTH = 22;
+  const PENCIL_WIDTH = 10;
   const PENCIL_COLOR = '#000';
   const ERASER_WIDTH = 40;
   const SAMPLE_SIZE = 0.8
-  // 1. 도구 상태 추가 및 초기값 설정
   const [tool, setTool] = useState("pencil");
   const [isDrawing, setIsDrawing] = useState(false);
+  
+  // Cursor
+  const cursorRef = useRef(null);
+  const cursorSize = ERASER_WIDTH;
+
+  const moveCursor = useCallback((e) => {
+    const canvas = canvasRef.current;
+    const cursor = cursorRef.current;
+
+    if(!parent || !cursor) return;
+
+    const rect = canvas.getBoundingClientRect();
+
+    const clientX = e.touches?.[0]?.clientX ?? e.clientX;
+    const clientY = e.touches?.[0]?.clientY ?? e.clientY;
+
+    cursor.style.left = `${clientX - rect.left}px`;
+    cursor.style.top = `${clientY - rect.top}px`;
+  }, [])
 
   // 마우스/터치 위치 계산 함수
   const getPos = useCallback((e) => {
@@ -45,6 +66,7 @@ export default function DrawPage() {
       const ctx = ctxRef.current;
       if (!ctx) return;
 
+      moveCursor(e);
       setIsDrawing(true);
       const p = getPos(e);
 
@@ -60,7 +82,7 @@ export default function DrawPage() {
       ctx.beginPath();
       ctx.moveTo(p.x, p.y);
     },
-    [getPos, tool]
+    [getPos, tool, moveCursor]
   );
 
   // 드로잉/지우기 진행
@@ -71,11 +93,12 @@ export default function DrawPage() {
 
       if (e.touches) e.preventDefault();
 
+      moveCursor(e);
       const p = getPos(e);
       ctx.lineTo(p.x, p.y);
       ctx.stroke();
     },
-    [isDrawing, getPos]
+    [isDrawing, getPos, moveCursor]
   );
 
   // 드로잉 종료
@@ -102,6 +125,17 @@ export default function DrawPage() {
   }, []);
 
   // 도형 예시
+  const tools = [
+    {
+      name: 'Pencil', style: 'bg-green-400'
+    },
+    {
+      name: 'Eraser', style: 'border-red-600 text-red-600'
+    },
+    {
+      name: 'X', style: 'bg-red-700 text-white'
+    }
+  ]
   const shapeExamples = [
     {
       name: 'Circle',
@@ -137,6 +171,20 @@ export default function DrawPage() {
         }
     }
   ]
+
+  const handleTools = useCallback((tool) => {
+    switch(tool) {
+      case 'Pencil': {
+        return setTool('pencil')
+      }
+      case 'Eraser': {
+        return setTool('eraser')
+      }
+      case 'X': {
+        return clearCanvas()
+      }
+    }
+  }, [setTool, clearCanvas])
   const drawShape = useCallback((shapeName) => {
     const canvas = canvasRef.current;
     const ctx = ctxRef.current;
@@ -154,6 +202,7 @@ export default function DrawPage() {
       shape.draw(ctx, canvas)
     }
   }, [])
+
   // 캔버스 초기화 및 context 설정
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -199,6 +248,60 @@ export default function DrawPage() {
     }
   }, [tool]);
 
+  // Mic
+  const enableTTS = false;
+  const {
+    isRecording,
+    questionList,
+    handleStartRecording,
+    handleStopRecording,
+  } = useVoiceChat({ enableTTS });
+
+
+  const lastQuestion = useMemo(() => {
+    const len = questionList.length;
+    return questionList[len - 1]
+  },[questionList])
+
+  const [loading, setLoading] = useState(false);
+
+  const prepare = useCallback( async(mode) => {
+    const res = await fetch(
+      `http://127.0.0.1:59532/generate?` +
+      new URLSearchParams({
+        mode: mode
+      }))
+    return res
+  }, [])
+
+  const handleGenerateImg = useCallback( async () => {
+    // prepare img 
+    setLoading(true);
+    // const res = await prepare(1);
+    const canvas = canvasRef.current;
+    if(!canvas) return;
+
+    // const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+    setLoading(false);
+
+    // prepare tts
+    // await prepare(0)
+
+  }, [])
+
+  const drawImageToCanvas = (imageSrc) => {
+    const canvas = canvasRef.current;
+    const ctx = ctxRef.current;
+    if(!canvas || !ctx) return;
+
+    const img = new Image();
+    img.src = imageSrc;
+
+    img.onload = () => {
+      clearCanvas();
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    }
+  }
   return (
     <div className="flex flex-col w-full h-full p-4">
       <header className="flex flex-row items-center pb-2 mb-2 border-b">
@@ -207,13 +310,14 @@ export default function DrawPage() {
           onClick={() => navigation("/")}
         />
         <h1 className="text-4xl font-bold">AI를 통한 그림그리기</h1>
+        <p>{lastQuestion}</p>
       </header>
 
       <div className="flex flex-1 gap-2 h-[calc(100%-70px)]">
         {/* SECTION: 캔버스 영역 70% */}
         <div className="w-3/5 p-2">
           <div
-            className="w-full h-full"
+            className="relative w-full h-full"
             style={{ minHeight: 400 }}
             ref={parentRef}
           >
@@ -221,63 +325,91 @@ export default function DrawPage() {
               ref={canvasRef}
               className="w-full h-full block bg-white"
               onMouseDown={startDraw}
-              onMouseMove={draw}
+              onMouseMove={(e) => {
+                moveCursor(e);
+                draw(e);
+              }}
               onMouseUp={endDraw}
               onMouseLeave={endDraw}
               onTouchStart={startDraw}
-              onTouchMove={draw}
+              onTouchMove={(e) => {
+                moveCursor(e);
+                draw(e)
+              }}
               onTouchEnd={endDraw}
-            ></canvas>
+            />
+            {/** 커서 */}
+            <div
+              ref={cursorRef}
+                className={`absolute pointer-events-none rounded-full ${
+                tool === "eraser"
+                  ? "border border-dashed border-red-500 bg-white/60"
+                  : "border border-black bg-black/20"
+                }`}
+                style={{
+                  width: cursorSize,
+                  height: cursorSize,
+                  transform: "translate(-50%, -50%)",
+                  display: isDrawing ? "block" : "none",
+                }}
+            />
           </div>
         </div>
         {/* SECTION: 사이드 영역 - 30% */}
         <div className="w-2/5 flex flex-col gap-2">
           <div className="border p-3 rounded-md">
             <p className="font-semibold mb-2 text-4xl">그리기 도구</p>
-            <div className="flex flex-row w-full justify-between">
-              <button
-                className={`px-3 py-2 rounded bg-green-400`}
-                onClick={() => setTool("pencil")}
-              >
-                <Pencil className="size-20" />
-              </button>
-              <button
-                className={`px-3 py-2 rounded border-4 border-red-600 text-red-600`}
-                onClick={() => setTool("eraser")}
-              >
-                <Eraser className="size-20" />
-              </button>
-              <button
-                className="px-3 py-2 rounded bg-red-700 text-white"
-                onClick={clearCanvas}
-              >
-                <X className="size-20" />
-              </button>
-            </div>
-          </div>
-
-          <div className="border p-3 rounded-md flex-1 overflow-hidden">
-            <p className="font-semibold mb-2 text-4xl">그리기 도우미</p>
-            <div className="flex flex-col space-y-4 h-full">
-                <div className="flex flex-row justify-between"> 
-                  {shapeExamples.map((shape) => (
+              <div className="flex flex-row justify-between">
+                {tools.map((tool) => (
+                  <button
+                    className={`px-3 py-2 rounded border shadow-lg ${tool.style}`}
+                    key={tool.name}
+                    onClick={() => handleTools(tool.name)}
+                  >
+                    <IconRenderer icon={tool.name} className="size-20"/>
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-row justify-between mt-2">
+                {shapeExamples.map((shape) => (
                     <button
                       className="px-3 py-2 rounded border shadow-lg"
                       key={shape.name}
                       onClick={() => drawShape(shape.name)}
                     >
-                      <IconRenderer icon={shape.name} />
+                      <IconRenderer icon={shape.name} className="size-20"/>
                     </button>
                   ))
-                  }
-                </div>
+                }
+              </div>
+
+          </div>
+
+          <div className="border px-2 rounded-md flex-1 overflow-hidden">
+            <div className="flex flex-col space-y-4 h-full">
+              <button className="bg-orange-500 text-3xl text-white py-1 rounded-xl font-bold" onClick={() => handleGenerateImg()}>
+                생성하기
+              </button>
               <MicToggleButton
+                onStart={handleStartRecording}
+                onStop={handleStopRecording}
+                isListening={isRecording}
                 micText={'text-6xl'}
               />
             </div>
           </div>
         </div>
       </div>
+            <Dialog
+              isOpen={loading}
+              onClose={() => setLoading(false)}
+              title="🚨 Loading"
+              titleStyle="text-2xl font-bold text-red-600 mb-4"
+            >
+              <p className="text-sm text-gray-500">
+                이미지 생성 준비중...
+              </p>
+            </Dialog>
     </div>
   );
 }
