@@ -3,10 +3,10 @@ import * as React from "react";
 import * as LucideIcons from "lucide-react";
 
 // LucidIcon Renderer
-const IconRenderer = React.forwardRef(({ icon, ...props }, ref) => {
+const IconRenderer = React.forwardRef(({ icon, size, ...props }, ref) => {
   const IconComponent = LucideIcons[icon];
   return (
-    <IconComponent ref={ref} size={'size-20'}{...props} />
+    <IconComponent ref={ref} size={size} {...props} />
   );
 });
 IconRenderer.displayName = "IconRenderer";

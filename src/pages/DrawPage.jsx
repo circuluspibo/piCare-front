@@ -366,7 +366,7 @@ export default function DrawPage() {
                     key={tool.name}
                     onClick={() => handleTools(tool.name)}
                   >
-                    <IconRenderer icon={tool.name} className="size-20"/>
+                    <IconRenderer icon={tool.name} size={80}/>
                   </button>
                 ))}
               </div>
@@ -377,7 +377,7 @@ export default function DrawPage() {
                       key={shape.name}
                       onClick={() => drawShape(shape.name)}
                     >
-                      <IconRenderer icon={shape.name} className="size-20"/>
+                      <IconRenderer icon={shape.name} size={80}/>
                     </button>
                   ))
                 }

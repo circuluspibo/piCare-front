@@ -74,8 +74,9 @@ export default function Main() {
               )}
             >
               <div className="flex flex row items-center gap-2">
-                <IconRenderer icon={v.icon} />
-                <p className="whitespace-normal text-center text-6xl ">
+                {/** FIXME: size 프롭스가 여기서만 왜 안 먹히는지 모르겠음. */}
+                <IconRenderer icon={v.icon} style={{ 'width': 80, 'height': 80}} />
+                <p className="whitespace-normal text-center  text-6xl">
                   {v.label}
                 </p>
               </div>
