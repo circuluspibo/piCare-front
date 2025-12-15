@@ -202,7 +202,7 @@ export default function DrawPage() {
     // 기존 캔버스 내용을 유지하면서 도형만 추가.
     const shape = shapeExamples.find((s) => s.name === shapeName);
     if (shape) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // ctx.clearRect(0, 0, canvas.width, canvas.height);
       shape.draw(ctx, canvas);
     }
   }, []);
@@ -225,21 +225,19 @@ export default function DrawPage() {
 
     ctxRef.current = ctx;
 
-    clearCanvas();
+    // clearCanvas();
 
     const handleResize = () => {
       canvas.width = parentRef.current.clientWidth;
       canvas.height = parentRef.current.clientHeight;
       ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      clearCanvas();
     };
 
     window.addEventListener("resize", handleResize);
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [clearCanvas]);
+  }, []);
 
   useEffect(() => {
     const ctx = ctxRef.current;
@@ -286,7 +284,7 @@ export default function DrawPage() {
           mode: mode,
         })
     );
-    console.log('papare res = ', res)
+    console.log("papare res = ", res);
     return res;
   };
   // 생성된 이미지 그리기
@@ -299,7 +297,7 @@ export default function DrawPage() {
     img.src = imageSrc;
 
     img.onload = () => {
-      clearCanvas();
+      ctx.globalCompositeOperation = "source-over";
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     };
   };
@@ -319,11 +317,11 @@ export default function DrawPage() {
       const blob = await new Promise((resolve) =>
         canvas.toBlob(resolve, "image/png")
       );
-      console.log('blob = ', blob)
+      console.log("blob = ", blob);
       const formData = new FormData();
       formData.append("file", blob, "sketch.png");
       // formData.append("prompt", sketchPrompt || "");
-      formData.append("prompt", 'wonderful robot i never met!');
+      formData.append("prompt", "wonderful robot i never met!");
       formData.append("seed", 0);
 
       const url = "http://127.0.0.1:59532";
@@ -336,20 +334,18 @@ export default function DrawPage() {
         throw new Error("HTTP ERROR - generateIMG");
       }
 
-      console.log('image res = ', res)
+      console.log("image res = ", res);
       // 이미지 결과 표시
       const imageBlob = await res.blob();
       const imageURL = URL.createObjectURL(imageBlob);
       drawImageToCanvas(imageURL);
-
     } catch (e) {
-      console.log('ERROR : ', e)
+      console.log("ERROR : ", e);
     } finally {
       // AI 모델 default로 다시 전환
       await preparedModel(0);
       setLoading(false);
     }
-  
   };
 
   return (
