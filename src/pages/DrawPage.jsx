@@ -94,7 +94,7 @@ export default function DrawPage() {
   // Sketch AI
   const sketchPrompt = questionList.at(-1) ?? "";
   const [loading, setLoading] = useState(false);
-
+  const [loadingText, setLoadingText] = useState('');
   const moveCursor = useCallback((e) => {
     const canvas = canvasRef.current;
     const cursor = cursorRef.current;
@@ -206,16 +206,17 @@ export default function DrawPage() {
     // 기존 캔버스 내용을 유지하면서 도형만 추가.
     const shape = shapeExamples.find((s) => s.name === shapeName);
     if (shape) {
-      // ctx.clearRect(0, 0, canvas.width, canvas.height);
       shape.draw(ctx, canvas);
     }
   }, []);
 
   // 캔버스 초기화 및 context 설정
+ // 캔버스 초기화 및 context 설정
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !parentRef.current) return;
 
+    // 초기 크기 설정 (여기서 한 번 초기화됨)
     canvas.width = parentRef.current.clientWidth;
     canvas.height = parentRef.current.clientHeight;
 
@@ -229,12 +230,36 @@ export default function DrawPage() {
 
     ctxRef.current = ctx;
 
-    // clearCanvas();
-
+    // **수정된 handleResize 함수:**
     const handleResize = () => {
-      canvas.width = parentRef.current.clientWidth;
-      canvas.height = parentRef.current.clientHeight;
+      const canvas = canvasRef.current;
+      const ctx = ctxRef.current;
+      if (!canvas || !ctx) return;
+      
+      // 1. 현재 캔버스 내용을 Data URL로 저장
+      const dataURL = canvas.toDataURL(); 
+      
+      // 2. 새로운 크기 계산
+      const newWidth = parentRef.current.clientWidth;
+      const newHeight = parentRef.current.clientHeight;
+
+      // 3. 캔버스 크기 재조정 (여기서 픽셀 데이터가 지워집니다)
+      canvas.width = newWidth;
+      canvas.height = newHeight;
+      
+      // 4. Context 설정 복원
       ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "#000"; 
+      ctx.lineWidth = 25;       
+      ctx.globalCompositeOperation = "source-over";
+
+      // 5. 이미지 객체를 생성하여 저장했던 Data URL을 캔버스에 다시 그립니다.
+      const img = new Image();
+      img.onload = function() {
+          ctx.drawImage(img, 0, 0, newWidth, newHeight); 
+      };
+      img.src = dataURL;
     };
 
     window.addEventListener("resize", handleResize);
@@ -280,12 +305,14 @@ export default function DrawPage() {
           mode: mode,
         })
     );
-    // console.log("papare res = ", res);
+    // "papare res = ", res);
     return res;
   };
   // 생성된 이미지 그리기
+ // 생성된 이미지 그리기 - 수정된 부분
   const drawImageToCanvas = (imageSrc) => {
     const canvas = canvasRef.current;
+    const parent = parentRef.current;
     const ctx = ctxRef.current;
     if (!canvas || !ctx) return;
 
@@ -293,18 +320,27 @@ export default function DrawPage() {
     img.src = imageSrc;
 
     img.onload = () => {
+      // **핵심 수정 부분:** 새로운 이미지를 그리기 전에 캔버스 전체를 지웁니다.
+      ctx.clearRect(0, 0, canvas.width, canvas.height); 
+
+      // 지우개 모드(destination-out) 등으로부터 안전하게 기본 모드로 복원
       ctx.globalCompositeOperation = "source-over";
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      // 이미지를 캔버스 전체에 그립니다.
+      ctx.drawImage(img, 0, 0, parent.width, parent.height);
     };
   };
 
   // 이미지 생성 API
   const handleGenerateImg = async () => {
-    if (!sketchPrompt) return;
+    const prompt = sketchPrompt || "멋진 로봇을 만들어줘."
+    console.log('prompt = ', prompt)
     // Show Loading
     setLoading(true);
+    setLoadingText('AI 이미지 생성 시작')
     try {
       // AI model 경량화를 위한 모델 변경.
+      setLoadingText('AI 이미지 생성 모델 적용중')
       await preparedModel(1);
 
       const canvas = canvasRef.current;
@@ -315,10 +351,11 @@ export default function DrawPage() {
       );
       const formData = new FormData();
       formData.append("file", blob, "sketch.png");
-      formData.append("prompt", sketchPrompt || "wonderful robot i never met!");
+      formData.append("prompt", prompt);
       formData.append("seed", 0);
 
       const url = "http://127.0.0.1:59532";
+      setLoadingText('스케치 이미지 전송중')
       const res = await fetch(`${url}/sketch2img`, {
         method: "POST",
         body: formData,
@@ -327,14 +364,17 @@ export default function DrawPage() {
       if (!res.ok) {
         throw new Error("HTTP ERROR - generateIMG");
       }
-      // 이미지 결과 표시
+
+      // 이미지 결과 표시]
       const imageBlob = await res.blob();
       const imageURL = URL.createObjectURL(imageBlob);
+      setLoadingText('생성된 AI 이미지 화면에 그리는중')
       drawImageToCanvas(imageURL);
     } catch (e) {
       console.log("ERROR : ", e);
     } finally {
       // AI 모델 default로 다시 전환
+      setLoadingText('AI 모델 전환중')
       await preparedModel(0).catch((e) =>
         console.log("PrepareModel ERROR : ", e)
       );
@@ -447,7 +487,7 @@ export default function DrawPage() {
         title="🚨 Loading"
         titleStyle="text-2xl font-bold text-red-600 mb-4"
       >
-        <p className="text-sm text-gray-500">이미지 생성 준비중...</p>
+        <p className="text-sm text-gray-500">{loadingText}...</p>
       </Dialog>
     </div>
   );

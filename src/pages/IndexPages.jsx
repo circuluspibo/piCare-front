@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "@/contexts/GlobalContext";
 
 export default function Main() {
-  const [updatePersona] = useContext(GlobalContext);
+  const {updatePersona} = useContext(GlobalContext);
   const navigation = useNavigate();
   // TODO: 선택된 Persona에 따른 Voice 값 받아함.
   const [selectedPersona, setSelectedPersona] = useState(PERSONAS[0]);
