@@ -281,11 +281,12 @@ export default function DrawPage() {
   // AI 모델 변경함수
   const preparedModel = async (mode) => {
     const res = await fetch(
-      `http://127.0.0.1:59532/generate?` +
+      `http://127.0.0.1:59532/prepare?` +
         new URLSearchParams({
           mode: mode,
         })
     );
+    console.log('papare res = ', res)
     return res;
   };
   // 생성된 이미지 그리기
@@ -305,42 +306,50 @@ export default function DrawPage() {
 
   // 이미지 생성 API
   const handleGenerateImg = async () => {
+    if (!sketchPrompt) return;
     // Show Loading
     setLoading(true);
-    if (!sketchPrompt) return;
+    try {
+      // AI model 경량화를 위한 모델 변경.
+      await preparedModel(1);
 
-    // AI model 경량화를 위한 모델 변경.
-    await preparedModel(1);
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+      const blob = await new Promise((resolve) =>
+        canvas.toBlob(resolve, "image/png")
+      );
+      console.log('blob = ', blob)
+      const formData = new FormData();
+      formData.append("file", blob, "sketch.png");
+      // formData.append("prompt", sketchPrompt || "");
+      formData.append("prompt", 'wonderful robot i never met!');
+      formData.append("seed", 0);
 
-    const blob = await new Promise((resolve) =>
-      canvas.toBlob(resolve, "image/png")
-    );
-    const formData = new FormData();
-    formData.append("sketch", blob, "sketch.png");
-    formData.append("prompt", sketchPrompt || "");
-    formData.append("seed", 0);
+      const url = "http://127.0.0.1:59532";
+      const res = await fetch(`${url}/sketch2img`, {
+        method: "POST",
+        body: formData,
+      });
 
-    const url = "";
-    const res = await fetch(`${url}/generate`, {
-      method: "POST",
-      body: formData,
-    });
+      if (!res.ok) {
+        throw new Error("HTTP ERROR - generateIMG");
+      }
 
-    if (!res.ok) {
-      throw new Error("HTTP ERROR - generateIMG");
+      console.log('image res = ', res)
+      // 이미지 결과 표시
+      const imageBlob = await res.blob();
+      const imageURL = URL.createObjectURL(imageBlob);
+      drawImageToCanvas(imageURL);
+
+    } catch (e) {
+      console.log('ERROR : ', e)
+    } finally {
+      // AI 모델 default로 다시 전환
+      await preparedModel(0);
+      setLoading(false);
     }
-
-    // 이미지 결과 표시
-    const imageBlob = await res.blob();
-    const imageURL = URL.createObjectURL(imageBlob);
-    drawImageToCanvas(imageURL);
-
-    // AI 모델 default로 다시 전환
-    await preparedModel(0);
-    setLoading(false);
+  
   };
 
   return (
