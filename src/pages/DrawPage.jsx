@@ -206,6 +206,7 @@ export default function DrawPage() {
     // 기존 캔버스 내용을 유지하면서 도형만 추가.
     const shape = shapeExamples.find((s) => s.name === shapeName);
     if (shape) {
+      clearCanvas()
       shape.draw(ctx, canvas);
     }
   }, []);

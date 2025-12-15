@@ -37,17 +37,17 @@ export default function Main() {
     const personaId = selectedPersona.id;
     switch (personaId) {
       case "grandpa":
-        return updatePersona(42);
+        return updatePersona(42); //91
       case "grandma":
-        return updatePersona(65);
+        return updatePersona(65); //57, 88
       case "man":
-        return updatePersona(48);
+        return updatePersona(48); 
       case "woman":
-        return updatePersona(30);
+        return updatePersona(49); //26
       case "boy":
-        return updatePersona(18);
+        return updatePersona(25); //17, 18
       case "girl":
-        return updatePersona(5);
+        return updatePersona(22); //5, 22, 76, 45
     }
   }, [selectedPersona, updatePersona]);
   return (
