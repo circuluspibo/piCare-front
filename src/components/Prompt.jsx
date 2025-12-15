@@ -9,7 +9,7 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
   const scrollRef = useRef(null);
 
   // 💡 모듈화된 훅 사용: 모든 상태와 핵심 함수를 가져옵니다.
-  const enableTTS = true
+  const enableTTS = true;
   const {
     isRecording,
     questionList,
@@ -20,7 +20,7 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
     handleStopRecording,
     initGreeting,
     currentLang,
-  } = useVoiceChat({enableTTS});
+  } = useVoiceChat({ enableTTS });
 
   // 헬퍼 함수: 시간 포맷팅
   const formatTime = (timestamp) => {
@@ -51,7 +51,6 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
   useEffect(() => {
     scrollToBottom();
   }, [fullResponse, scrollToBottom]);
-
 
   return (
     <div className="flex flex-col h-full">
