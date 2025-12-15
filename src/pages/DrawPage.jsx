@@ -91,11 +91,15 @@ export default function DrawPage() {
   const cursorRef = useRef(null);
   const cursorSize = ERASER_WIDTH;
 
+  // Sketch AI
+  const sketchPrompt = questionList.at(-1) ?? "";
+  const [loading, setLoading] = useState(false);
+
   const moveCursor = useCallback((e) => {
     const canvas = canvasRef.current;
     const cursor = cursorRef.current;
 
-    if (!parent || !cursor) return;
+    if (!canvas || !cursor) return;
 
     const rect = canvas.getBoundingClientRect();
 
@@ -267,14 +271,6 @@ export default function DrawPage() {
     },
     [setTool, clearCanvas]
   );
-  const sketchPrompt = useMemo(() => {
-    const len = questionList.length;
-    if (len === 0) return "";
-
-    return questionList[len - 1];
-  }, [questionList]);
-
-  const [loading, setLoading] = useState(false);
 
   // AI 모델 변경함수
   const preparedModel = async (mode) => {
@@ -284,7 +280,7 @@ export default function DrawPage() {
           mode: mode,
         })
     );
-    console.log("papare res = ", res);
+    // console.log("papare res = ", res);
     return res;
   };
   // 생성된 이미지 그리기
@@ -317,11 +313,9 @@ export default function DrawPage() {
       const blob = await new Promise((resolve) =>
         canvas.toBlob(resolve, "image/png")
       );
-      console.log("blob = ", blob);
       const formData = new FormData();
       formData.append("file", blob, "sketch.png");
-      // formData.append("prompt", sketchPrompt || "");
-      formData.append("prompt", "wonderful robot i never met!");
+      formData.append("prompt", sketchPrompt || "wonderful robot i never met!");
       formData.append("seed", 0);
 
       const url = "http://127.0.0.1:59532";
@@ -333,8 +327,6 @@ export default function DrawPage() {
       if (!res.ok) {
         throw new Error("HTTP ERROR - generateIMG");
       }
-
-      console.log("image res = ", res);
       // 이미지 결과 표시
       const imageBlob = await res.blob();
       const imageURL = URL.createObjectURL(imageBlob);
@@ -343,7 +335,9 @@ export default function DrawPage() {
       console.log("ERROR : ", e);
     } finally {
       // AI 모델 default로 다시 전환
-      await preparedModel(0);
+      await preparedModel(0).catch((e) =>
+        console.log("PrepareModel ERROR : ", e)
+      );
       setLoading(false);
     }
   };

@@ -2,16 +2,18 @@ import Prompt from "@/components/Prompt";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PersonaContainer, PersonaThumbnail } from "@/components/ui/persona";
-import { useState, } from "react";
+import { useContext, useEffect, useState } from "react";
 import { PERSONAS } from "@/assets/data/personaData";
 import { buttonLabels } from "@/assets/data/buttonLabels";
 import { IconRenderer } from "@/components/ui/IconRenderer";
 import { useNavigate } from "react-router-dom";
+import { GlobalContext } from "@/contexts/GlobalContext";
 
 export default function Main() {
+  const [updatePersona] = useContext(GlobalContext);
   const navigation = useNavigate();
+  // TODO: 선택된 Persona에 따른 Voice 값 받아함.
   const [selectedPersona, setSelectedPersona] = useState(PERSONAS[0]);
-
   // 버튼 이벤트 헨들러
   const handleClickEvent = (value) => {
     switch (value) {
@@ -31,7 +33,23 @@ export default function Main() {
     }
   };
 
-
+  useEffect(() => {
+    const personaId = selectedPersona.id;
+    switch (personaId) {
+      case "grandpa":
+        return updatePersona(42);
+      case "grandma":
+        return updatePersona(65);
+      case "man":
+        return updatePersona(48);
+      case "woman":
+        return updatePersona(30);
+      case "boy":
+        return updatePersona(18);
+      case "girl":
+        return updatePersona(5);
+    }
+  }, [selectedPersona, updatePersona]);
   return (
     <>
       <div className="flex w-full h-full mx-auto bg-gray-100 p-2 rounded-xl shadow-lg overflow-hidden">
@@ -75,7 +93,7 @@ export default function Main() {
             >
               <div className="flex flex row items-center gap-2">
                 {/** FIXME: size 프롭스가 여기서만 왜 안 먹히는지 모르겠음. */}
-                <IconRenderer icon={v.icon} style={{ 'width': 80, 'height': 80}} />
+                <IconRenderer icon={v.icon} style={{ width: 80, height: 80 }} />
                 <p className="whitespace-normal text-center  text-6xl">
                   {v.label}
                 </p>

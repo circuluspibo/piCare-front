@@ -4,9 +4,6 @@ import { useState, useRef, useEffect, useCallback, useContext } from "react";
 import LANGUAGE_SYSTEMS from "@/utils/LanguageSystem";
 import { GlobalContext } from "@/contexts/GlobalContext";
 
-// 현재 언어 설정을 가정하고, TTS 음성 ID는 33으로 가정합니다.
-const currentVoice = 33;
-
 export default function useVoiceChat({ enableTTS }) {
   // 참조 관리
   const mediaRecorderRef = useRef(null);
@@ -34,7 +31,7 @@ export default function useVoiceChat({ enableTTS }) {
         `${ttsBaseURL}/tts?` +
         new URLSearchParams({
           text,
-          voice: `${currentVoice - 1}`,
+          voice: `${personaVoice}`,
           lang: currentLang,
           static: "0",
           isPlay: "0",
@@ -49,13 +46,13 @@ export default function useVoiceChat({ enableTTS }) {
         audio.play().catch(resolve);
       });
     },
-    [ttsBaseURL, currentLang]
+    [ttsBaseURL, currentLang, personaVoice]
   ); // currentVoice는 상수이므로 의존성 배열에서 제거 가능
 
   // 헬퍼 함수: TTS 큐에 문장 추가
   const addToTtsQueue = useCallback((text) => {
-    if(!enableTTS) {
-        return;
+    if (!enableTTS) {
+      return;
     }
 
     setTtsQueue((prev) => [...prev, text]);
@@ -63,14 +60,12 @@ export default function useVoiceChat({ enableTTS }) {
 
   // TTS 재생 및 큐 로직 (useEffect의 의존성으로 사용되므로 useCallback으로 감싸야 함)
   const processTtsQueue = useCallback(async () => {
-
-    if(!enableTTS) {
-        return;
+    if (!enableTTS) {
+      return;
     }
 
     // 이미 재생 중이거나 큐가 비어있으면 실행하지 않음
     if (ttsQueue.length === 0 || isPlayingTts) return;
-
 
     // 큐 처리를 시작하면서 재생 상태로 변경
     setIsPlayingTts(true);
@@ -81,16 +76,16 @@ export default function useVoiceChat({ enableTTS }) {
       await playTtsSentence(text);
     }
     setIsPlayingTts(false);
-  }, [ttsQueue, isPlayingTts, playTtsSentence]);
+  }, [ttsQueue, isPlayingTts, playTtsSentence, enableTTS]);
 
   // TTS 큐가 업데이트될 때마다 processTtsQueue 실행
   useEffect(() => {
-    if(!enableTTS) {
-        return;
+    if (!enableTTS) {
+      return;
     }
 
     processTtsQueue();
-  }, [ttsQueue, processTtsQueue]);
+  }, [ttsQueue, processTtsQueue, enableTTS]);
 
   // 서버에 메시지 전송 및 스트리밍 응답 처리
   const sendMessage = useCallback(
