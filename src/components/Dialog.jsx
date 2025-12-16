@@ -39,7 +39,7 @@ export default function Dialog({
         {title && <h3 className={titleStyle}>{title}</h3>}
 
         {/* 본문 내용 (Children) */}
-        <div className="text-gray-700 mb-6 text-left">{children}</div>
+        <div className="text-gray-700 text-left">{children}</div>
 
         {/* 액션 버튼 (Actions) */}
 

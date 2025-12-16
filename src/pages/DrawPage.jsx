@@ -93,7 +93,9 @@ export default function DrawPage() {
 
   // Sketch AI
   const sketchPrompt =
-    questionList.length > 0 ? questionList[questionList.length - 1] : "";
+    questionList.length > 0
+      ? questionList[questionList.length - 1]
+      : "귀여운 로봇을 만들어줘.";
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState("");
   const moveCursor = useCallback((e) => {
@@ -306,11 +308,28 @@ export default function DrawPage() {
           mode: mode,
         })
     );
-    // "papare res = ", res);
     return res;
   };
+
+  // 흰 배경 화면으로 이미지 합성
+  const imgWithBackgroundToBlob = (origin) => {
+    const exportCanvas = document.createElement("canvas");
+    exportCanvas.width = origin.width;
+    exportCanvas.height = origin.height;
+
+    const exportCtx = exportCanvas.getContext("2d");
+    if (!exportCtx) return;
+
+    // 흰색 배경 채우기
+    exportCtx.fillStyle = "#ffffff";
+    exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+    // 기존 캔버스 내용을 위에 덮기.
+    exportCtx.drawImage(origin, 0, 0);
+
+    return new Promise((resolve) => exportCanvas.toBlob(resolve, "image/png"));
+  };
   // 생성된 이미지 그리기
-  // 생성된 이미지 그리기 - 수정된 부분
   const drawImageToCanvas = (imageSrc) => {
     const canvas = canvasRef.current;
     const ctx = ctxRef.current;
@@ -333,8 +352,7 @@ export default function DrawPage() {
 
   // 이미지 생성 API
   const handleGenerateImg = async () => {
-    const prompt = sketchPrompt || "사랑이 넘치는 로봇을 만들어줘.";
-    console.log("prompt = ", prompt);
+    console.log("prompt = ", sketchPrompt);
     // Show Loading
     setLoading(true);
     try {
@@ -345,16 +363,14 @@ export default function DrawPage() {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      const blob = await new Promise((resolve) =>
-        canvas.toBlob(resolve, "image/png")
-      );
+      const blob = await imgWithBackgroundToBlob(canvas);
 
       if (!blob) {
         throw new Error("Failed to make blob file - handleGenerateImg()");
       }
       const formData = new FormData();
       formData.append("file", blob, "sketch.png");
-      formData.append("prompt", prompt);
+      formData.append("prompt", sketchPrompt);
       formData.append("seed", 0);
 
       // NOTE: URL 변경될 수도 있음.
@@ -492,9 +508,9 @@ export default function DrawPage() {
         isOpen={loading}
         onClose={() => setLoading(false)}
         title="잠시만 기다려주세요..."
-        titleStyle="text-4xl font-bold text-black-600 mb-2"
+        titleStyle="text-4xl font-bold text-black-600 mb-6"
       >
-        <p className="text-3xl text-gray-500">{loadingText}...</p>
+        <p className="text-2xl text-gray-500">{loadingText}...</p>
       </Dialog>
     </div>
   );
