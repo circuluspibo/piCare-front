@@ -106,7 +106,7 @@ export default function useVoiceChat({ enableTTS }) {
         );
 
         if (!res.ok) {
-          throw new Error(`NETWORK ERROR: ${res.status}`);
+          throw new Error(`NETWORK ERROR - sendMessage() : ${res.status}`);
         }
 
         const reader = res.body.getReader();

@@ -110,7 +110,7 @@ export const fetchChatStream = async (message, system, lang, onChunk) => {
   );
 
   if (!res.ok) {
-    throw new Error(`NETWORK ERROR: ${res.status}`);
+    throw new Error(`NETWORK ERROR - fetchChatStream() : ${res.status}`);
   }
 
   const reader = res.body.getReader();

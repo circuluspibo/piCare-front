@@ -27,7 +27,7 @@ export default function ExercisePage() {
     passCount: 0,
     totalTime: 0,
   });
-  const [showCameraErrorDialog, setShowCameraErrorDialog] = useState(false); 
+  const [showCameraErrorDialog, setShowCameraErrorDialog] = useState(false);
   const [cameraError, setCameraError] = useState(""); // 에러 메시지 저장
   const [lastResultTarget, setLastResultTarget] = useState(null); // 'left' 또는 'right' (정답으로 지정된 깃발)
   const [lastResultIsPass, setLastResultIsPass] = useState(null); // boolean (통과 여부)
@@ -39,7 +39,9 @@ export default function ExercisePage() {
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const [videoClass,  setVideoClass] = useState('w-[1px] h-[1px] opacity-0 fixed -left-[9999px] -top-[9999px] pointer-events-none');
+  const [videoClass, setVideoClass] = useState(
+    "w-[1px] h-[1px] opacity-0 fixed -left-[9999px] -top-[9999px] pointer-events-none"
+  );
   const [showVideo, setShowVideo] = useState(false);
   const lastTimeRef = useRef(0);
   const unfocusTimeRef = useRef(0);
@@ -66,24 +68,19 @@ export default function ExercisePage() {
     return audio;
   }, []);
 
-  // API Mock
-  // const piboTell = (text) => {
-  //   console.log("PIBO TELL:", text);
-  // };
-
   const updateVideoClass = () => {
-    console.log('update')
-    if(!showVideo) {
-      setVideoClass('w-[300px] h-[300px] fixed right-0 top-0 z-[9999]')
-      setShowVideo(true)
+    if (!showVideo) {
+      setVideoClass("w-[300px] h-[300px] fixed right-0 top-0 z-[9999]");
+      setShowVideo(true);
     } else {
-      setVideoClass('w-[1px] h-[1px] opacity-0 fixed -left-[9999px] -top-[9999px] pointer-events-none')
-      setShowVideo(false)
+      setVideoClass(
+        "w-[1px] h-[1px] opacity-0 fixed -left-[9999px] -top-[9999px] pointer-events-none"
+      );
+      setShowVideo(false);
     }
-  }
+  };
   // Reset Game
   const resetGame = useCallback(() => {
-    // console.log("resetGame");
     setIsStart(false);
     setIsFinish(false);
     setShowDialog(false);
@@ -105,19 +102,12 @@ export default function ExercisePage() {
   // Finish
   const finish = useCallback(
     (data) => {
-      // console.log("finish");
       if (isFinish || showDialog) {
         return;
       }
 
       const passCount = data.scores.filter((s) => s.isPass).length;
       const totalTime = Date.now() - initTimeRef.current;
-
-      // piboTell(
-      //   `고생했어! ${Math.round(
-      //     totalTime / 1000
-      //   )}초 동안, ${TOTAL_ATTEMPTS}번 중 ${passCount}번 성공했어.`
-      // );
 
       setFinalResult({ passCount, totalTime });
       setIsFinish(true);
@@ -141,7 +131,6 @@ export default function ExercisePage() {
       setLastResultTarget(target);
       setLastResultIsPass(isPass);
 
-      // console.log("target = ", target);
       if (isPass) {
         pass.play();
       } else if (side !== "timeout") {
@@ -168,7 +157,6 @@ export default function ExercisePage() {
 
   // Start
   const start = useCallback(() => {
-    // console.log("start");
     isPoseDetectedRef.current = false;
 
     startTimeRef.current = Date.now();
@@ -200,8 +188,6 @@ export default function ExercisePage() {
 
   // Next
   const next = useCallback(() => {
-    // console.log("next");
-
     setCount((prevCount) => {
       const newCount = prevCount + 1;
       if (newCount === TOTAL_ATTEMPTS) {
@@ -268,8 +254,7 @@ export default function ExercisePage() {
       else if (rightHand?.visibility > 0.8) side = "left";
 
       if (side) {
-        // 포즈 감지!
-        // console.log("Pose Detected:", side);
+        // 포즈감지
         isPoseDetectedRef.current = true;
         lastTimeRef.current = Date.now();
 
@@ -311,39 +296,40 @@ export default function ExercisePage() {
       return;
     }
 
-   navigator.mediaDevices.getUserMedia({ video: true })
+    navigator.mediaDevices
+      .getUserMedia({ video: true })
       .then((stream) => {
         // 성공: 스트림을 즉시 닫고 (Camera 클래스가 다시 열 것임), 나머지 로직 실행
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
 
         poseInstance = new Pose({
-            locateFile: (file) =>
-                `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+          locateFile: (file) =>
+            `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
         });
         poseInstance.setOptions({
-            modelComplexity: 1,
-            smoothLandmarks: true,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5,
+          modelComplexity: 1,
+          smoothLandmarks: true,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5,
         });
 
         poseInstance.onResults((results) => {
-            if (onResultsRef.current) onResultsRef.current(results);
+          if (onResultsRef.current) onResultsRef.current(results);
         });
 
         // 2. Camera 인스턴스 생성 (getUserMedia 성공 후이므로 에러 방지)
         cameraInstance = new Camera(videoEl, {
-            onFrame: async () => {
-                try {
-                    if (poseInstance && typeof poseInstance.send === "function") {
-                        await poseInstance.send({ image: videoEl });
-                    }
-                } catch (err) {
-                    console.log("Pose send failed (possibly closed):", err);
-                }
-            },
-            width: 480,
-            height: 270,
+          onFrame: async () => {
+            try {
+              if (poseInstance && typeof poseInstance.send === "function") {
+                await poseInstance.send({ image: videoEl });
+              }
+            } catch (err) {
+              console.log("Pose send failed (possibly closed):", err);
+            }
+          },
+          width: 480,
+          height: 270,
         });
 
         cameraInstance.start();
@@ -356,10 +342,18 @@ export default function ExercisePage() {
         let errorMessage = "알 수 없는 카메라 접근 오류가 발생했습니다.";
 
         // 에러 타입에 따른 사용자 친화적 메시지 설정
-        if (error.name === "NotFoundError" || error.name === "NotReadableError") {
-            errorMessage = "카메라 장치를 찾을 수 없거나 사용 중입니다. 다른 프로그램에서 사용 중인지 확인해주세요.";
-        } else if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
-            errorMessage = "카메라 접근이 거부되었습니다. 브라우저 설정에서 카메라 권한을 허용해주세요.";
+        if (
+          error.name === "NotFoundError" ||
+          error.name === "NotReadableError"
+        ) {
+          errorMessage =
+            "카메라 장치를 찾을 수 없거나 사용 중입니다. 다른 프로그램에서 사용 중인지 확인해주세요.";
+        } else if (
+          error.name === "NotAllowedError" ||
+          error.name === "PermissionDeniedError"
+        ) {
+          errorMessage =
+            "카메라 접근이 거부되었습니다. 브라우저 설정에서 카메라 권한을 허용해주세요.";
         }
 
         setCameraError(errorMessage);
@@ -388,20 +382,19 @@ export default function ExercisePage() {
   }, [music]);
 
   useEffect(() => {
-
     music.play().catch((e) => {
-        // 브라우저 자동 재생 정책에 걸릴 경우
-        console.log("Failed to play music on mount:", e);
+      // 브라우저 자동 재생 정책에 걸릴 경우
+      console.log("Failed to play music on mount:", e);
     });
 
     // 1-2. 컴포넌트 언마운트 시 확실히 정지 및 리셋
     return () => {
-        console.log("Music Cleanup: Stopping playback.");
-        music.pause();
-        // 메모리 해제는 GC에 맡기지만, 확실한 정지를 위해 currentTime 리셋
-        music.currentTime = 0; 
+      console.log("Music Cleanup: Stopping playback.");
+      music.pause();
+      // 메모리 해제는 GC에 맡기지만, 확실한 정지를 위해 currentTime 리셋
+      music.currentTime = 0;
     };
-}, [music]); 
+  }, [music]);
 
   // 최초 게임 시작 트리거
   useEffect(() => {
@@ -411,25 +404,22 @@ export default function ExercisePage() {
     }
   }, [isStart]);
 
-const getBgClass = (flagSide) => {
+  const getBgClass = (flagSide) => {
     // 결과 표시 중이 아닐 때 (기본 흰색)
     if (lastResultTarget === null) return "bg-white";
 
-    const isTargetFlag = (flagSide === lastResultTarget);
-    const oppositeFlag = (lastResultTarget === 'left' ? 'right' : 'left');
-    const isOppositeFlag = (flagSide === oppositeFlag);
-
+    const isTargetFlag = flagSide === lastResultTarget;
+    const oppositeFlag = lastResultTarget === "left" ? "right" : "left";
+    const isOppositeFlag = flagSide === oppositeFlag;
 
     if (lastResultIsPass) {
-        return isTargetFlag ? "bg-green-300" : "bg-white";
-
+      return isTargetFlag ? "bg-green-300" : "bg-white";
     } else {
+      if (isOppositeFlag) {
+        return "bg-red-300";
+      }
 
-        if (isOppositeFlag) {
-             return "bg-red-300";
-        }
-        
-        return "bg-white";
+      return "bg-white";
     }
   };
   return (
@@ -491,7 +481,7 @@ const getBgClass = (flagSide) => {
 
           {/* 점수 스코어 */}
           <div className="p-2 shadow-lg rounded-lg">
-              <p className="text-4xl font-semibold mb-4">진행 상황</p>
+            <p className="text-4xl font-semibold mb-4">진행 상황</p>
             <ul className="check grid grid-cols-5 gap-1">
               {Array.from({ length: TOTAL_ATTEMPTS }).map((_, i) => (
                 <li
@@ -509,18 +499,18 @@ const getBgClass = (flagSide) => {
           </div>
         </aside>
       </main>
-          <div className={videoClass}>
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                style={{ display: "none" }}
-              />
-              <canvas
-                ref={canvasRef}
-                className={`w-full h-auto ${isFinish ? "hidden" : ""}`}
-              />
-            </div>
+      <div className={videoClass}>
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          style={{ display: "none" }}
+        />
+        <canvas
+          ref={canvasRef}
+          className={`w-full h-auto ${isFinish ? "hidden" : ""}`}
+        />
+      </div>
       {/* SECITON: 결과 다이얼로그 */}
       <Dialog
         isOpen={showDialog && isFinish}
@@ -528,10 +518,10 @@ const getBgClass = (flagSide) => {
         title="⭐ 게임 결과 ⭐"
         actions={[
           {
-            text: '다시하기',
+            text: "다시하기",
             onClick: resetGame,
-            style: 'bg-blue-600 text-white'
-          }
+            style: "bg-blue-600 text-white",
+          },
         ]}
       >
         <p className="mb-2">총 시도: {TOTAL_ATTEMPTS}회</p>
@@ -551,7 +541,7 @@ const getBgClass = (flagSide) => {
         isOpen={showCameraErrorDialog}
         onClose={() => setShowCameraErrorDialog(false)}
         title="🚨 카메라 연결 실패"
-        titleStyle="text-2xl font-bold text-red-600 mb-4"
+        titleStyle="text-4xl font-bold text-red-600 mb-4"
         actions={[
           {
             text: "닫기 (새로고침 권장)",
@@ -563,10 +553,7 @@ const getBgClass = (flagSide) => {
           },
         ]}
       >
-        <p className="mb-4">{cameraError}</p>
-        <p className="text-sm text-gray-500">
-          AI 활동은 카메라를 통한 자세 인식이 필수입니다. 브라우저 설정을 확인하고 페이지를 새로고침하여 다시 시도해주세요.
-        </p>
+        <p className="text-xl">{cameraError}</p>
       </Dialog>
     </div>
   );
