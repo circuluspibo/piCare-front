@@ -394,7 +394,6 @@ export default function DrawPage() {
           onClick={() => navigation("/")}
         />
         <h1 className="text-4xl font-bold">AI를 통한 그림그리기</h1>
-        <p>{sketchPrompt}</p>
       </header>
 
       <div className="flex flex-1 gap-2 h-[calc(100%-70px)]">
