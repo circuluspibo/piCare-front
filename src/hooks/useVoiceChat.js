@@ -1,13 +1,13 @@
 // src/hooks/useVoiceChat.js
 
 import { useState, useRef, useEffect, useCallback, useContext } from "react";
-import LANGUAGE_SYSTEMS from "@/utils/LanguageSystem";
 import { GlobalContext } from "@/contexts/GlobalContext";
+import PERSONA_SYSTEMS from "@/utils/PersonaSystem";
 
 export default function useVoiceChat({ enableTTS }) {
   // 참조 관리
   const mediaRecorderRef = useRef(null);
-  const { currentLang, personaVoice } = useContext(GlobalContext); // GlobalContext에서 설정 가져오기
+  const { currentLang, persona, personaVoice } = useContext(GlobalContext); // GlobalContext에서 설정 가져오기
 
   // 상태 관리
   const [isRecording, setIsRecording] = useState(false);
@@ -20,7 +20,7 @@ export default function useVoiceChat({ enableTTS }) {
   const [questionTimes, setQuestionTimes] = useState([]);
 
   // 유틸리티 및 상수
-  const currentSystem = LANGUAGE_SYSTEMS[currentLang];
+  const currentSystem = PERSONA_SYSTEMS[persona];
   const apiBaseURL = import.meta.env.VITE_API_BASE_URL;
   const ttsBaseURL = import.meta.env.VITE_TTS_BASE_URL;
 
@@ -93,7 +93,7 @@ export default function useVoiceChat({ enableTTS }) {
       if (!message) return;
       setFullResponse("");
       let lastSentenceEnd = 0;
-
+      console.log('persona = ', persona)
       try {
         const res = await fetch(
           `${apiBaseURL}/txt2chat?` +
