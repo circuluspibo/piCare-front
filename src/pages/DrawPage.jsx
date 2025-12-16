@@ -1,10 +1,4 @@
-import React, {
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { ArrowBigLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MicToggleButton from "@/components/magicui/listening-indicator";
@@ -95,7 +89,7 @@ export default function DrawPage() {
   const sketchPrompt =
     questionList.length > 0
       ? questionList[questionList.length - 1]
-      : "귀여운 로봇을 만들어줘.";
+      : "이미지 형태의 귀여운 로봇을 그려줘.";
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState("");
   const moveCursor = useCallback((e) => {
@@ -312,7 +306,7 @@ export default function DrawPage() {
   };
 
   // 흰 배경 화면으로 이미지 합성
-  const imgWithBackgroundToBlob = (origin) => {
+  const imgWithBackgroundToBlob = useCallback((origin) => {
     const exportCanvas = document.createElement("canvas");
     exportCanvas.width = origin.width;
     exportCanvas.height = origin.height;
@@ -328,49 +322,55 @@ export default function DrawPage() {
     exportCtx.drawImage(origin, 0, 0);
 
     return new Promise((resolve) => exportCanvas.toBlob(resolve, "image/png"));
-  };
+  }, []);
+
   // 생성된 이미지 그리기
-  const drawImageToCanvas = (imageSrc) => {
-    const canvas = canvasRef.current;
-    const ctx = ctxRef.current;
-    if (!canvas || !ctx) return;
+  const drawImageToCanvas = useCallback(
+    (imageSrc) => {
+      const canvas = canvasRef.current;
+      const ctx = ctxRef.current;
+      if (!canvas || !ctx) return;
 
-    const img = new Image();
-    img.src = imageSrc;
+      const img = new Image();
+      img.src = imageSrc;
 
-    img.onload = () => {
-      // **핵심 수정 부분:** 새로운 이미지를 그리기 전에 캔버스 전체를 지웁니다.
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      img.onload = () => {
+        // **핵심 수정 부분:** 새로운 이미지를 그리기 전에 캔버스 전체를 지웁니다.
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 지우개 모드(destination-out) 등으로부터 안전하게 기본 모드로 복원
-      ctx.globalCompositeOperation = "source-over";
+        // 지우개 모드(destination-out) 등으로부터 안전하게 기본 모드로 복원
+        ctx.globalCompositeOperation = "source-over";
 
-      // 이미지를 캔버스 전체에 그립니다.
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    };
-  };
+        // 이미지를 캔버스 전체에 그립니다.
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      };
+    },
+    [canvasRef, ctxRef] // canvasRef와 ctxRef를 의존성 배열에 포함합니다.
+  );
 
   // 이미지 생성 API
-  const handleGenerateImg = async () => {
+  const handleGenerateImg = useCallback(async () => {
     console.log("prompt = ", sketchPrompt);
+
     // Show Loading
     setLoading(true);
-    try {
-      // AI model 경량화를 위한 모델 변경.
-      setLoadingText("이미지 생성을 위한 AI 모델로 전환중");
-      await preparedModel(1);
+    setLoadingText("이미지 생성을 위한 AI 모델로 전환중");
 
+    try {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
       const blob = await imgWithBackgroundToBlob(canvas);
-
       if (!blob) {
         throw new Error("Failed to make blob file - handleGenerateImg()");
       }
+
       const formData = new FormData();
       formData.append("file", blob, "sketch.png");
-      formData.append("prompt", sketchPrompt);
+      formData.append(
+        "prompt",
+        `애니메이션 스타일로 생성해줘, ${sketchPrompt}`
+      );
       formData.append("seed", 0);
 
       // NOTE: URL 변경될 수도 있음.
@@ -390,18 +390,41 @@ export default function DrawPage() {
       const imageURL = URL.createObjectURL(imageBlob);
       setLoadingText("생성된 AI 이미지 화면에 그리는 중");
       drawImageToCanvas(imageURL);
-    } catch (e) {
-      console.log("ERROR : ", e);
+    } catch (error) {
+      console.log("ERROR : ", error);
     } finally {
       // AI 모델 default로 다시 전환
       setLoadingText("기본 AI 모델로 전환중");
-      await preparedModel(0).catch((e) =>
-        console.log("PrepareModel ERROR : ", e)
-      );
       setLoading(false);
     }
-  };
+  }, [
+    setLoading,
+    setLoadingText,
+    imgWithBackgroundToBlob,
+    drawImageToCanvas,
+    sketchPrompt,
+  ]);
 
+  const handleStopAndGenerate = useCallback(async () => {
+    handleStopRecording();
+    await handleGenerateImg();
+  }, [handleStopRecording, handleGenerateImg]);
+
+  useEffect(() => {
+    // mount시 모델 변경
+    setLoading(true);
+    setLoadingText("이미지 생성을 위한 AI 모델 전환중");
+    preparedModel(1);
+    setLoading(false);
+
+    // unmount시 모델 재변경
+    return () => {
+      setLoading(true);
+      setLoadingText("기본 AI 모델로 전환중");
+      preparedModel(0);
+      setLoading(false);
+    };
+  }, []);
   return (
     <div className="flex flex-col w-full h-full p-4">
       <header className="flex flex-row items-center pb-2 mb-2 border-b">
@@ -488,15 +511,12 @@ export default function DrawPage() {
 
           <div className="border px-2 rounded-md flex-1 overflow-hidden">
             <div className="flex flex-col space-y-4 h-full justify-between">
-              <button
-                className="bg-orange-500 text-3xl text-white py-1 rounded-xl font-bold"
-                onClick={() => handleGenerateImg()}
-              >
-                생성하기
-              </button>
+              <p className="border-4 border-orange-400 flex items-center h-20 text-3xl text-black py-1 rounded-xl font-bold px-2 mt-2">
+                명령어: {questionList[questionList.length - 1]}
+              </p>
               <MicToggleButton
                 onStart={handleStartRecording}
-                onStop={handleStopRecording}
+                onStop={handleStopAndGenerate}
                 isListening={isRecording}
                 micText={"text-6xl"}
               />
