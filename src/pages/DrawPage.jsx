@@ -352,7 +352,6 @@ export default function DrawPage() {
   const handleGenerateImg = useCallback(async () => {
     // Show Loading
     setLoading(true);
-    setLoadingText("이미지 생성을 위한 AI 모델로 전환중");
 
     try {
       const canvas = canvasRef.current;
@@ -362,13 +361,10 @@ export default function DrawPage() {
       if (!blob) {
         throw new Error("Failed to make blob file - handleGenerateImg()");
       }
-      console.log(`애니메이션 스타일로 ${sketchPrompt}`)
+      console.log(`애니메이션 스타일로 ${sketchPrompt}`);
       const formData = new FormData();
       formData.append("file", blob, "sketch.png");
-      formData.append(
-        "prompt",
-        `애니메이션 스타일로 ${sketchPrompt}`
-      );
+      formData.append("prompt", `애니메이션 스타일로 ${sketchPrompt}`);
       formData.append("seed", 0);
 
       // NOTE: URL 변경될 수도 있음.
@@ -408,8 +404,8 @@ export default function DrawPage() {
     handleStopRecording();
     const prepared = sessionStorage.getItem(PREPARE_KEY);
     if (prepared !== "true") {
-      sessionStorage.setItem(PREPARE_KEY, "true");
       setLoading(true);
+      sessionStorage.setItem(PREPARE_KEY, "true");
       setLoadingText("이미지 생성을 위한 모델로 전환중");
       await preparedModel(1);
       setLoading(false);
