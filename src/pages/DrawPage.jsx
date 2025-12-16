@@ -405,24 +405,26 @@ export default function DrawPage() {
     sketchPrompt,
   ]);
 
+  const PREPARE_KEY = "AI_MODEL_PREPARED";
   const handleStopAndGenerate = useCallback(async () => {
-    handleStopRecording();
+    await handleStopRecording();
+
+    const prepared = sessionStorage.getItem(PREPARE_KEY);
+    if (prepared !== "true") {
+      sessionStorage.setItem(PREPARE_KEY, "true");
+      setLoading(true);
+      setLoadingText("이미지 생성을 위한 모델로 전환중");
+      await preparedModel(1);
+      setLoading(false);
+    }
     await handleGenerateImg();
   }, [handleStopRecording, handleGenerateImg]);
 
   useEffect(() => {
-    // mount시 모델 변경
-    setLoading(true);
-    setLoadingText("이미지 생성을 위한 AI 모델 전환중");
-    preparedModel(1);
-    setLoading(false);
-
     // unmount시 모델 재변경
     return () => {
-      setLoading(true);
-      setLoadingText("기본 AI 모델로 전환중");
       preparedModel(0);
-      setLoading(false);
+      sessionStorage.removeItem(PREPARE_KEY);
     };
   }, []);
   return (
