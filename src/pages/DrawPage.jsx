@@ -350,8 +350,6 @@ export default function DrawPage() {
 
   // 이미지 생성 API
   const handleGenerateImg = useCallback(async () => {
-    console.log("prompt = ", sketchPrompt);
-
     // Show Loading
     setLoading(true);
     setLoadingText("이미지 생성을 위한 AI 모델로 전환중");
@@ -364,12 +362,12 @@ export default function DrawPage() {
       if (!blob) {
         throw new Error("Failed to make blob file - handleGenerateImg()");
       }
-
+      console.log(`애니메이션 스타일로 ${sketchPrompt}`)
       const formData = new FormData();
       formData.append("file", blob, "sketch.png");
       formData.append(
         "prompt",
-        `애니메이션 스타일로 생성해줘, ${sketchPrompt}`
+        `애니메이션 스타일로 ${sketchPrompt}`
       );
       formData.append("seed", 0);
 
@@ -407,8 +405,7 @@ export default function DrawPage() {
 
   const PREPARE_KEY = "AI_MODEL_PREPARED";
   const handleStopAndGenerate = useCallback(async () => {
-    await handleStopRecording();
-
+    handleStopRecording();
     const prepared = sessionStorage.getItem(PREPARE_KEY);
     if (prepared !== "true") {
       sessionStorage.setItem(PREPARE_KEY, "true");
@@ -511,9 +508,9 @@ export default function DrawPage() {
             </div>
           </div>
 
-          <div className="border px-2 rounded-md flex-1 overflow-hidden">
-            <div className="flex flex-col space-y-4 h-full justify-between">
-              <p className="border-4 border-orange-400 flex items-center h-20 text-3xl text-black py-1 rounded-xl font-bold px-2 mt-2">
+          <div className="border p-2 rounded-md flex-1 overflow-hidden">
+            <div className="flex flex-col space-y-2 h-full justify-between">
+              <p className="border-4 border-orange-400 flex items-center h-12 text-3xl text-black rounded-xl font-bold px-2">
                 명령어: {questionList[questionList.length - 1]}
               </p>
               <MicToggleButton
