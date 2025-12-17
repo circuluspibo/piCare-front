@@ -1,14 +1,10 @@
-// src/components/Prompt.jsx
-
 import { useRef, useCallback, useEffect } from "react";
 import MicToggleButton from "./magicui/listening-indicator";
-import useVoiceChat from "@/hooks/useVoiceChat"; // 💡 모듈화된 훅 임포트
+import usePromptVoiceChat from "@/hooks/usePromptVoiceChat";
 
 export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
-  // 스크롤 참조만 남김
   const scrollRef = useRef(null);
 
-  // 💡 모듈화된 훅 사용: 모든 상태와 핵심 함수를 가져옵니다.
   const enableTTS = true;
   const {
     isRecording,
@@ -20,9 +16,8 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
     handleStopRecording,
     initGreeting,
     currentLang,
-  } = useVoiceChat({ enableTTS });
+  } = usePromptVoiceChat({ enableTTS });
 
-  // 헬퍼 함수: 시간 포맷팅
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
     return new Date(timestamp).toLocaleTimeString(currentLang, {
@@ -32,7 +27,6 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
     });
   };
 
-  // 헬퍼 함수: 마크다운 파싱
   const parseMarkdown = useCallback((text) => {
     return text
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
@@ -41,7 +35,6 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
       .replace(/\n/g, "<br>");
   }, []);
 
-  // 헬퍼 함수: 스크롤을 맨 아래로 이동
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -66,46 +59,31 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
           </div>
         )}
 
-        {questionList.length > 0 &&
-          questionList.map((q, idx) => (
-            <div key={idx} className="w-full">
-              {/* 질문 영역 - 오른쪽 정렬 */}
-              <div className="flex flex-col items-end">
-                <div className="bg-blue-500 text-white p-3 rounded-xl rounded-tr-none max-w-xs md:max-w-md shadow">
-                  <p dangerouslySetInnerHTML={{ __html: parseMarkdown(q) }} />
-                </div>
-
-                {questionTimes[idx] && (
-                  <span className="text-xs text-gray-500 mt-1 mr-1">
-                    {formatTime(questionTimes[idx])}
-                  </span>
-                )}
+        {questionList.map((q, idx) => (
+          <div key={idx} className="w-full">
+            <div className="flex flex-col items-end">
+              <div className="bg-blue-500 text-white p-3 rounded-xl rounded-tr-none">
+                <p dangerouslySetInnerHTML={{ __html: parseMarkdown(q) }} />
               </div>
+              <span className="text-xs text-gray-500 mt-1">
+                {formatTime(questionTimes[idx])}
+              </span>
+            </div>
 
-              {/* 답변영역 - 왼쪽 정렬 */}
-              <div className="flex justify-start items-end mt-2 gap-2">
-                <div className="bg-white text-gray-800 p-3 rounded-xl rounded-tl-none max-w-xs md:max-w-md shadow border border-gray-200">
-                  {answerList[idx] ? (
-                    <p
-                      dangerouslySetInnerHTML={{
-                        __html: parseMarkdown(answerList[idx]),
-                      }}
-                    />
-                  ) : idx === questionList.length - 1 && fullResponse ? (
-                    <p
-                      dangerouslySetInnerHTML={{
-                        __html: parseMarkdown(fullResponse),
-                      }}
-                    />
-                  ) : null}
-                </div>
+            <div className="flex justify-start mt-2">
+              <div className="bg-white p-3 rounded-xl rounded-tl-none border">
+                <p
+                  dangerouslySetInnerHTML={{
+                    __html: parseMarkdown(answerList[idx] || fullResponse),
+                  }}
+                />
               </div>
             </div>
-          ))}
+          </div>
+        ))}
       </div>
 
-      <div className="flex justify-center items-center mt-4">
-        {/* 💡 훅에서 가져온 핸들러를 사용 */}
+      <div className="flex justify-center mt-4">
         <MicToggleButton
           onStart={handleStartRecording}
           onStop={handleStopRecording}

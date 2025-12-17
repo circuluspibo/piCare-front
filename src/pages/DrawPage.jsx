@@ -3,7 +3,7 @@ import { ArrowBigLeft, Trash2, Palette, Wand2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MicToggleButton from "@/components/magicui/listening-indicator";
 import Dialog from "@/components/Dialog";
-import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
+import { useDrawSpeechRecognition } from "@/hooks/useDrawSpeechRecognition";
 
 export default function DrawPage() {
   const navigation = useNavigate();
@@ -32,7 +32,7 @@ export default function DrawPage() {
 
   // Hooks
   const { startSpeechRecognition, stopSpeechRecognition } =
-    useSpeechRecognition({
+    useDrawSpeechRecognition({
       onTextChange: setSketchPrompt,
       onRecordingChange: setIsRecording,
     });
