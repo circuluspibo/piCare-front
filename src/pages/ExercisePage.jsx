@@ -154,9 +154,9 @@ export default function ExercisePage() {
       if (marks) {
         drawConnectors(canvasCtx, marks, POSE_CONNECTIONS, {
           color: "#00FF00",
-          lineWidth: 6,
+          lineWidth: 4,
         });
-        drawLandmarks(canvasCtx, marks, { color: "#FF0000", lineWidth: 2 });
+        drawLandmarks(canvasCtx, marks, { color: "#FF0000", lineWidth: 4 });
       }
       canvasCtx.restore();
 
@@ -329,7 +329,7 @@ export default function ExercisePage() {
             <video ref={videoRef} autoPlay playsInline className="hidden" />
             <canvas
               ref={canvasRef}
-              className="w-full h-full object-cover transform scale-x-[-1]"
+              className="w-full h-full object-contain transform"
             />
 
             {!isPoseVisible && (
