@@ -3,109 +3,41 @@ import { ArrowBigLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MicToggleButton from "@/components/magicui/listening-indicator";
 import { IconRenderer } from "@/components/ui/IconRenderer";
-import useVoiceChat from "@/hooks/useVoiceChat";
 import Dialog from "@/components/Dialog";
+import DRAW_TOOLS from "@/assets/data/DrawTools";
+import DRAW_OPTIONS from "@/assets/data/DrawOptions";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 
 export default function DrawPage() {
   const navigation = useNavigate();
 
-  // Hooks
-  const enableTTS = false;
-  const {
-    isRecording,
-    questionList,
-    handleStartRecording,
-    handleStopRecording,
-  } = useVoiceChat({ enableTTS });
-
-  // Canvas
+  // Refs
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const parentRef = useRef(null);
-  const PENCIL_WIDTH = 10;
-  const PENCIL_COLOR = "#000";
-  const ERASER_WIDTH = 40;
-  const SAMPLE_SIZE = 0.8;
+  const cursorRef = useRef(null);
+  const aiModelRef = useRef(null);
+
+  // States
+  const [speakToText, setSpeakToText] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState("");
   const [tool, setTool] = useState("pencil");
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // 그리기 도구
-  // 도형 예시
-  const tools = [
-    {
-      name: "Pencil",
-      style: "bg-green-400",
-    },
-    {
-      name: "Eraser",
-      style: "border-red-600 text-red-600",
-    },
-    {
-      name: "X",
-      style: "bg-red-700 text-white",
-    },
-  ];
-  const drawOptions = [
-    {
-      name: "Circle",
-      draw: (ctx, canvas) => {
-        const size = Math.min(canvas.width, canvas.height) * SAMPLE_SIZE;
-        const center = { x: canvas.width / 2, y: canvas.height / 2 };
-        ctx.beginPath();
-        ctx.arc(center.x, center.y, size / 2, 0, 2 * Math.PI);
-        ctx.stroke();
-      },
-    },
-    {
-      name: "Square",
-      draw: (ctx, canvas) => {
-        const size = Math.min(canvas.width, canvas.height) * SAMPLE_SIZE;
-        const startX = (canvas.width - size) / 2;
-        const startY = (canvas.height - size) / 2;
-        ctx.strokeRect(startX, startY, size, size);
-      },
-    },
-    {
-      name: "Triangle",
-      draw: (ctx, canvas) => {
-        const size = Math.min(canvas.width, canvas.height) * SAMPLE_SIZE;
-        const centerX = canvas.width / 2;
-        const startY = (canvas.height - size) / 2 + size;
-        ctx.beginPath();
-        ctx.moveTo(centerX, startY - size); // Top
-        ctx.lineTo(centerX + size / 2, startY); // Right bottom
-        ctx.lineTo(centerX - size / 2, startY); // Left bottom
-        ctx.closePath();
-        ctx.stroke();
-      },
-    },
-  ];
-
-  // Cursor
-  const cursorRef = useRef(null);
+  // Canvas
+  const PENCIL_WIDTH = 10;
+  const PENCIL_COLOR = "#000";
+  const ERASER_WIDTH = 40;
   const cursorSize = ERASER_WIDTH;
 
-  // Sketch AI
-  const sketchPrompt =
-    questionList.length > 0
-      ? questionList[questionList.length - 1]
-      : "이미지 형태의 귀여운 로봇을 그려줘.";
-  const [loading, setLoading] = useState(false);
-  const [loadingText, setLoadingText] = useState("");
-  const moveCursor = useCallback((e) => {
-    const canvas = canvasRef.current;
-    const cursor = cursorRef.current;
-
-    if (!canvas || !cursor) return;
-
-    const rect = canvas.getBoundingClientRect();
-
-    const clientX = e.touches?.[0]?.clientX ?? e.clientX;
-    const clientY = e.touches?.[0]?.clientY ?? e.clientY;
-
-    cursor.style.left = `${clientX - rect.left}px`;
-    cursor.style.top = `${clientY - rect.top}px`;
-  }, []);
+  // Hooks
+  const { startSpeechRecognition, stopSpeechRecognition } =
+    useSpeechRecognition({
+      onTextChange: setSpeakToText,
+      onRecordingChange: setIsRecording,
+    });
 
   // 마우스/터치 위치 계산 함수
   const getPos = useCallback((e) => {
@@ -128,7 +60,22 @@ export default function DrawPage() {
     return { x: 0, y: 0 };
   }, []);
 
-  // NOTE: 드로잉
+  const moveCursor = useCallback((e) => {
+    const canvas = canvasRef.current;
+    const cursor = cursorRef.current;
+
+    if (!canvas || !cursor) return;
+
+    const rect = canvas.getBoundingClientRect();
+
+    const clientX = e.touches?.[0]?.clientX ?? e.clientX;
+    const clientY = e.touches?.[0]?.clientY ?? e.clientY;
+
+    cursor.style.left = `${clientX - rect.left}px`;
+    cursor.style.top = `${clientY - rect.top}px`;
+  }, []);
+
+  // Draw
   const startDraw = useCallback(
     (e) => {
       const ctx = ctxRef.current;
@@ -189,25 +136,27 @@ export default function DrawPage() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }, []);
+  // 그리기 도구 그리기
+  const drawShape = useCallback(
+    (shapeName) => {
+      const canvas = canvasRef.current;
+      const ctx = ctxRef.current;
+      if (!canvas || !ctx) return;
 
-  const drawShape = useCallback((shapeName) => {
-    const canvas = canvasRef.current;
-    const ctx = ctxRef.current;
-    if (!canvas || !ctx) return;
+      // 그리기 전 스타일 설정
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = PENCIL_COLOR;
+      ctx.lineWidth = PENCIL_WIDTH;
 
-    // 그리기 전 스타일 설정
-    ctx.globalCompositeOperation = "source-over";
-    ctx.strokeStyle = PENCIL_COLOR;
-    ctx.lineWidth = PENCIL_WIDTH;
+      const shape = DRAW_OPTIONS.find((s) => s.name === shapeName);
+      if (shape) {
+        clearCanvas();
+        shape.draw(ctx, canvas);
+      }
+    },
+    [clearCanvas]
+  );
 
-    const shape = drawOptions.find((s) => s.name === shapeName);
-    if (shape) {
-      clearCanvas();
-      shape.draw(ctx, canvas);
-    }
-  }, []);
-
-  // 캔버스 초기화 및 context 설정
   // 캔버스 초기화 및 context 설정
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -276,20 +225,11 @@ export default function DrawPage() {
     }
   }, [tool]);
 
-  // NOTE: 이미지 생성하기
+  // 그리기 도구 핸들러
   const handleTools = useCallback(
     (tool) => {
-      switch (tool) {
-        case "Pencil": {
-          return setTool("pencil");
-        }
-        case "Eraser": {
-          return setTool("eraser");
-        }
-        case "X": {
-          return clearCanvas();
-        }
-      }
+      const draw = tool.toLocaleLowerCase();
+      draw === "x" ? clearCanvas : setTool(draw);
     },
     [setTool, clearCanvas]
   );
@@ -305,7 +245,7 @@ export default function DrawPage() {
     return res;
   };
 
-  // 흰 배경 화면으로 이미지 합성
+  // 이미지 전송 전처리
   const imgWithBackgroundToBlob = useCallback((origin) => {
     const exportCanvas = document.createElement("canvas");
     exportCanvas.width = origin.width;
@@ -323,7 +263,6 @@ export default function DrawPage() {
 
     return new Promise((resolve) => exportCanvas.toBlob(resolve, "image/png"));
   }, []);
-
   // 생성된 이미지 그리기
   const drawImageToCanvas = useCallback(
     (imageSrc) => {
@@ -347,7 +286,6 @@ export default function DrawPage() {
     },
     [canvasRef, ctxRef] // canvasRef와 ctxRef를 의존성 배열에 포함합니다.
   );
-
   // 이미지 생성 API
   const handleGenerateImg = useCallback(async () => {
     // Show Loading
@@ -361,10 +299,10 @@ export default function DrawPage() {
       if (!blob) {
         throw new Error("Failed to make blob file - handleGenerateImg()");
       }
-      console.log(`애니메이션 스타일로 ${sketchPrompt}`);
+      console.log(`애니메이션 스타일로 ${speakToText}`);
       const formData = new FormData();
       formData.append("file", blob, "sketch.png");
-      formData.append("prompt", `애니메이션 스타일로 ${sketchPrompt}`);
+      formData.append("prompt", `애니메이션 스타일로 ${speakToText}`);
       formData.append("seed", 0);
 
       // NOTE: URL 변경될 수도 있음.
@@ -396,30 +334,35 @@ export default function DrawPage() {
     setLoadingText,
     imgWithBackgroundToBlob,
     drawImageToCanvas,
-    sketchPrompt,
+    speakToText,
   ]);
 
-  const PREPARE_KEY = "AI_MODEL_PREPARED";
+  // 음성 인식 및 이미지 생성 핸들러
   const handleStopAndGenerate = useCallback(async () => {
-    handleStopRecording();
-    const prepared = sessionStorage.getItem(PREPARE_KEY);
-    if (prepared !== "true") {
+    await stopSpeechRecognition();
+    if (!aiModelRef.current) {
       setLoading(true);
-      sessionStorage.setItem(PREPARE_KEY, "true");
       setLoadingText("이미지 생성을 위한 모델로 전환중");
+      aiModelRef.current = true;
       await preparedModel(1);
       setLoading(false);
     }
     await handleGenerateImg();
-  }, [handleStopRecording, handleGenerateImg]);
+  }, [
+    setLoading,
+    setLoadingText,
+    stopSpeechRecognition,
+    preparedModel,
+    handleGenerateImg,
+  ]);
 
   useEffect(() => {
-    // unmount시 모델 재변경
     return () => {
+      // Unmoute시 모델 다시 변경
       preparedModel(0);
-      sessionStorage.removeItem(PREPARE_KEY);
     };
   }, []);
+
   return (
     <div className="flex flex-col w-full h-full p-4">
       <header className="flex flex-row items-center pb-2 mb-2 border-b">
@@ -481,7 +424,7 @@ export default function DrawPage() {
           <div className="border p-3 rounded-md">
             <p className="font-semibold mb-2 text-4xl">그리기 도구</p>
             <div className="flex flex-row justify-between">
-              {tools.map((tool) => (
+              {DRAW_TOOLS.map((tool) => (
                 <button
                   className={`px-3 py-2 rounded border shadow-lg ${tool.style}`}
                   key={tool.name}
@@ -492,7 +435,7 @@ export default function DrawPage() {
               ))}
             </div>
             <div className="flex flex-row justify-between mt-2">
-              {drawOptions.map((shape) => (
+              {DRAW_OPTIONS.map((shape) => (
                 <button
                   className="px-3 py-2 rounded border shadow-lg"
                   key={shape.name}
@@ -507,10 +450,10 @@ export default function DrawPage() {
           <div className="border p-2 rounded-md flex-1 overflow-hidden">
             <div className="flex flex-col space-y-2 h-full justify-between">
               <p className="border-4 border-orange-400 flex items-center h-12 text-3xl text-black rounded-xl font-bold px-2">
-                명령어: {questionList[questionList.length - 1]}
+                명령어: {speakToText}
               </p>
               <MicToggleButton
-                onStart={handleStartRecording}
+                onStart={startSpeechRecognition}
                 onStop={handleStopAndGenerate}
                 isListening={isRecording}
                 micText={"text-6xl"}
