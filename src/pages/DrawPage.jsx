@@ -1,11 +1,8 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { ArrowBigLeft } from "lucide-react";
+import { ArrowBigLeft, Trash2, Palette, Wand2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MicToggleButton from "@/components/magicui/listening-indicator";
-import { IconRenderer } from "@/components/ui/IconRenderer";
 import Dialog from "@/components/Dialog";
-import DRAW_TOOLS from "@/assets/data/DrawTools";
-import DRAW_OPTIONS from "@/assets/data/DrawOptions";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 
 export default function DrawPage() {
@@ -162,59 +159,27 @@ export default function DrawPage() {
 
   // 캔버스 초기화 및 context 설정
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !parentRef.current) return;
-
-    // 초기 크기 설정 (여기서 한 번 초기화됨)
-    canvas.width = parentRef.current.clientWidth;
-    canvas.height = parentRef.current.clientHeight;
-
-    const ctx = canvas.getContext("2d");
-
-    // 초기 context 스타일 설정
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = 25;
-
-    ctxRef.current = ctx;
-
-    // **수정된 handleResize 함수:**
-    const handleResize = () => {
+    const updateCanvasSize = () => {
       const canvas = canvasRef.current;
-      const ctx = ctxRef.current;
-      if (!canvas || !ctx) return;
+      const parent = parentRef.current;
+      if (!canvas || !parent) return;
 
-      // 1. 현재 캔버스 내용을 Data URL로 저장
-      const dataURL = canvas.toDataURL();
+      // 화면에 보이는 크기만큼 픽셀 해상도를 할당 (비율 왜곡 방지)
+      canvas.width = parent.clientWidth;
+      canvas.height = parent.clientHeight;
 
-      // 2. 새로운 크기 계산
-      const newWidth = parentRef.current.clientWidth;
-      const newHeight = parentRef.current.clientHeight;
-
-      // 3. 캔버스 크기 재조정 (여기서 픽셀 데이터가 지워집니다)
-      canvas.width = newWidth;
-      canvas.height = newHeight;
-
-      // 4. Context 설정 복원
+      // 크기가 변하면 컨텍스트 설정이 초기화되므로 다시 설정
+      const ctx = canvas.getContext("2d");
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       ctx.strokeStyle = "#000";
-      ctx.lineWidth = 25;
-      ctx.globalCompositeOperation = "source-over";
-
-      // 5. 이미지 객체를 생성하여 저장했던 Data URL을 캔버스에 다시 그립니다.
-      const img = new Image();
-      img.onload = function () {
-        ctx.drawImage(img, 0, 0, newWidth, newHeight);
-      };
-      img.src = dataURL;
+      ctx.lineWidth = 15;
+      ctxRef.current = ctx;
     };
 
-    window.addEventListener("resize", handleResize);
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
+    updateCanvasSize();
+    window.addEventListener("resize", updateCanvasSize);
+    return () => window.removeEventListener("resize", updateCanvasSize);
   }, []);
 
   useEffect(() => {
@@ -278,18 +243,37 @@ export default function DrawPage() {
       img.src = imageSrc;
 
       img.onload = () => {
-        // **핵심 수정 부분:** 새로운 이미지를 그리기 전에 캔버스 전체를 지웁니다.
+        ctx.globalCompositeOperation = "source-over";
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 지우개 모드(destination-out) 등으로부터 안전하게 기본 모드로 복원
-        ctx.globalCompositeOperation = "source-over";
+        // 1. 비율 계산
+        const canvasAspect = canvas.width / canvas.height;
+        const imgAspect = img.width / img.height;
 
-        // 이미지를 캔버스 전체에 그립니다.
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        let drawWidth, drawHeight, offsetX, offsetY;
+
+        // 2. 짤리지 않게 크기 결정 (Object-fit: contain 방식)
+        if (imgAspect > canvasAspect) {
+          // 이미지가 가로로 더 긴 경우 -> 너비 기준
+          drawWidth = canvas.width;
+          drawHeight = canvas.width / imgAspect;
+          offsetX = 0;
+          offsetY = (canvas.height - drawHeight) / 2;
+        } else {
+          // 이미지가 세로로 더 긴 경우 -> 높이 기준
+          drawHeight = canvas.height;
+          drawWidth = canvas.height * imgAspect;
+          offsetX = (canvas.width - drawWidth) / 2;
+          offsetY = 0;
+        }
+
+        // 3. 이미지 그리기
+        ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
       };
     },
-    [canvasRef, ctxRef] // canvasRef와 ctxRef를 의존성 배열에 포함합니다.
+    [canvasRef, ctxRef]
   );
+
   // 이미지 생성 API
   const handleGenerateImg = useCallback(async () => {
     setLoading(true);
@@ -349,26 +333,28 @@ export default function DrawPage() {
   }, []);
 
   return (
-    <div className="flex flex-col w-full h-full p-4">
-      <header className="flex flex-row items-center pb-2 mb-2 border-b">
-        <ArrowBigLeft
-          className="size-10 mr-2 cursor-pointer"
-          onClick={() => navigation("/")}
-        />
-        <h1 className="text-4xl font-bold">AI를 통한 그림그리기</h1>
+    <div className="flex flex-col h-full p-4 bg-gray-50 overflow-hidden font-sans">
+      {/* SECTION: 헤더 (연결성 강화) */}
+      <header className="flex flex-col items-start pb-4 border-b mb-4">
+        <div className="flex items-center text-4xl font-black">
+          <ArrowBigLeft
+            className="size-12 mr-4 cursor-pointer hover:text-blue-600 transition-colors"
+            onClick={() => navigation("/")}
+          />
+          <span>AI 예술 활동: 말로 그리기</span>
+        </div>
+        <p className="text-2xl text-gray-500 mt-2 ml-16 font-medium">
+          생각하는 것을 말하면 AI가 멋지게 그려줘요
+        </p>
       </header>
 
-      <div className="flex flex-1 gap-2 h-[calc(100%-70px)]">
-        {/* SECTION: 캔버스 영역 70% */}
-        <div className="w-3/5 p-2">
-          <div
-            className="relative w-full h-full"
-            style={{ minHeight: 400 }}
-            ref={parentRef}
-          >
+      <main className="flex flex-grow space-x-6 overflow-hidden">
+        {/* SECTION: 캔버스 판 (70%) */}
+        <div className="w-[70%] relative" ref={parentRef}>
+          <div className="w-full h-full bg-white rounded-xl border-[12px] border-white overflow-hidden relative cursor-none">
             <canvas
               ref={canvasRef}
-              className="w-full h-full block bg-white"
+              className="w-full h-full block"
               onMouseDown={startDraw}
               onMouseMove={(e) => {
                 moveCursor(e);
@@ -383,71 +369,114 @@ export default function DrawPage() {
               }}
               onTouchEnd={endDraw}
             />
-            {/** 커서 */}
+            {/* 커서 가이드 */}
             <div
               ref={cursorRef}
-              className={`absolute pointer-events-none rounded-full ${
+              className={`absolute pointer-events-none rounded-full border-4 ${
                 tool === "eraser"
-                  ? "border-4 border-red-500 border-dashed bg-red-200/30"
-                  : "border-2 border-black bg-black/10"
+                  ? "border-red-500 bg-red-100/50 border-dashed"
+                  : "border-blue-500 bg-blue-100/30"
               }`}
               style={{
                 width: cursorSize,
                 height: cursorSize,
                 transform: "translate(-50%, -50%)",
-                display: isDrawing ? "block" : "none",
-                boxShadow:
-                  tool === "eraser"
-                    ? "0 0 0 2px rgba(239,68,68,0.5)"
-                    : "0 0 8px rgba(0,0,0,0.5)",
+                display: "block",
               }}
             />
           </div>
+          {/* 하단 툴바 */}
+          {/* <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-1 bg-white/80 backdrop-blur-md rounded-xl shadow-xl border border-white">
+            <button
+              onClick={() => setTool("pencil")}
+              className={`px-2 rounded-xl transition-all ${
+                tool === "pencil"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-400"
+              }`}
+            >
+              <Palette size={20} />
+            </button>
+            <button
+              onClick={() => setTool("eraser")}
+              className={`px-2 rounded-xl transition-all ${
+                tool === "eraser"
+                  ? "bg-red-600 text-white"
+                  : "bg-gray-100 text-gray-400"
+              }`}
+            >
+              <Trash2 size={20} />
+            </button>
+            <div className="w-[2px] bg-gray-300 mx-2" />
+            <button
+              onClick={clearCanvas}
+              className="p-4 rounded-xl bg-gray-800 text-white hover:bg-black transition-all"
+            >
+              <span className="font-bold text-xl px-1">전체 삭제</span>
+            </button>
+          </div> */}
         </div>
-        {/* SECTION: 사이드 영역 - 30% */}
-        <div className="w-2/5 flex flex-col gap-2">
-          <div className="border p-3 rounded-md h-full flex flex-col space-y-2 justify-between">
-            <div className="border p-3 rounded-md">
-              {/* 모델 선택 영역: 좁아진 너비에 맞춰 버튼을 세로(flex-col)로 배치 */}
-              <div className="flex flex-col gap-2">
-                <button
-                  className={`px-3 py-4 rounded border shadow-md font-bold transition-colors ${
-                    sketchModel === "real"
-                      ? "bg-black text-white"
-                      : "bg-white text-black hover:bg-gray-100"
-                  }`}
-                  onClick={() => setSketchModel("real")}
-                >
-                  실사화
-                </button>
-                <button
-                  className={`px-3 py-4 rounded border shadow-md font-bold transition-colors ${
-                    sketchModel === "anim"
-                      ? "bg-black text-white"
-                      : "bg-white text-black hover:bg-gray-100"
-                  }`}
-                  onClick={() => setSketchModel("anim")}
-                >
-                  애니메이션
-                </button>
+
+        {/* SECTION: 사이드 바 (30%) */}
+        <aside className="w-[30%] flex flex-col space-y-2">
+          {/* 1. 스타일 선택 */}
+          <div className="bg-white p-6 shadow-xl rounded-xl border-2 border-blue-500 h-full flex flex-col">
+            {/* 제목 영역 */}
+            <p className="text-2xl font-black mb-6 flex items-center shrink-0">
+              <Wand2 className="mr-2 text-blue-600" /> 그림 스타일
+            </p>
+
+            {/* 콘텐츠 영역: flex-1과 justify-between을 통해 Y축 고르게 분포 */}
+            <div className="flex-1 flex flex-col justify-between items-center w-full">
+              <button
+                className={`w-full py-6 rounded-2xl text-2xl font-black transition-all border-4 ${
+                  sketchModel === "real"
+                    ? "bg-blue-50 border-blue-600 text-blue-700"
+                    : "bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100"
+                }`}
+                onClick={() => setSketchModel("real")}
+              >
+                현실처럼 (실사)
+              </button>
+
+              <button
+                className={`w-full py-6 rounded-2xl text-2xl font-black transition-all border-4 ${
+                  sketchModel === "anim"
+                    ? "bg-purple-50 border-purple-600 text-purple-700"
+                    : "bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100"
+                }`}
+                onClick={() => setSketchModel("anim")}
+              >
+                만화처럼 (애니)
+              </button>
+
+              {/* 마이크 버튼 영역 */}
+              <div className="flex flex-col items-center justify-center pt-4">
+                <MicToggleButton
+                  onStart={startSpeechRecognition}
+                  onStop={handleStopAndGenerate}
+                  isListening={isRecording}
+                  micText="text-5xl"
+                />
+                <p className="mt-4 text-gray-400 font-bold">
+                  마이크를 눌러 말씀하세요
+                </p>
               </div>
             </div>
-            <MicToggleButton
-              onStart={startSpeechRecognition}
-              onStop={handleStopAndGenerate}
-              isListening={isRecording}
-              micText={"text-6xl"}
-            />
           </div>
-        </div>
-      </div>
+        </aside>
+      </main>
+
+      {/* 로딩 다이얼로그 (일관된 스타일) */}
       <Dialog
         isOpen={loading}
         onClose={() => setLoading(false)}
-        title="잠시만 기다려주세요..."
-        titleStyle="text-4xl font-bold text-black-600 mb-6"
+        title="AI 화가가 그리는 중..."
       >
-        <p className="text-2xl text-gray-500">{loadingText}...</p>
+        <div className="text-center p-10 flex flex-col items-center">
+          <div className="w-20 h-20 border-8 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-8" />
+          <p className="text-3xl font-black text-gray-700">{loadingText}</p>
+        </div>
       </Dialog>
     </div>
   );
