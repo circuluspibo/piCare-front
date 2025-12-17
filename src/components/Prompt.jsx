@@ -1,11 +1,12 @@
 import { useRef, useCallback, useEffect } from "react";
 import MicToggleButton from "./magicui/listening-indicator";
-import usePromptVoiceChat from "@/hooks/usePromptVoiceChat";
+import useVoiceChat from "@/hooks/useVoiceChat"; // 수정: 통합 훅 임포트
 
 export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
   const scrollRef = useRef(null);
 
   const enableTTS = true;
+  // Hooks (수정: 제공해주신 useVoiceChat 적용)
   const {
     isRecording,
     questionList,
@@ -16,7 +17,7 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
     handleStopRecording,
     initGreeting,
     currentLang,
-  } = usePromptVoiceChat({ enableTTS });
+  } = useVoiceChat({ enableTTS });
 
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
@@ -43,7 +44,7 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [fullResponse, scrollToBottom]);
+  }, [fullResponse, questionList, scrollToBottom]); // questionList 추가하여 신규 질문 시에도 작동
 
   return (
     <div className="flex flex-col h-full">
@@ -74,7 +75,10 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
               <div className="bg-white p-3 rounded-xl rounded-tl-none border">
                 <p
                   dangerouslySetInnerHTML={{
-                    __html: parseMarkdown(answerList[idx] || fullResponse),
+                    __html: parseMarkdown(
+                      answerList[idx] ||
+                        (idx === questionList.length - 1 ? fullResponse : "")
+                    ),
                   }}
                 />
               </div>
@@ -85,8 +89,8 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
 
       <div className="flex justify-center mt-4">
         <MicToggleButton
-          onStart={handleStartRecording}
-          onStop={handleStopRecording}
+          onStart={handleStartRecording} // 핸들러 명칭 일치
+          onStop={handleStopRecording} // 핸들러 명칭 일치
           isListening={isRecording}
           micText={micText}
         />
