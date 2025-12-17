@@ -14,7 +14,7 @@ export default function ExercisePage() {
   const [isStart, setIsStart] = useState(false);
   const [isFinish, setIsFinish] = useState(false);
   const [count, setCount] = useState(0);
-  const [isPoseVisible, setIsPoseVisible] = useState(false); // 포즈 인식 여부 상태
+  const [isPoseVisible, setIsPoseVisible] = useState(false);
 
   const [target, setTarget] = useState("");
   const [wrong, setWrong] = useState("");
@@ -60,7 +60,6 @@ export default function ExercisePage() {
   }, []);
 
   // --- Logic Functions ---
-
   const resetGame = useCallback(() => {
     setIsStart(false);
     setIsFinish(false);
@@ -70,7 +69,6 @@ export default function ExercisePage() {
     setWrong("");
     setTotalScores([]);
     setFinalResult({ passCount: 0, totalTime: 0 });
-
     clearInterval(intvRef.current);
     clearTimeout(timeOutRef.current);
     initTimeRef.current = null;
@@ -83,10 +81,10 @@ export default function ExercisePage() {
     (data) => {
       if (isFinish || showDialog) return;
       const passCount = data.scores.filter((s) => s.isPass).length;
-      const totalTime = Date.now() - initTimeRef.current; // 여기서 최종 시간 계산
+      const totalTime = Date.now() - initTimeRef.current;
       setFinalResult({ passCount, totalTime });
       setIsFinish(true);
-      timeOutRef.current = setTimeout(() => setShowDialog(true), 1500);
+      timeOutRef.current = setTimeout(() => setShowDialog(true), 1000);
     },
     [isFinish, showDialog]
   );
@@ -97,13 +95,10 @@ export default function ExercisePage() {
       clearInterval(intvRef.current);
       const spendTime = Date.now() - startTimeRef.current;
       const isPass = target === side;
-
       setLastResultTarget(target);
       setLastResultIsPass(isPass);
-
       if (isPass) pass.play();
       else fail.play();
-
       setTotalScores((prev) => [...prev, { isPass, spendTime }]);
       timeOutRef.current = setTimeout(() => {
         setLastResultTarget(null);
@@ -118,7 +113,6 @@ export default function ExercisePage() {
     isPoseDetectedRef.current = false;
     startTimeRef.current = Date.now();
     clearInterval(intvRef.current);
-
     let trialTime = FIXED_LIMIT;
     intvRef.current = setInterval(() => {
       trialTime -= 1;
@@ -127,7 +121,6 @@ export default function ExercisePage() {
         if (!isPoseDetectedRef.current) calcRef.current("timeout");
       }
     }, 1000);
-
     const isLeftTarget = Math.random() < 0.5;
     setTarget(isLeftTarget ? "left" : "right");
     setWrong(isLeftTarget ? "right" : "left");
@@ -150,32 +143,20 @@ export default function ExercisePage() {
       const marks = results.poseLandmarks;
       const canvasEl = canvasRef.current;
       if (!canvasEl) return;
-
-      setIsPoseVisible(!!marks); // 인식 상태 업데이트
+      setIsPoseVisible(!!marks);
 
       const canvasCtx = canvasEl.getContext("2d");
       canvasCtx.save();
       canvasCtx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-
-      // 캔버스 크기 동적 맞춤
-      if (
-        canvasEl.width !== canvasEl.clientWidth ||
-        canvasEl.height !== canvasEl.clientHeight
-      ) {
-        canvasEl.width = canvasEl.clientWidth;
-        canvasEl.height = canvasEl.clientHeight;
-      }
-
       canvasCtx.translate(canvasEl.width, 0);
       canvasCtx.scale(-1, 1);
       canvasCtx.drawImage(results.image, 0, 0, canvasEl.width, canvasEl.height);
-
       if (marks) {
         drawConnectors(canvasCtx, marks, POSE_CONNECTIONS, {
           color: "#00FF00",
-          lineWidth: 4,
+          lineWidth: 6,
         });
-        drawLandmarks(canvasCtx, marks, { color: "#0000FF", lineWidth: 2 });
+        drawLandmarks(canvasCtx, marks, { color: "#FF0000", lineWidth: 2 });
       }
       canvasCtx.restore();
 
@@ -183,13 +164,12 @@ export default function ExercisePage() {
         initTimeRef.current = Date.now();
         setIsStart(true);
       }
-
       if (isPoseDetectedRef.current || !isStart || isFinish) return;
       if (Date.now() - lastTimeRef.current < 1000) return;
       if (!marks) return;
 
-      const leftHand = marks[15];
-      const rightHand = marks[16];
+      const leftHand = marks[15],
+        rightHand = marks[16];
       let side = null;
       if (leftHand?.visibility > 0.8) side = "right";
       else if (rightHand?.visibility > 0.8) side = "left";
@@ -203,7 +183,6 @@ export default function ExercisePage() {
     [isStart, isFinish]
   );
 
-  // --- Effects ---
   useEffect(() => {
     finishRef.current = finish;
     calcRef.current = calc;
@@ -218,13 +197,11 @@ export default function ExercisePage() {
       locateFile: (file) =>
         `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
     });
-
     poseInstance.setOptions({
       modelComplexity: 1,
       minDetectionConfidence: 0.5,
     });
     poseInstance.onResults(onResults);
-
     navigator.mediaDevices
       .getUserMedia({ video: true })
       .then((stream) => {
@@ -233,20 +210,18 @@ export default function ExercisePage() {
           onFrame: async () => {
             await poseInstance.send({ image: videoEl });
           },
-          width: 640,
-          height: 480,
+          width: 1280,
+          height: 720,
         });
         camera.start();
       })
-      .catch((err) => {
-        setCameraError("카메라를 사용할 수 없습니다. 권한을 확인해주세요.");
+      .catch(() => {
+        setCameraError("카메라를 확인해주세요.");
         setShowCameraErrorDialog(true);
       });
-
     return () => {
       poseInstance.close();
       clearInterval(intvRef.current);
-      clearTimeout(timeOutRef.current);
     };
   }, [onResults]);
 
@@ -254,95 +229,85 @@ export default function ExercisePage() {
     music.play().catch(() => {});
     return () => music.pause();
   }, [music]);
-
   useEffect(() => {
     if (isStart) startRef.current();
   }, [isStart]);
 
   const getBgClass = (flagSide) => {
-    if (lastResultTarget === null) return "bg-white border-gray-100";
+    if (lastResultTarget === null) return "bg-white border-gray-100 shadow-sm";
     const isTargetFlag = flagSide === lastResultTarget;
     if (lastResultIsPass)
       return isTargetFlag
-        ? "bg-green-100 border-green-500 scale-[1.02]"
-        : "bg-white opacity-50";
+        ? "bg-green-100 border-green-500 shadow-2xl scale-[1.03]"
+        : "bg-white opacity-20";
     return flagSide !== lastResultTarget
-      ? "bg-red-100 border-red-500 scale-[1.02]"
-      : "bg-white opacity-50";
+      ? "bg-red-100 border-red-500 shadow-2xl scale-[1.03]"
+      : "bg-white opacity-20";
   };
 
   return (
-    <div className="flex flex-col h-full p-4 bg-gray-50 overflow-hidden font-sans text-gray-800">
-      {/* SECTION: 헤더 */}
-      <header className="flex flex-col items-start pb-4 border-b mb-4">
+    <div className="flex flex-col h-full p-4 bg-gray-50 overflow-hidden font-sans">
+      <header className="flex flex-row items-center justify-between pb-2 border-b mb-4">
         <div className="flex items-center text-4xl font-black">
           <ArrowBigLeft
-            className="size-12 mr-4 cursor-pointer hover:text-blue-600 transition-colors"
+            className="size-12 mr-4 cursor-pointer hover:text-blue-600"
             onClick={() => navigation("/")}
           />
-          <span>신체활동: 청기 백기 게임</span>
+          <span>청기 백기 게임</span>
         </div>
-        <p className="text-2xl text-gray-500 mt-2 ml-16 font-medium">
-          인식 상태를 확인하며 깃발을 들어보세요!
-        </p>
+        <div
+          className={`px-10 py-3 rounded-full text-3xl font-black text-white shadow-xl transition-all ${
+            isPoseVisible ? "bg-green-500" : "bg-red-500 animate-pulse"
+          }`}
+        >
+          {isPoseVisible ? "인식 중" : "인식 불가"}
+        </div>
       </header>
 
       <main className="flex flex-grow space-x-6 overflow-hidden">
-        {/* SECTION: 메인 게임판 (70%) */}
-        <div className="w-[70%] flex items-center gap-6">
+        {/* SECTION: 메인 게임판 */}
+        <div className="w-[70%] flex items-center gap-2">
           <div
-            className={`w-1/2 h-full shadow-2xl rounded-[2rem] border-8 flex flex-col items-center justify-center transition-all duration-500 ${getBgClass(
+            className={`w-1/2 h-full rounded-2xl border-[5px] flex flex-col items-center justify-center transition-all duration-300 ${getBgClass(
               "right"
             )}`}
           >
-            <span className="text-4xl font-black mb-8 text-blue-600">
-              청기 (왼쪽)
+            <span className="text-6xl font-black mb-10 text-blue-600">
+              청기
             </span>
             <img
               className="w-3/4 object-contain"
               src={`${BASE_IMAGE_PATH}${
                 wrong === "right" ? "/shrug.png" : "/left.png"
               }`}
-              alt="Blue Flag"
+              alt="B"
             />
           </div>
           <div
-            className={`w-1/2 h-full shadow-2xl rounded-[2rem] border-8 flex flex-col items-center justify-center transition-all duration-500 ${getBgClass(
+            className={`w-1/2 h-full rounded-2xl border-[5px] flex flex-col items-center justify-center transition-all duration-300 ${getBgClass(
               "left"
             )}`}
           >
-            <span className="text-4xl font-black mb-8 text-red-600">
-              백기 (오른쪽)
-            </span>
+            <span className="text-6xl font-black mb-10 text-red-600">백기</span>
             <img
               className="w-3/4 object-contain"
               src={`${BASE_IMAGE_PATH}${
                 wrong === "left" ? "/shrug.png" : "/right.png"
               }`}
-              alt="White Flag"
+              alt="W"
             />
           </div>
         </div>
 
-        {/* SECTION: 사이드 바 (30%) */}
-        <aside className="w-[30%] flex flex-col space-y-6">
-          {/* 1. 진행 상황 (상단 도넛차트 위치로 이동) */}
-          <div className="bg-white p-6 shadow-xl rounded-[1.5rem] border-b-8 border-blue-500">
-            <div className="flex justify-between items-end mb-4">
-              <span className="text-2xl font-black">진행 상황</span>
-              <span className="text-3xl font-bold text-blue-600">
-                {count}
-                <span className="text-xl text-gray-400">
-                  {" "}
-                  / {TOTAL_ATTEMPTS}
-                </span>
-              </span>
-            </div>
-            <div className="grid grid-cols-5 gap-3">
+        {/* SECTION: 사이드 바 (압축형 진행상황 + 거대 카메라) */}
+        <aside className="w-[30%] flex flex-col space-y-4">
+          {/* 1. 진행 상황 (최소화) */}
+          <div className="bg-white p-2 rounded-xl border-4 border-blue-500">
+            <div className="flex flex-wrap gap-1 justify-center">
               {Array.from({ length: TOTAL_ATTEMPTS }).map((_, i) => (
                 <div
                   key={i}
-                  className={`aspect-square rounded-xl flex items-center justify-center font-bold text-xl shadow-inner transition-all duration-300 ${
+                  className={`w-10 h-10 rounded-sm flex items-center justify-center text-[22px] font-bold ${
                     i < count
                       ? totalScores[i]?.isPass
                         ? "bg-green-500 text-white"
@@ -356,30 +321,21 @@ export default function ExercisePage() {
             </div>
           </div>
 
-          {/* 2. 실시간 카메라 인식 영역 (확대 및 테두리 강조) */}
+          {/* 2. 실시간 카메라 (90% 차지) */}
           <div
-            className="flex-1 relative bg-black rounded-[1.5rem] overflow-hidden shadow-2xl border-[12px] transition-colors duration-300 flex items-center justify-center"
+            className="flex-1 relative bg-black rounded-xl overflow-hidden shadow-2xl border-[2px] transition-all duration-300"
             style={{ borderColor: isPoseVisible ? "#22c55e" : "#ef4444" }}
           >
             <video ref={videoRef} autoPlay playsInline className="hidden" />
-            <canvas ref={canvasRef} className="w-full h-full object-cover" />
+            <canvas
+              ref={canvasRef}
+              className="w-full h-full object-cover transform scale-x-[-1]"
+            />
 
-            {/* 상태 뱃지 */}
-            <div
-              className={`absolute top-4 right-4 px-6 py-2 rounded-full text-lg font-black text-white shadow-lg ${
-                isPoseVisible ? "bg-green-500" : "bg-red-500 animate-pulse"
-              }`}
-            >
-              {isPoseVisible ? "인식 완료" : "인식 대기 중"}
-            </div>
-
-            {/* 인식 안내 문구 (인식 안될 때만 표시) */}
             {!isPoseVisible && (
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-6 text-center">
-                <p className="text-white text-2xl font-bold leading-relaxed">
-                  화면에 몸이 전체적으로
-                  <br />
-                  보이도록 서주세요!
+              <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-8 text-center pointer-events-none">
+                <p className="text-white text-4xl font-black leading-tight">
+                  몸이 전체적으로 나오게 서주세요!
                 </p>
               </div>
             )}
@@ -387,59 +343,36 @@ export default function ExercisePage() {
         </aside>
       </main>
 
-      {/* 결과 다이얼로그 (총 소요 시간 표시) */}
+      {/* 결과 다이얼로그 (텍스트 극대화, 내용 최소화) */}
       <Dialog
         isOpen={showDialog && isFinish}
         onClose={() => setShowDialog(false)}
-        title="✨ 미션 완료! ✨"
+        title="축하합니다!"
         actions={[
           {
-            text: "한 번 더 하기",
+            text: "다시하기",
             onClick: resetGame,
             style:
-              "bg-blue-600 text-white w-full py-5 text-3xl font-black rounded-2xl hover:bg-blue-700 transition-all shadow-xl",
+              "bg-blue-600 text-white w-full py-8 text-5xl font-black rounded-[2rem] hover:scale-105 transition-transform shadow-2xl",
           },
         ]}
       >
-        <div className="text-center p-8">
-          <div className="flex justify-around mb-8 border-b pb-8">
-            <div>
-              <p className="text-xl text-gray-400 font-bold mb-2">성공 횟수</p>
-              <p className="text-6xl font-black text-green-600">
-                {finalResult.passCount}
-                <span className="text-2xl ml-1">회</span>
-              </p>
-            </div>
-            <div className="border-l pl-8">
-              <p className="text-xl text-gray-400 font-bold mb-2">
-                총 소요 시간
-              </p>
-              <p className="text-6xl font-black text-blue-600">
-                {Math.round(finalResult.totalTime / 1000)}
-                <span className="text-2xl ml-1">초</span>
-              </p>
-            </div>
+        <div className="flex flex-col items-center py-10 space-y-12">
+          <div className="text-center">
+            <p className="text-4xl font-bold text-gray-400 mb-4">성공 횟수</p>
+            <p className="text-[10rem] leading-none font-black text-green-600">
+              {finalResult.passCount}
+              <span className="text-5xl">회</span>
+            </p>
           </div>
-          <p className="text-2xl text-gray-600 font-bold">
-            정말 훌륭한 실력이네요!
-          </p>
+          <div className="text-center border-t-2 w-full pt-10 border-dashed">
+            <p className="text-4xl font-bold text-gray-400 mb-4">걸린 시간</p>
+            <p className="text-8xl font-black text-blue-600">
+              {Math.round(finalResult.totalTime / 1000)}
+              <span className="text-4xl">초</span>
+            </p>
+          </div>
         </div>
-      </Dialog>
-
-      {/* 카메라 에러 다이얼로그 */}
-      <Dialog
-        isOpen={showCameraErrorDialog}
-        onClose={() => setShowCameraErrorDialog(false)}
-        title="⚠️ 카메라 연결 확인"
-        actions={[
-          {
-            text: "메인으로 이동",
-            onClick: () => navigation("/"),
-            style: "bg-gray-800 text-white w-full py-3",
-          },
-        ]}
-      >
-        <p className="text-2xl p-6 text-center font-medium">{cameraError}</p>
       </Dialog>
     </div>
   );
