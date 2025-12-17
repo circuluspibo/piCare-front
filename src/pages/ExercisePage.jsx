@@ -3,7 +3,6 @@ import { Pose } from "@mediapipe/pose";
 import { Camera } from "@mediapipe/camera_utils";
 import { drawConnectors, drawLandmarks } from "@mediapipe/drawing_utils";
 import { POSE_CONNECTIONS } from "@mediapipe/pose";
-import DonutChart from "@/components/DonutChart";
 import { ArrowBigLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Dialog from "@/components/Dialog";
@@ -11,12 +10,11 @@ import Dialog from "@/components/Dialog";
 export default function ExercisePage() {
   const navigation = useNavigate();
 
-  // State and Refs
-
+  // --- State and Refs ---
   const [isStart, setIsStart] = useState(false);
   const [isFinish, setIsFinish] = useState(false);
-  const [down, setDown] = useState(10);
   const [count, setCount] = useState(0);
+  const [isPoseVisible, setIsPoseVisible] = useState(false); // 포즈 인식 여부 상태
 
   const [target, setTarget] = useState("");
   const [wrong, setWrong] = useState("");
@@ -28,9 +26,9 @@ export default function ExercisePage() {
     totalTime: 0,
   });
   const [showCameraErrorDialog, setShowCameraErrorDialog] = useState(false);
-  const [cameraError, setCameraError] = useState(""); // 에러 메시지 저장
-  const [lastResultTarget, setLastResultTarget] = useState(null); // 'left' 또는 'right' (정답으로 지정된 깃발)
-  const [lastResultIsPass, setLastResultIsPass] = useState(null); // boolean (통과 여부)
+  const [cameraError, setCameraError] = useState("");
+  const [lastResultTarget, setLastResultTarget] = useState(null);
+  const [lastResultIsPass, setLastResultIsPass] = useState(null);
 
   const initTimeRef = useRef(null);
   const intvRef = useRef(null);
@@ -39,13 +37,7 @@ export default function ExercisePage() {
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const [videoClass, setVideoClass] = useState(
-    "w-[1px] h-[1px] opacity-0 fixed -left-[9999px] -top-[9999px] pointer-events-none"
-  );
-  const [showVideo, setShowVideo] = useState(false);
   const lastTimeRef = useRef(0);
-  const unfocusTimeRef = useRef(0);
-
   const isPoseDetectedRef = useRef(false);
 
   const startRef = useRef(null);
@@ -53,9 +45,8 @@ export default function ExercisePage() {
   const nextRef = useRef(null);
   const finishRef = useRef(null);
   const totalScoresRef = useRef([]);
-  const cameraRef = useRef(null);
 
-  // Constants & Sounds
+  // --- Constants & Sounds ---
   const BASE_IMAGE_PATH = "/images/exercise";
   const TOTAL_ATTEMPTS = 20;
   const FIXED_LIMIT = 10;
@@ -68,18 +59,8 @@ export default function ExercisePage() {
     return audio;
   }, []);
 
-  const updateVideoClass = () => {
-    if (!showVideo) {
-      setVideoClass("w-[300px] h-[300px] fixed right-0 top-0 z-[9999]");
-      setShowVideo(true);
-    } else {
-      setVideoClass(
-        "w-[1px] h-[1px] opacity-0 fixed -left-[9999px] -top-[9999px] pointer-events-none"
-      );
-      setShowVideo(false);
-    }
-  };
-  // Reset Game
+  // --- Logic Functions ---
+
   const resetGame = useCallback(() => {
     setIsStart(false);
     setIsFinish(false);
@@ -94,32 +75,22 @@ export default function ExercisePage() {
     clearTimeout(timeOutRef.current);
     initTimeRef.current = null;
     lastTimeRef.current = 0;
-    unfocusTimeRef.current = 0;
     totalScoresRef.current = [];
-    isPoseDetectedRef.current = false; // ✨ Ref 초기화
+    isPoseDetectedRef.current = false;
   }, []);
 
-  // Finish
   const finish = useCallback(
     (data) => {
-      if (isFinish || showDialog) {
-        return;
-      }
-
+      if (isFinish || showDialog) return;
       const passCount = data.scores.filter((s) => s.isPass).length;
-      const totalTime = Date.now() - initTimeRef.current;
-
+      const totalTime = Date.now() - initTimeRef.current; // 여기서 최종 시간 계산
       setFinalResult({ passCount, totalTime });
       setIsFinish(true);
-
-      timeOutRef.current = setTimeout(() => {
-        setShowDialog(true);
-      }, 1500);
+      timeOutRef.current = setTimeout(() => setShowDialog(true), 1500);
     },
-    [isFinish, showDialog, setIsFinish, setShowDialog, setFinalResult]
+    [isFinish, showDialog]
   );
 
-  // Calc
   const calc = useCallback(
     (side) => {
       isPoseDetectedRef.current = true;
@@ -127,106 +98,84 @@ export default function ExercisePage() {
       const spendTime = Date.now() - startTimeRef.current;
       const isPass = target === side;
 
-      //  정답 깃발 위치와 통과 여부를 저장
       setLastResultTarget(target);
       setLastResultIsPass(isPass);
 
-      if (isPass) {
-        pass.play();
-      } else if (side !== "timeout") {
-        fail.play();
-      } else {
-        // timeout
-        console.log("timeOut");
-        fail.play();
-      }
+      if (isPass) pass.play();
+      else fail.play();
 
-      setTotalScores((prev) => [
-        ...prev,
-        { isPass, spendTime, unfocusTime: unfocusTimeRef.current },
-      ]);
-
+      setTotalScores((prev) => [...prev, { isPass, spendTime }]);
       timeOutRef.current = setTimeout(() => {
         setLastResultTarget(null);
         setLastResultIsPass(null);
         nextRef.current();
       }, 1000);
     },
-    [target, setTotalScores, pass, fail]
+    [target, pass, fail]
   );
 
-  // Start
   const start = useCallback(() => {
     isPoseDetectedRef.current = false;
-
     startTimeRef.current = Date.now();
-    unfocusTimeRef.current = 0;
     clearInterval(intvRef.current);
 
-    setDown(FIXED_LIMIT);
-
+    let trialTime = FIXED_LIMIT;
     intvRef.current = setInterval(() => {
-      setDown((prevDown) => {
-        const newDown = prevDown - 1;
-        if (newDown === 0) {
-          clearInterval(intvRef.current);
-          if (!isPoseDetectedRef.current) {
-            calcRef.current("timeout");
-          }
-        }
-        return newDown;
-      });
+      trialTime -= 1;
+      if (trialTime <= 0) {
+        clearInterval(intvRef.current);
+        if (!isPoseDetectedRef.current) calcRef.current("timeout");
+      }
     }, 1000);
 
     const isLeftTarget = Math.random() < 0.5;
-    const newTarget = isLeftTarget ? "left" : "right";
-    const newWrong = isLeftTarget ? "right" : "left";
+    setTarget(isLeftTarget ? "left" : "right");
+    setWrong(isLeftTarget ? "right" : "left");
+  }, []);
 
-    setTarget(newTarget);
-    setWrong(newWrong);
-  }, [setDown, setTarget, setWrong]);
-
-  // Next
   const next = useCallback(() => {
-    setCount((prevCount) => {
-      const newCount = prevCount + 1;
+    setCount((prev) => {
+      const newCount = prev + 1;
       if (newCount === TOTAL_ATTEMPTS) {
-        finishRef.current({
-          totalTime: Date.now() - initTimeRef.current,
-          scores: totalScoresRef.current,
-        });
+        finishRef.current({ scores: totalScoresRef.current });
       } else {
         startRef.current();
       }
       return newCount;
     });
-  }, [setCount]);
+  }, []);
 
-  // onResults (MediaPipe 콜백)
   const onResults = useCallback(
     (results) => {
       const marks = results.poseLandmarks;
       const canvasEl = canvasRef.current;
-
       if (!canvasEl) return;
 
-      const canvasCtx = canvasEl.getContext("2d");
+      setIsPoseVisible(!!marks); // 인식 상태 업데이트
 
+      const canvasCtx = canvasEl.getContext("2d");
       canvasCtx.save();
       canvasCtx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
+      // 캔버스 크기 동적 맞춤
+      if (
+        canvasEl.width !== canvasEl.clientWidth ||
+        canvasEl.height !== canvasEl.clientHeight
+      ) {
+        canvasEl.width = canvasEl.clientWidth;
+        canvasEl.height = canvasEl.clientHeight;
+      }
+
       canvasCtx.translate(canvasEl.width, 0);
       canvasCtx.scale(-1, 1);
-      canvasCtx.globalCompositeOperation = "destination-atop";
       canvasCtx.drawImage(results.image, 0, 0, canvasEl.width, canvasEl.height);
 
-      canvasCtx.globalCompositeOperation = "source-over";
       if (marks) {
         drawConnectors(canvasCtx, marks, POSE_CONNECTIONS, {
           color: "#00FF00",
-          lineWidth: 2,
+          lineWidth: 4,
         });
-        drawLandmarks(canvasCtx, marks, { color: "#0000FF", lineWidth: 1 });
+        drawLandmarks(canvasCtx, marks, { color: "#0000FF", lineWidth: 2 });
       }
       canvasCtx.restore();
 
@@ -235,325 +184,262 @@ export default function ExercisePage() {
         setIsStart(true);
       }
 
-      // 이미 포즈가 감지되어 calc가 호출되었으면 처리 x
       if (isPoseDetectedRef.current || !isStart || isFinish) return;
-
-      if (Date.now() - lastTimeRef.current < 1000) {
-        return;
-      }
-
+      if (Date.now() - lastTimeRef.current < 1000) return;
       if (!marks) return;
 
       const leftHand = marks[15];
       const rightHand = marks[16];
-
       let side = null;
-
-      // 손 감지
       if (leftHand?.visibility > 0.8) side = "right";
       else if (rightHand?.visibility > 0.8) side = "left";
 
       if (side) {
-        // 포즈감지
         isPoseDetectedRef.current = true;
         lastTimeRef.current = Date.now();
-
         calcRef.current(side);
       }
     },
-    [isStart, isFinish, setIsStart]
+    [isStart, isFinish]
   );
 
-  const onResultsRef = useRef(onResults);
-  useEffect(() => {
-    onResultsRef.current = onResults;
-  }, [onResults]);
-
+  // --- Effects ---
   useEffect(() => {
     finishRef.current = finish;
     calcRef.current = calc;
     startRef.current = start;
     nextRef.current = next;
-  }, [finish, calc, start, next]);
-
-  useEffect(() => {
     totalScoresRef.current = totalScores;
-  }, [totalScores]);
+  }, [finish, calc, start, next, totalScores]);
 
-  // Create & Cleanup
   useEffect(() => {
     const videoEl = videoRef.current;
-    let poseInstance = null;
-    let cameraInstance = null;
+    let poseInstance = new Pose({
+      locateFile: (file) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+    });
 
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      console.error("Camera access not supported.");
-      return;
-    }
-
-    if (!videoEl || !canvasRef.current) {
-      console.log("Video or Canvas element not found");
-      return;
-    }
+    poseInstance.setOptions({
+      modelComplexity: 1,
+      minDetectionConfidence: 0.5,
+    });
+    poseInstance.onResults(onResults);
 
     navigator.mediaDevices
       .getUserMedia({ video: true })
       .then((stream) => {
-        // 성공: 스트림을 즉시 닫고 (Camera 클래스가 다시 열 것임), 나머지 로직 실행
         stream.getTracks().forEach((track) => track.stop());
-
-        poseInstance = new Pose({
-          locateFile: (file) =>
-            `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
-        });
-        poseInstance.setOptions({
-          modelComplexity: 1,
-          smoothLandmarks: true,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5,
-        });
-
-        poseInstance.onResults((results) => {
-          if (onResultsRef.current) onResultsRef.current(results);
-        });
-
-        // 2. Camera 인스턴스 생성 (getUserMedia 성공 후이므로 에러 방지)
-        cameraInstance = new Camera(videoEl, {
+        const camera = new Camera(videoEl, {
           onFrame: async () => {
-            try {
-              if (poseInstance && typeof poseInstance.send === "function") {
-                await poseInstance.send({ image: videoEl });
-              }
-            } catch (err) {
-              console.log("Pose send failed (possibly closed):", err);
-            }
+            await poseInstance.send({ image: videoEl });
           },
-          width: 480,
-          height: 270,
+          width: 640,
+          height: 480,
         });
-
-        cameraInstance.start();
-        cameraRef.current = cameraInstance;
+        camera.start();
       })
-      .catch((error) => {
-        // 실패: 에러를 상태에 저장하고 Dialog를 띄웁니다.
-        console.error("Failed to acquire camera feed:", error);
-
-        let errorMessage = "알 수 없는 카메라 접근 오류가 발생했습니다.";
-
-        // 에러 타입에 따른 사용자 친화적 메시지 설정
-        if (
-          error.name === "NotFoundError" ||
-          error.name === "NotReadableError"
-        ) {
-          errorMessage =
-            "카메라 장치를 찾을 수 없거나 사용 중입니다. 다른 프로그램에서 사용 중인지 확인해주세요.";
-        } else if (
-          error.name === "NotAllowedError" ||
-          error.name === "PermissionDeniedError"
-        ) {
-          errorMessage =
-            "카메라 접근이 거부되었습니다. 브라우저 설정에서 카메라 권한을 허용해주세요.";
-        }
-
-        setCameraError(errorMessage);
+      .catch((err) => {
+        setCameraError("카메라를 사용할 수 없습니다. 권한을 확인해주세요.");
         setShowCameraErrorDialog(true);
       });
 
     return () => {
-      console.log("Cleanup: Stopping all resources.");
+      poseInstance.close();
       clearInterval(intvRef.current);
       clearTimeout(timeOutRef.current);
-
-      try {
-        if (cameraInstance) cameraInstance.stop();
-      } catch (e) {
-        console.warn("Error stopping camera instance:", e);
-      }
-
-      try {
-        if (poseInstance) poseInstance.close();
-      } catch (e) {
-        console.warn("Error closing pose instance:", e);
-      }
-
-      if (cameraRef.current === cameraInstance) cameraRef.current = null;
     };
+  }, [onResults]);
+
+  useEffect(() => {
+    music.play().catch(() => {});
+    return () => music.pause();
   }, [music]);
 
   useEffect(() => {
-    music.play().catch((e) => {
-      // 브라우저 자동 재생 정책에 걸릴 경우
-      console.log("Failed to play music on mount:", e);
-    });
-
-    // 1-2. 컴포넌트 언마운트 시 확실히 정지 및 리셋
-    return () => {
-      console.log("Music Cleanup: Stopping playback.");
-      music.pause();
-      // 메모리 해제는 GC에 맡기지만, 확실한 정지를 위해 currentTime 리셋
-      music.currentTime = 0;
-    };
-  }, [music]);
-
-  // 최초 게임 시작 트리거
-  useEffect(() => {
-    if (isStart) {
-      // piboTell("총 20번의 시도로 게임을 시작할게!");
-      startRef.current && startRef.current();
-    }
+    if (isStart) startRef.current();
   }, [isStart]);
 
   const getBgClass = (flagSide) => {
-    // 결과 표시 중이 아닐 때 (기본 흰색)
-    if (lastResultTarget === null) return "bg-white";
-
+    if (lastResultTarget === null) return "bg-white border-gray-100";
     const isTargetFlag = flagSide === lastResultTarget;
-    const oppositeFlag = lastResultTarget === "left" ? "right" : "left";
-    const isOppositeFlag = flagSide === oppositeFlag;
-
-    if (lastResultIsPass) {
-      return isTargetFlag ? "bg-green-300" : "bg-white";
-    } else {
-      if (isOppositeFlag) {
-        return "bg-red-300";
-      }
-
-      return "bg-white";
-    }
+    if (lastResultIsPass)
+      return isTargetFlag
+        ? "bg-green-100 border-green-500 scale-[1.02]"
+        : "bg-white opacity-50";
+    return flagSide !== lastResultTarget
+      ? "bg-red-100 border-red-500 scale-[1.02]"
+      : "bg-white opacity-50";
   };
+
   return (
-    <div className="flex flex-col h-full p-4 bg-gray-50">
-      {/* SECTION: 헤더 파트 */}
-      <header className="flex flex-col items-start pb-2 border-b border-gray-200 mb-2">
-        <div className="flex items-center text-4xl font-bold text-gray-800">
+    <div className="flex flex-col h-full p-4 bg-gray-50 overflow-hidden font-sans text-gray-800">
+      {/* SECTION: 헤더 */}
+      <header className="flex flex-col items-start pb-4 border-b mb-4">
+        <div className="flex items-center text-4xl font-black">
           <ArrowBigLeft
-            className="size-10 mr-2 cursor-pointer"
+            className="size-12 mr-4 cursor-pointer hover:text-blue-600 transition-colors"
             onClick={() => navigation("/")}
           />
-          <span onClick={() => updateVideoClass()}>신체활동</span>
+          <span>신체활동: 청기 백기 게임</span>
         </div>
-        <p className="text-3xl text-gray-500 mt-1">
-          올라오는 깃발에 맞추어 손을 들어보자
+        <p className="text-2xl text-gray-500 mt-2 ml-16 font-medium">
+          인식 상태를 확인하며 깃발을 들어보세요!
         </p>
       </header>
 
-      <main className="flex flex-grow space-x-4">
-        {/* SECTION : 이미지 영역 (70%)역 */}
-        <div className="w-[70%] flex items-center">
-          <div className="flex w-full h-full space-x-4">
-            <div
-              className={`w-1/2 shadow-lg rounded-lg p-4 flex items-center justify-center ${getBgClass(
-                "right"
-              )}`}
-            >
-              <img
-                className={`w-1/2 object-contain`}
-                src={`${BASE_IMAGE_PATH}${
-                  wrong === "right" ? "/shrug.png" : "/left.png"
-                }`}
-                alt="Left Flag"
-              />
-            </div>
-
-            <div
-              className={`w-1/2 shadow-lg rounded-lg p-4 flex items-center justify-center ${getBgClass(
-                "left"
-              )}`}
-            >
-              <img
-                className={`w-1/2 object-contain`}
-                src={`${BASE_IMAGE_PATH}${
-                  wrong === "left" ? "/shrug.png" : "/right.png"
-                }`}
-                alt="Right Flag"
-              />
-            </div>
+      <main className="flex flex-grow space-x-6 overflow-hidden">
+        {/* SECTION: 메인 게임판 (70%) */}
+        <div className="w-[70%] flex items-center gap-6">
+          <div
+            className={`w-1/2 h-full shadow-2xl rounded-[2rem] border-8 flex flex-col items-center justify-center transition-all duration-500 ${getBgClass(
+              "right"
+            )}`}
+          >
+            <span className="text-4xl font-black mb-8 text-blue-600">
+              청기 (왼쪽)
+            </span>
+            <img
+              className="w-3/4 object-contain"
+              src={`${BASE_IMAGE_PATH}${
+                wrong === "right" ? "/shrug.png" : "/left.png"
+              }`}
+              alt="Blue Flag"
+            />
+          </div>
+          <div
+            className={`w-1/2 h-full shadow-2xl rounded-[2rem] border-8 flex flex-col items-center justify-center transition-all duration-500 ${getBgClass(
+              "left"
+            )}`}
+          >
+            <span className="text-4xl font-black mb-8 text-red-600">
+              백기 (오른쪽)
+            </span>
+            <img
+              className="w-3/4 object-contain"
+              src={`${BASE_IMAGE_PATH}${
+                wrong === "left" ? "/shrug.png" : "/right.png"
+              }`}
+              alt="White Flag"
+            />
           </div>
         </div>
 
-        {/* SECTION: 차트, 진행도, 카메라 영역 (30%) */}
-        <aside className="w-[30%] h-full flex flex-col space-y-4">
-          {/* 도넛 차트 */}
-          <div className="p-2 shadow-lg rounded-lg flex justify-center">
-            <DonutChart value={down} max={FIXED_LIMIT} color="#b22729" />
-          </div>
-
-          {/* 점수 스코어 */}
-          <div className="p-2 shadow-lg rounded-lg">
-            <p className="text-4xl font-semibold mb-4">진행 상황</p>
-            <ul className="check grid grid-cols-5 gap-1">
+        {/* SECTION: 사이드 바 (30%) */}
+        <aside className="w-[30%] flex flex-col space-y-6">
+          {/* 1. 진행 상황 (상단 도넛차트 위치로 이동) */}
+          <div className="bg-white p-6 shadow-xl rounded-[1.5rem] border-b-8 border-blue-500">
+            <div className="flex justify-between items-end mb-4">
+              <span className="text-2xl font-black">진행 상황</span>
+              <span className="text-3xl font-bold text-blue-600">
+                {count}
+                <span className="text-xl text-gray-400">
+                  {" "}
+                  / {TOTAL_ATTEMPTS}
+                </span>
+              </span>
+            </div>
+            <div className="grid grid-cols-5 gap-3">
               {Array.from({ length: TOTAL_ATTEMPTS }).map((_, i) => (
-                <li
+                <div
                   key={i}
-                  className={`w-9 h-9 rounded-full ${
+                  className={`aspect-square rounded-xl flex items-center justify-center font-bold text-xl shadow-inner transition-all duration-300 ${
                     i < count
                       ? totalScores[i]?.isPass
-                        ? "bg-green-500"
-                        : "bg-red-500"
-                      : "bg-gray-300"
+                        ? "bg-green-500 text-white"
+                        : "bg-red-500 text-white"
+                      : "bg-gray-100 text-gray-300"
                   }`}
-                ></li>
+                >
+                  {i + 1}
+                </div>
               ))}
-            </ul>
+            </div>
+          </div>
+
+          {/* 2. 실시간 카메라 인식 영역 (확대 및 테두리 강조) */}
+          <div
+            className="flex-1 relative bg-black rounded-[1.5rem] overflow-hidden shadow-2xl border-[12px] transition-colors duration-300 flex items-center justify-center"
+            style={{ borderColor: isPoseVisible ? "#22c55e" : "#ef4444" }}
+          >
+            <video ref={videoRef} autoPlay playsInline className="hidden" />
+            <canvas ref={canvasRef} className="w-full h-full object-cover" />
+
+            {/* 상태 뱃지 */}
+            <div
+              className={`absolute top-4 right-4 px-6 py-2 rounded-full text-lg font-black text-white shadow-lg ${
+                isPoseVisible ? "bg-green-500" : "bg-red-500 animate-pulse"
+              }`}
+            >
+              {isPoseVisible ? "인식 완료" : "인식 대기 중"}
+            </div>
+
+            {/* 인식 안내 문구 (인식 안될 때만 표시) */}
+            {!isPoseVisible && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-6 text-center">
+                <p className="text-white text-2xl font-bold leading-relaxed">
+                  화면에 몸이 전체적으로
+                  <br />
+                  보이도록 서주세요!
+                </p>
+              </div>
+            )}
           </div>
         </aside>
       </main>
-      <div className={videoClass}>
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          style={{ display: "none" }}
-        />
-        <canvas
-          ref={canvasRef}
-          className={`w-full h-auto ${isFinish ? "hidden" : ""}`}
-        />
-      </div>
-      {/* SECITON: 결과 다이얼로그 */}
+
+      {/* 결과 다이얼로그 (총 소요 시간 표시) */}
       <Dialog
         isOpen={showDialog && isFinish}
         onClose={() => setShowDialog(false)}
-        title="⭐ 게임 결과 ⭐"
+        title="✨ 미션 완료! ✨"
         actions={[
           {
-            text: "다시하기",
+            text: "한 번 더 하기",
             onClick: resetGame,
-            style: "bg-blue-600 text-white",
+            style:
+              "bg-blue-600 text-white w-full py-5 text-3xl font-black rounded-2xl hover:bg-blue-700 transition-all shadow-xl",
           },
         ]}
       >
-        <p className="mb-2">총 시도: {TOTAL_ATTEMPTS}회</p>
-        <p className="mb-4">
-          성공 횟수:{" "}
-          <span className="text-green-600 font-bold">
-            {finalResult.passCount}회
-          </span>
-        </p>
-        <p className="text-sm text-gray-500">
-          총 소요 시간: {Math.round(finalResult.totalTime / 1000)}초
-        </p>
+        <div className="text-center p-8">
+          <div className="flex justify-around mb-8 border-b pb-8">
+            <div>
+              <p className="text-xl text-gray-400 font-bold mb-2">성공 횟수</p>
+              <p className="text-6xl font-black text-green-600">
+                {finalResult.passCount}
+                <span className="text-2xl ml-1">회</span>
+              </p>
+            </div>
+            <div className="border-l pl-8">
+              <p className="text-xl text-gray-400 font-bold mb-2">
+                총 소요 시간
+              </p>
+              <p className="text-6xl font-black text-blue-600">
+                {Math.round(finalResult.totalTime / 1000)}
+                <span className="text-2xl ml-1">초</span>
+              </p>
+            </div>
+          </div>
+          <p className="text-2xl text-gray-600 font-bold">
+            정말 훌륭한 실력이네요!
+          </p>
+        </div>
       </Dialog>
 
-      {/** SECTION: 카메라 연결 실패 관련 Dialog */}
+      {/* 카메라 에러 다이얼로그 */}
       <Dialog
         isOpen={showCameraErrorDialog}
         onClose={() => setShowCameraErrorDialog(false)}
-        title="🚨 카메라 연결 실패"
-        titleStyle="text-4xl font-bold text-red-600 mb-4"
+        title="⚠️ 카메라 연결 확인"
         actions={[
           {
-            text: "닫기 (새로고침 권장)",
-            onClick: () => {
-              // Dialog를 닫고, 필요하다면 초기화 로직을 추가할 수 있습니다.
-              // 예를 들어 navigation("/") 으로 홈으로 돌아가는 액션 등.
-            },
-            style: "bg-red-600 text-white hover:bg-red-700",
+            text: "메인으로 이동",
+            onClick: () => navigation("/"),
+            style: "bg-gray-800 text-white w-full py-3",
           },
         ]}
       >
-        <p className="text-xl">{cameraError}</p>
+        <p className="text-2xl p-6 text-center font-medium">{cameraError}</p>
       </Dialog>
     </div>
   );
