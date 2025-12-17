@@ -3,7 +3,7 @@ import { ArrowBigLeft, Trash2, Palette, Wand2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MicToggleButton from "@/components/magicui/listening-indicator";
 import Dialog from "@/components/Dialog";
-import { useDrawSpeechRecognition } from "@/hooks/useDrawSpeechRecognition";
+import useVoiceChat from "@/hooks/useVoiceChat"; // 수정: 통합 훅 임포트
 
 export default function DrawPage() {
   const navigation = useNavigate();
@@ -18,7 +18,6 @@ export default function DrawPage() {
   // States
   const [sketchPrompt, setSketchPrompt] = useState("");
   const [sketchModel, setSketchModel] = useState("real"); // 'real' || 'anim'
-  const [isRecording, setIsRecording] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState("");
   const [tool, setTool] = useState("pencil");
@@ -30,12 +29,22 @@ export default function DrawPage() {
   const ERASER_WIDTH = 40;
   const cursorSize = ERASER_WIDTH;
 
-  // Hooks
-  const { startSpeechRecognition, stopSpeechRecognition } =
-    useDrawSpeechRecognition({
-      onTextChange: setSketchPrompt,
-      onRecordingChange: setIsRecording,
-    });
+  // Hooks (수정: 제공해주신 useVoiceChat 적용)
+  const {
+    isRecording,
+    handleStartRecording,
+    handleStopRecording,
+    questionList,
+  } = useVoiceChat({
+    enableTTS: false, // 그림 그리기에서는 대화 TTS 비활성화
+  });
+
+  // [신규 로직] questionList가 업데이트되면(STT 완료) 마지막 질문을 sketchPrompt로 설정
+  useEffect(() => {
+    if (questionList.length > 0) {
+      setSketchPrompt(questionList[questionList.length - 1]);
+    }
+  }, [questionList]);
 
   // 마우스/터치 위치 계산 함수
   const getPos = useCallback((e) => {
@@ -136,27 +145,6 @@ export default function DrawPage() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }, []);
 
-  // 그리기 도구 그리기
-  // const drawShape = useCallback(
-  //   (shapeName) => {
-  //     const canvas = canvasRef.current;
-  //     const ctx = ctxRef.current;
-  //     if (!canvas || !ctx) return;
-
-  //     // 그리기 전 스타일 설정
-  //     ctx.globalCompositeOperation = "source-over";
-  //     ctx.strokeStyle = PENCIL_COLOR;
-  //     ctx.lineWidth = PENCIL_WIDTH;
-
-  //     const shape = DRAW_OPTIONS.find((s) => s.name === shapeName);
-  //     if (shape) {
-  //       clearCanvas();
-  //       shape.draw(ctx, canvas);
-  //     }
-  //   },
-  //   [clearCanvas]
-  // );
-
   // 캔버스 초기화 및 context 설정
   useEffect(() => {
     const updateCanvasSize = () => {
@@ -193,15 +181,6 @@ export default function DrawPage() {
     }
   }, [tool]);
 
-  // 그리기 도구 핸들러
-  // const handleTools = useCallback(
-  //   (tool) => {
-  //     const draw = tool.toLocaleLowerCase();
-  //     draw === "x" ? clearCanvas : setTool(draw);
-  //   },
-  //   [setTool, clearCanvas]
-  // );
-
   // AI 모델 변경함수
   const preparedModel = useCallback(async (mode) => {
     const res = await fetch(
@@ -211,68 +190,46 @@ export default function DrawPage() {
         })
     );
     return res;
-  });
-
-  // 이미지 전송 전처리
-  // const imgWithBackgroundToBlob = useCallback((origin) => {
-  //   const exportCanvas = document.createElement("canvas");
-  //   exportCanvas.width = origin.width;
-  //   exportCanvas.height = origin.height;
-
-  //   const exportCtx = exportCanvas.getContext("2d");
-  //   if (!exportCtx) return;
-
-  //   // 흰색 배경 채우기
-  //   exportCtx.fillStyle = "#ffffff";
-  //   exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-
-  //   // 기존 캔버스 내용을 위에 덮기.
-  //   exportCtx.drawImage(origin, 0, 0);
-
-  //   return new Promise((resolve) => exportCanvas.toBlob(resolve, "image/png"));
-  // }, []);
+  }, []);
 
   // 생성된 이미지 그리기
-  const drawImageToCanvas = useCallback(
-    (imageSrc) => {
-      const canvas = canvasRef.current;
-      const ctx = ctxRef.current;
-      if (!canvas || !ctx) return;
+  const drawImageToCanvas = useCallback((imageSrc) => {
+    const canvas = canvasRef.current;
+    const ctx = ctxRef.current;
+    if (!canvas || !ctx) return;
 
-      const img = new Image();
-      img.src = imageSrc;
+    const img = new Image();
+    img.src = imageSrc;
 
-      img.onload = () => {
-        ctx.globalCompositeOperation = "source-over";
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    img.onload = () => {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 1. 비율 계산
-        const canvasAspect = canvas.width / canvas.height;
-        const imgAspect = img.width / img.height;
+      // 1. 비율 계산
+      const canvasAspect = canvas.width / canvas.height;
+      const imgAspect = img.width / img.height;
 
-        let drawWidth, drawHeight, offsetX, offsetY;
+      let drawWidth, drawHeight, offsetX, offsetY;
 
-        // 2. 짤리지 않게 크기 결정 (Object-fit: contain 방식)
-        if (imgAspect > canvasAspect) {
-          // 이미지가 가로로 더 긴 경우 -> 너비 기준
-          drawWidth = canvas.width;
-          drawHeight = canvas.width / imgAspect;
-          offsetX = 0;
-          offsetY = (canvas.height - drawHeight) / 2;
-        } else {
-          // 이미지가 세로로 더 긴 경우 -> 높이 기준
-          drawHeight = canvas.height;
-          drawWidth = canvas.height * imgAspect;
-          offsetX = (canvas.width - drawWidth) / 2;
-          offsetY = 0;
-        }
+      // 2. 짤리지 않게 크기 결정 (Object-fit: contain 방식)
+      if (imgAspect > canvasAspect) {
+        // 이미지가 가로로 더 긴 경우 -> 너비 기준
+        drawWidth = canvas.width;
+        drawHeight = canvas.width / imgAspect;
+        offsetX = 0;
+        offsetY = (canvas.height - drawHeight) / 2;
+      } else {
+        // 이미지가 세로로 더 긴 경우 -> 높이 기준
+        drawHeight = canvas.height;
+        drawWidth = canvas.height * imgAspect;
+        offsetX = (canvas.width - drawWidth) / 2;
+        offsetY = 0;
+      }
 
-        // 3. 이미지 그리기
-        ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-      };
-    },
-    [canvasRef, ctxRef]
-  );
+      // 3. 이미지 그리기
+      ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+    };
+  }, []);
 
   // 이미지 생성 API
   const handleGenerateImg = useCallback(async () => {
@@ -308,7 +265,7 @@ export default function DrawPage() {
 
   // 음성 인식 및 이미지 생성 핸들러
   const handleStopAndGenerate = useCallback(async () => {
-    await stopSpeechRecognition();
+    handleStopRecording(); // 수정: 훅의 중지 함수 호출
     if (!aiModelRef.current) {
       setLoading(true);
       setLoadingText("이미지 생성을 위한 모델로 전환중");
@@ -316,21 +273,21 @@ export default function DrawPage() {
       await preparedModel(1);
       setLoading(false);
     }
-    await handleGenerateImg();
-  }, [
-    setLoading,
-    setLoadingText,
-    stopSpeechRecognition,
-    preparedModel,
-    handleGenerateImg,
-  ]);
+    // STT가 완료되어 sketchPrompt가 업데이트되면 useEffect에서 handleGenerateImg가 실행됨
+  }, [handleStopRecording, preparedModel]);
+
+  useEffect(() => {
+    if (sketchPrompt && !isRecording && aiModelRef.current) {
+      handleGenerateImg();
+    }
+  }, [sketchPrompt, isRecording, handleGenerateImg]);
 
   useEffect(() => {
     return () => {
       // Unmoute시 모델 다시 변경
       preparedModel(0);
     };
-  }, []);
+  }, [preparedModel]);
 
   return (
     <div className="flex flex-col h-full p-4 bg-gray-50 overflow-hidden font-sans">
@@ -453,7 +410,7 @@ export default function DrawPage() {
               {/* 마이크 버튼 영역 */}
               <div className="flex flex-col items-center justify-center pt-4">
                 <MicToggleButton
-                  onStart={startSpeechRecognition}
+                  onStart={handleStartRecording}
                   onStop={handleStopAndGenerate}
                   isListening={isRecording}
                   micText="text-5xl"
