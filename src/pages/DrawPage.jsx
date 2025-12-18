@@ -243,7 +243,7 @@ export default function DrawPage() {
       const params = new URLSearchParams({
         prompt: sketchPrompt,
         model: sketchModel,
-        seed: Math.floor(Math.random() * 1000000), // 매번 다른 시드값 권장
+        seed: 0, // 매번 다른 시드값 권장
         lang: "ko",
       });
       setLoadingText(`${sketchPrompt}으로 이미지 생성중`);
@@ -441,7 +441,9 @@ export default function DrawPage() {
       >
         <div className="text-center p-10 flex flex-col items-center">
           <div className="w-20 h-20 border-8 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-8" />
-          <p className="text-3xl font-black text-gray-700">{loadingText}</p>
+          <p className="text-3xl font-black text-gray-700 break-keep">
+            {loadingText}
+          </p>
         </div>
       </Dialog>
     </div>
