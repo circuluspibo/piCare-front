@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect } from "react";
 import MicToggleButton from "./magicui/listening-indicator";
 import useVoiceChat from "@/hooks/useVoiceChat"; // 수정: 통합 훅 임포트
+import Dialog from "./Dialog";
 
 export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
   const scrollRef = useRef(null);
@@ -41,6 +42,16 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, []);
+
+  // EventHandler
+  const onStopClick = () => {
+    handleStopRecording();
+  };
+  const isThinking =
+    !isRecording &&
+    questionList.length > 0 &&
+    fullResponse === "" &&
+    answerList.length < questionList.length;
 
   useEffect(() => {
     scrollToBottom();
@@ -90,11 +101,30 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
       <div className="flex justify-center mt-4">
         <MicToggleButton
           onStart={handleStartRecording} // 핸들러 명칭 일치
-          onStop={handleStopRecording} // 핸들러 명칭 일치
+          onStop={onStopClick} // 핸들러 명칭 일치
           isListening={isRecording}
           micText={micText}
+          iconSize="size-24"
         />
       </div>
+      {/* 대화용 로딩 다이얼로그 */}
+      <Dialog
+        isOpen={isThinking}
+        onClose={() => {}}
+        title="AI 친구가 생각하고 있어요"
+      >
+        <div className="text-center p-10 flex flex-col items-center">
+          <div className="flex space-x-2 mb-8">
+            {/* 점이 통통 튀는 애니메이션 */}
+            <div className="w-4 h-4 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+            <div className="w-4 h-4 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+            <div className="w-4 h-4 bg-blue-600 rounded-full animate-bounce"></div>
+          </div>
+          <p className="text-3xl font-black text-gray-700">
+            대답을 준비하고 있어요...
+          </p>
+        </div>
+      </Dialog>
     </div>
   );
 }

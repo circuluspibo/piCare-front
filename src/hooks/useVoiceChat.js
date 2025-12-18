@@ -5,95 +5,101 @@ import { GlobalContext } from "@/contexts/GlobalContext";
 import PERSONA_SYSTEMS from "@/utils/PersonaSystem";
 
 export default function useVoiceChat({ enableTTS }) {
-  // 참조 관리
   const mediaRecorderRef = useRef(null);
-  const { currentLang, persona, personaVoice } = useContext(GlobalContext); // GlobalContext에서 설정 가져오기
+  const { currentLang, persona, personaVoice } = useContext(GlobalContext);
 
-  // 상태 관리
   const [isRecording, setIsRecording] = useState(false);
   const [gumStream, setGumStream] = useState(null);
   const [questionList, setQuestionList] = useState([]);
   const [answerList, setAnswerList] = useState([]);
   const [isPlayingTts, setIsPlayingTts] = useState(false);
-  const [ttsQueue, setTtsQueue] = useState([]);
+  const [ttsQueue, setTtsQueue] = useState([]); // 음성 재생 대기열
   const [fullResponse, setFullResponse] = useState("");
   const [questionTimes, setQuestionTimes] = useState([]);
 
-  // 유틸리티 및 상수
   const currentSystem = PERSONA_SYSTEMS[persona];
   const apiBaseURL = import.meta.env.VITE_API_BASE_URL;
   const ttsBaseURL = import.meta.env.VITE_TTS_BASE_URL;
 
-  // 헬퍼 함수: TTS 문장 재생
+  // 1. 실제 오디오 재생 함수
   const playTtsSentence = useCallback(
     async (text) => {
+      if (!text || text.trim().length === 0) return;
+
+      console.log("aaaaa");
       const ttsUrl =
         `${ttsBaseURL}/tts?` +
         new URLSearchParams({
-          text,
+          text: text.trim(),
           voice: `${personaVoice}`,
           lang: currentLang,
           static: "0",
-          isPlay: "0",
+          isPlay: "0", // 0이면 서버가 파일을 생성/반환하고 자동재생은 클라이언트가 담당
         });
 
       return new Promise((resolve) => {
+        console.log("🔊 [TTS 재생 시도]:", text);
         const audio = new Audio(ttsUrl);
-        // 오류 또는 재생 완료 시 resolve 호출하여 다음 큐로 진행
-        audio.onended = resolve;
-        audio.onerror = resolve;
-        // 오디오 재생을 시도하고, Promise가 rejected 되는 경우를 처리하여 다음 큐로 진행
-        audio.play().catch(resolve);
+
+        // 재생 성공/실패와 상관없이 다음 문장을 위해 resolve 호출 필수
+        audio.onended = () => {
+          console.log("✅ [재생 완료]:", text);
+          resolve();
+        };
+
+        audio.onerror = (e) => {
+          console.error("❌ [오디오 로드 에러]:", e);
+          resolve();
+        };
+
+        audio.play().catch((err) => {
+          console.warn("⚠️ [재생 차단됨]:", err);
+          resolve();
+        });
       });
     },
     [ttsBaseURL, currentLang, personaVoice]
-  ); // currentVoice는 상수이므로 의존성 배열에서 제거 가능
+  );
 
-  // 헬퍼 함수: TTS 큐에 문장 추가
-  const addToTtsQueue = useCallback((text) => {
-    if (!enableTTS) {
-      return;
-    }
-
-    setTtsQueue((prev) => [...prev, text]);
-  }, []);
-
-  // TTS 재생 및 큐 로직 (useEffect의 의존성으로 사용되므로 useCallback으로 감싸야 함)
-  const processTtsQueue = useCallback(async () => {
-    if (!enableTTS) {
-      return;
-    }
-
-    // 이미 재생 중이거나 큐가 비어있으면 실행하지 않음
-    if (ttsQueue.length === 0 || isPlayingTts) return;
-
-    // 큐 처리를 시작하면서 재생 상태로 변경
-    setIsPlayingTts(true);
-    const queueSnapshot = [...ttsQueue];
-    setTtsQueue([]);
-
-    for (const text of queueSnapshot) {
-      await playTtsSentence(text);
-    }
-    setIsPlayingTts(false);
-  }, [ttsQueue, isPlayingTts, playTtsSentence, enableTTS]);
-
-  // TTS 큐가 업데이트될 때마다 processTtsQueue 실행
+  // 2. TTS 큐 감시 및 실행 (이 부분이 "playTtsQueue" 역할을 수행)
   useEffect(() => {
-    if (!enableTTS) {
-      return;
-    }
+    const processQueue = async () => {
+      // 조건: TTS 활성화 && 현재 재생 중 아님 && 큐에 문장이 있음
+      if (!enableTTS || isPlayingTts || ttsQueue.length === 0) return;
 
-    processTtsQueue();
-  }, [ttsQueue, processTtsQueue, enableTTS]);
+      setIsPlayingTts(true); // 잠금
 
-  // 서버에 메시지 전송 및 스트리밍 응답 처리
+      const nextSentence = ttsQueue[0];
+      // 큐에서 현재 문장 제외
+      setTtsQueue((prev) => prev.slice(1));
+
+      console.log("🚀 [Queue 처리 시작]:", nextSentence);
+      await playTtsSentence(nextSentence);
+
+      setIsPlayingTts(false); // 잠금 해제
+    };
+
+    processQueue();
+  }, [ttsQueue, isPlayingTts, enableTTS, playTtsSentence]);
+
+  // 3. 텍스트를 큐에 추가하는 헬퍼
+  const addToTtsQueue = useCallback(
+    (text) => {
+      if (!enableTTS || !text.trim()) return;
+      setTtsQueue((prev) => [...prev, text.trim()]);
+    },
+    [enableTTS]
+  );
+
+  // 4. LLM 스트리밍 응답 처리
   const sendMessage = useCallback(
     async (message) => {
       if (!message) return;
+
       setFullResponse("");
+      let accumulatedResponse = "";
       let lastSentenceEnd = 0;
-      console.log("persona = ", persona);
+
       try {
         const res = await fetch(
           `${apiBaseURL}/txt2chat?` +
@@ -105,55 +111,41 @@ export default function useVoiceChat({ enableTTS }) {
             })
         );
 
-        if (!res.ok) {
-          throw new Error(`NETWORK ERROR - sendMessage() : ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`NETWORK ERROR: ${res.status}`);
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
-        let accumulatedResponse = "";
 
-        // 문장 구분 정규식
-        const sentenceRegex = /([^.!?\n]*[.!?\n]\s*)/g;
+        // 문장 구분 기호: . ! ? \n
+        const sentenceRegex = /[^.!?\n]+[.!?\n]/g;
 
         while (true) {
           const { done, value } = await reader.read();
 
           if (done) {
-            // 남은 텍스트 처리
+            // 미처 처리되지 않은 마지막 문장 처리
             const remainingText = accumulatedResponse
               .slice(lastSentenceEnd)
               .trim();
-            if (remainingText) {
-              addToTtsQueue(remainingText);
-            }
-
+            if (remainingText) addToTtsQueue(remainingText);
             setAnswerList((prev) => [...prev, accumulatedResponse]);
-
             break;
           }
 
           const chunk = decoder.decode(value, { stream: true });
           accumulatedResponse += chunk;
-
           setFullResponse(accumulatedResponse);
 
-          let processedLength = 0;
-          const segmentToAnalyze = accumulatedResponse.slice(lastSentenceEnd);
+          // 스트리밍 중 문장이 완성될 때마다 큐에 추가
           let match;
-          sentenceRegex.lastIndex = 0;
-
-          // 문장 단위로 TTS 큐에 추가
-          while ((match = sentenceRegex.exec(segmentToAnalyze)) !== null) {
+          sentenceRegex.lastIndex = lastSentenceEnd;
+          while ((match = sentenceRegex.exec(accumulatedResponse)) !== null) {
             const sentence = match[0].trim();
-
             if (sentence) {
               addToTtsQueue(sentence);
             }
-            // 길이 누적
-            processedLength += match[0].length;
+            lastSentenceEnd = sentenceRegex.lastIndex;
           }
-          lastSentenceEnd += processedLength;
         }
       } catch (error) {
         console.error(`TEXT MESSAGE ERROR : `, error);
@@ -162,96 +154,90 @@ export default function useVoiceChat({ enableTTS }) {
     [apiBaseURL, currentSystem, currentLang, addToTtsQueue]
   );
 
-  // 녹음 시작 핸들러
+  // 5. 음성 녹음 및 STT 전송
   const handleStartRecording = async () => {
     if (isRecording) return;
     let chunks = [];
     try {
       setIsRecording(true);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: false,
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setGumStream(stream);
 
-      const recorder = new MediaRecorder(stream, { audioBitsPerSecond: 16000 });
-      recorder.addEventListener("dataavailable", (e) => {
-        chunks.push(e.data);
-      });
+      const recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
 
-      recorder.addEventListener("stop", async () => {
+      recorder.onstop = async () => {
         const audioBlob = new Blob(chunks, { type: "audio/ogg;codecs=opus" });
         const formData = new FormData();
         formData.append("file", audioBlob, "voice.ogg");
 
         try {
-          // STT API 호출
           const res = await fetch(
             `${apiBaseURL}/stt?lang=${currentLang}&isPlay=0`,
             { method: "POST", body: formData }
           );
 
-          if (!res.ok) {
-            throw new Error(`STT ERROR: ${res.status}`);
-          }
+          if (!res.ok) throw new Error(`STT ERROR: ${res.status}`);
 
           const result = await res.json();
-          let recognizedText = "";
-          if (result.text && result.text.trim()) {
-            recognizedText = result.text.trim();
-          } else if (result.data && result.data.trim()) {
-            recognizedText = result.data.trim();
-          }
+          const recognizedText = (result.text || result.data || "").trim();
 
-          if (recognizedText) {
-            // 질문 상태 업데이트 후 LLM에 전송
-            setQuestionList((prev) => [...prev, recognizedText]);
+          // 필터: 특수기호 제거 및 유효 텍스트 확인
+          const cleanedText = recognizedText
+            .replace(/[^\w\s가-힣ㄱ-ㅎㅏ-ㅣ?.!,]/g, "")
+            .trim();
+
+          if (cleanedText) {
+            setQuestionList((prev) => [...prev, cleanedText]);
             setQuestionTimes((prev) => [...prev, Date.now()]);
-            await sendMessage(recognizedText);
-          } else {
-            console.log("Not recognized");
+            await sendMessage(cleanedText); // 여기서 txt2chat 호출
           }
         } catch (error) {
-          console.error("Voice recognition error:", error);
+          console.error("STT Process error:", error);
         }
-        chunks = [];
-      });
+      };
 
       mediaRecorderRef.current = recorder;
       recorder.start();
     } catch (error) {
-      console.error("Recording start error:", error);
+      console.error("Recording error:", error);
       setIsRecording(false);
     }
   };
 
-  // 녹음 중지 핸들러
   const handleStopRecording = () => {
     if (!isRecording) return;
     setIsRecording(false);
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-    }
+    if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
     if (gumStream) {
       gumStream.getAudioTracks().forEach((track) => track.stop());
       setGumStream(null);
     }
   };
 
+  const resetVoiceChat = useCallback(() => {
+    setQuestionList([]);
+    setAnswerList([]);
+    setFullResponse("");
+    setTtsQueue([]);
+    setIsPlayingTts(false);
+    setQuestionTimes([]);
+  }, []);
+
   return {
-    // 상태
     isRecording,
     questionList,
     answerList,
     fullResponse,
     questionTimes,
     isPlayingTts,
-    // 핸들러/액션
     handleStartRecording,
     handleStopRecording,
-    sendMessage, // 외부에서 텍스트로도 메시지를 보낼 수 있도록 노출
-    // 기타 유틸리티
+    sendMessage,
     currentLang,
     initGreeting: "무엇을 도와드릴까요?",
+    resetVoiceChat,
   };
 }
