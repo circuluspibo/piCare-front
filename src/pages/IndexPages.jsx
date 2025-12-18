@@ -2,16 +2,20 @@ import Prompt from "@/components/Prompt";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PersonaContainer, PersonaThumbnail } from "@/components/ui/persona";
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { PERSONAS } from "@/assets/data/personaData";
 import { buttonLabels } from "@/assets/data/buttonLabels";
 import { IconRenderer } from "@/components/ui/IconRenderer";
 import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "@/contexts/GlobalContext";
+import useVoiceChat from "@/hooks/useVoiceChat";
+import PERSONA_SYSTEMS from "@/utils/PersonaSystem";
 
 export default function Main() {
-  const { updatePersona } = useContext(GlobalContext);
+  const { updatePersona, persona } = useContext(GlobalContext);
   const navigation = useNavigate();
+  // useVoiceChat 훅 연결 (TTS 활성화 상태로 설정)
+  const { sendMessage } = useVoiceChat({ enableTTS: true });
   // TODO: 선택된 Persona에 따른 Voice 값 받아함.
   const [selectedPersona, setSelectedPersona] = useState(PERSONAS[0]);
   // 버튼 이벤트 헨들러
@@ -50,6 +54,165 @@ export default function Main() {
         return updatePersona(22, personaId); //5, 22, 76, 45
     }
   }, [selectedPersona, updatePersona]);
+
+  const [isAutoMode, setIsAutoMode] = useState(false);
+  const autoTimerRef = useRef(null);
+  const lastActionTimeRef = useRef(0); // 30초 쿨타임 체크용
+
+  const runAutoCaptureProcess = useCallback(async () => {
+    try {
+      // 1. Heartbeat 상태 수집 (서버로부터 현재 사람 정보 가져오기)
+      const hbResp = await fetch(`http://127.0.0.1:59531/heartbeat`);
+      const hbResult = await hbResp.json();
+      const hbData = hbResult.data;
+
+      const now = Date.now();
+      // 2. 조건 확인: 사람이 있고, 마지막 실행으로부터 30초가 지났을 때만 실행
+      if (hbData.cnt_live > 0 && now - lastActionTimeRef.current > 30000) {
+        lastActionTimeRef.current = now; // 즉시 쿨타임 적용
+
+        // 3. 현재 카메라 화면 캡처
+        // 2. 현재 카메라 화면 캡처
+        const video = document.querySelector("video");
+        const canvas = document.createElement("canvas");
+        canvas.width = 640;
+        canvas.height = 480;
+        const ctx = canvas.getContext("2d");
+
+        if (video && video.videoWidth > 0) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        } else {
+          ctx.fillStyle = "blue";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = "white";
+          ctx.font = "30px Arial";
+          ctx.fillText("VIDEO TEST SOURCE", 150, 240);
+        }
+
+        // Blob으로 변환
+        const blob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/jpeg")
+        );
+        const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+
+        // FormData 생성
+        const formData = new FormData();
+        const currentSystem = PERSONA_SYSTEMS[persona];
+        formData.append("file", file); // @app.post의 'file' 인자
+        formData.append("prompt", `상황에 맞게 짧고 친절하게 인사해줘.`);
+        formData.append("system", currentSystem);
+        formData.append("lang", "ko"); // 한국어로 응답받으려면 'ko' 설정
+        formData.append("isPlay", "0");
+
+        const response = await fetch(`http://127.0.0.1:59532/v1/img2chat`, {
+          method: "POST",
+          body: formData, // JSON.stringify가 아닌 formData를 그대로 보냄
+        });
+
+        if (!response.ok) throw new Error("네트워크 응답 에러");
+
+        // 5. 스트리밍 응답 처리
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          fullText += chunk;
+        }
+        // TTS 실행
+        sendMessage(fullText);
+      }
+    } catch (error) {
+      console.error("Auto Mode 에러:", error);
+    }
+  }, [sendMessage, persona]);
+
+  // 동일 로직 테스트 용 함수
+  // NOTE: 테스트용 1회성 실행 핸들러 ---
+  const [isTesting, setIsTesting] = useState(false);
+  const runTestCapture = useCallback(async () => {
+    if (isTesting) return; // 이미 테스트 중이면 중복 클릭 방지
+    setIsTesting(true); // 깜빡임 시작
+    try {
+      console.log("테스트 모드 실행: 즉시 캡처 및 분석 시작");
+
+      // 1. 테스트용 가상 데이터 설정 (Heartbeat 생략)
+
+      // 2. 현재 카메라 화면 캡처
+      const video = document.querySelector("video");
+      const canvas = document.createElement("canvas");
+      canvas.width = 640;
+      canvas.height = 480;
+      const ctx = canvas.getContext("2d");
+
+      if (video && video.videoWidth > 0) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.fillStyle = "blue";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.font = "30px Arial";
+        ctx.fillText("VIDEO TEST SOURCE", 150, 240);
+      }
+
+      // Blob으로 변환
+      const blob = await new Promise((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg")
+      );
+      const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+
+      // FormData 생성
+      const formData = new FormData();
+      const currentSystem = PERSONA_SYSTEMS[persona];
+      formData.append("file", file); // @app.post의 'file' 인자
+      formData.append("prompt", `상황에 맞게 짧고 친절하게 인사해줘.`);
+      formData.append("system", currentSystem);
+      formData.append("lang", "ko"); // 한국어로 응답받으려면 'ko' 설정
+      formData.append("isPlay", "0");
+
+      const response = await fetch(`http://127.0.0.1:59532/v1/img2chat`, {
+        method: "POST",
+        body: formData, // JSON.stringify가 아닌 formData를 그대로 보냄
+      });
+
+      if (!response.ok) throw new Error("네트워크 응답 에러");
+
+      // 5. 스트리밍 응답 처리
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        fullText += chunk;
+      }
+      // TTS 실행
+      sendMessage(fullText);
+    } catch (error) {
+      console.error("Test Mode Error:", error);
+    } finally {
+      setIsTesting(false); // 응답 완료 또는 에러 발생 시 깜빡임 중지
+    }
+  }, [sendMessage, persona, setIsTesting, isTesting]);
+
+  // Auto Mode 루프 설정 (1초마다 상태 체크)
+  useEffect(() => {
+    if (isAutoMode) {
+      autoTimerRef.current = setInterval(runAutoCaptureProcess, 1000);
+    } else {
+      if (autoTimerRef.current) clearInterval(autoTimerRef.current);
+    }
+    return () => {
+      if (autoTimerRef.current) clearInterval(autoTimerRef.current);
+    };
+  }, [isAutoMode, runAutoCaptureProcess]);
   return (
     <>
       <div className="flex w-full h-full mx-auto bg-gray-100 p-2 rounded-xl shadow-lg overflow-hidden">
@@ -81,6 +244,32 @@ export default function Main() {
 
         {/** SECTION: 버튼 영역 (25%) */}
         <div className="w-1/4 flex flex-col h-full p-2 gap-2 bg-gray-300 rounded-r-2xl">
+          {/** NOTE: 임시 테스트 버튼 */}
+          <div className="flex justify-end pr-1">
+            <button
+              onClick={runTestCapture}
+              disabled={isTesting}
+              className={cn(
+                "w-4 h-4 rounded-full transition-all duration-300 shadow-sm",
+                isTesting ? "bg-red-400 animate-pulse scale-125" : "bg-gray-500"
+              )}
+              title="Test Run"
+            />
+          </div>
+          <Button
+            onClick={() => {
+              setIsAutoMode(!isAutoMode);
+              if (!isAutoMode) lastActionTimeRef.current = 0; // 켤 때 즉시 반응하도록 초기화
+            }}
+            className={cn(
+              "h-12 text-2xl font-black rounded-xl transition-all duration-300 shadow-inner",
+              isAutoMode
+                ? "bg-red-500 text-white animate-pulse"
+                : "bg-gray-400 text-gray-800"
+            )}
+          >
+            {isAutoMode ? "● AUTO ON" : "○ AUTO OFF"}
+          </Button>
           {buttonLabels.map((v, i) => (
             <Button
               key={i}
