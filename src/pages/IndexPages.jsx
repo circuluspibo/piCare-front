@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import useVoiceChat from "@/hooks/useVoiceChat";
 import PERSONA_SYSTEMS from "@/utils/PersonaSystem";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export default function Main() {
   const { updatePersona, persona } = useContext(GlobalContext);
@@ -59,7 +61,12 @@ export default function Main() {
   const autoTimerRef = useRef(null);
   const lastActionTimeRef = useRef(0); // 30초 쿨타임 체크용
 
+  const isTemp = true;
   const runAutoCaptureProcess = useCallback(async () => {
+    // NOTE:임시로 즉시 리턴
+    if (isTemp) {
+      return;
+    }
     try {
       // 1. Heartbeat 상태 수집 (서버로부터 현재 사람 정보 가져오기)
       const hbResp = await fetch(`http://127.0.0.1:59531/heartbeat`);
@@ -215,10 +222,10 @@ export default function Main() {
   }, [isAutoMode, runAutoCaptureProcess]);
   return (
     <>
-      <div className="flex w-full h-full mx-auto bg-gray-100 p-2 rounded-xl shadow-lg overflow-hidden">
+      <div className="flex w-full h-full mx-auto bg-gray-200 p-2 rounded-xl overflow-hidden">
         {/** SECTION:페르소나 (10%) */}
         <div
-          className={`w-1/10 flex flex-col items-center justify-start rounded-l-xl`}
+          className={`w-1/10 flex flex-col items-center justify-start rounded-l-xl m-1`}
         >
           <PersonaContainer>
             <div className="grid grid-cols-1 gap-1 overflow-hidden p-1 h-full">
@@ -236,40 +243,50 @@ export default function Main() {
         </div>
 
         {/** SECTION: 프롬프트/챗봇 (65%) */}
-        <div className="w-8/12 bg-white p-3 border-x border-gray-300 shadow-inner">
+        <div className="w-8/12 p-3 bg-white rounded-xl ">
           <div className="text-xl text-gray-600 h-full">
             <Prompt />
           </div>
         </div>
 
         {/** SECTION: 버튼 영역 (25%) */}
-        <div className="w-1/4 flex flex-col h-full p-2 gap-2 bg-gray-300 rounded-r-2xl">
+        <div className="w-1/4 flex flex-col h-full p-2 gap-2 rounded-r-2xl">
           {/** NOTE: 임시 테스트 버튼 */}
-          <div className="flex justify-end pr-1">
-            <button
-              onClick={runTestCapture}
-              disabled={isTesting}
-              className={cn(
-                "w-4 h-4 rounded-full transition-all duration-300 shadow-sm",
-                isTesting ? "bg-red-400 animate-pulse scale-125" : "bg-gray-500"
-              )}
-              title="Test Run"
-            />
+          <div className="flex flex-row w-full justify-between">
+            <div className="flex items-center">
+              <button
+                onClick={runTestCapture}
+                disabled={isTesting}
+                className={cn(
+                  "w-6 h-6 rounded-full transition-all duration-300 shadow-sm",
+                  isTesting
+                    ? "bg-yellow-400 animate-pulse scale-110 shadow-[0_0_10px_rgba(250,204,21,0.6)]"
+                    : "bg-gray-400 hover:bg-yellow-500 active:scale-95"
+                )}
+                title="즉시 테스트"
+              />
+            </div>
+
+            {/* 2. 자동 모드 스위치 및 라벨 (오른쪽) */}
+            <div className="flex items-center gap-3">
+              <span
+                className={cn(
+                  "text-xl font-bold tracking-tighter transition-colors",
+                  isAutoMode ? "text-blue-600" : "text-gray-500"
+                )}
+              >
+                {isAutoMode ? "자동 켜기" : "자동 끄기"}
+              </span>
+              <Switch
+                checked={isAutoMode}
+                onCheckedChange={(checked) => {
+                  setIsAutoMode(checked);
+                  if (checked) lastActionTimeRef.current = 0; // 켤 때 즉시 감지하도록 초기화
+                }}
+                className="scale-125 data-[state=checked]:bg-blue-500" // 스위치 크기를 살짝 키움
+              />
+            </div>
           </div>
-          <Button
-            onClick={() => {
-              setIsAutoMode(!isAutoMode);
-              if (!isAutoMode) lastActionTimeRef.current = 0; // 켤 때 즉시 반응하도록 초기화
-            }}
-            className={cn(
-              "h-12 text-2xl font-black rounded-xl transition-all duration-300 shadow-inner",
-              isAutoMode
-                ? "bg-red-500 text-white animate-pulse"
-                : "bg-gray-400 text-gray-800"
-            )}
-          >
-            {isAutoMode ? "● AUTO ON" : "○ AUTO OFF"}
-          </Button>
           {buttonLabels.map((v, i) => (
             <Button
               key={i}

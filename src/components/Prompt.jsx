@@ -59,10 +59,7 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div
-        ref={scrollRef}
-        className="flex-grow overflow-y-auto p-4 space-y-4 bg-gray-50 rounded-lg shadow-inner"
-      >
+      <div ref={scrollRef} className="flex-grow overflow-y-auto p-4 space-y-4">
         {questionList.length === 0 && (
           <div className="flex justify-center items-center h-full">
             <p className={`${text} text-gray-600 font-semibold`}>
