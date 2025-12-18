@@ -202,12 +202,14 @@ export default function useVoiceChat({ enableTTS }) {
           } else if (result.data && result.data.trim()) {
             recognizedText = result.data.trim();
           }
-
-          if (recognizedText) {
+          const cleanedText = recognizedText
+            .replace(/[^가-힣ㄱ-ㅎㅏ-ㅣ\s]/g, "")
+            .trim();
+          if (cleanedText) {
             // 질문 상태 업데이트 후 LLM에 전송
-            setQuestionList((prev) => [...prev, recognizedText]);
+            setQuestionList((prev) => [...prev, cleanedText]);
             setQuestionTimes((prev) => [...prev, Date.now()]);
-            await sendMessage(recognizedText);
+            await sendMessage(cleanedText);
           } else {
             console.log("Not recognized");
           }
@@ -238,6 +240,20 @@ export default function useVoiceChat({ enableTTS }) {
     }
   };
 
+  const resetVoiceChat = useCallback(() => {
+    // 대화 기록 초기화
+    setQuestionList([]);
+    setAnswerList([]);
+
+    setFullResponse("");
+
+    // TTS 초기화
+    setTtsQueue([]);
+    setIsPlayingTts(false);
+
+    // 기타 데이터 초기화
+    setQuestionTimes([]);
+  }, []);
   return {
     // 상태
     isRecording,
@@ -253,5 +269,6 @@ export default function useVoiceChat({ enableTTS }) {
     // 기타 유틸리티
     currentLang,
     initGreeting: "무엇을 도와드릴까요?",
+    resetVoiceChat,
   };
 }

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { ArrowBigLeft, Trash2, Palette, Wand2 } from "lucide-react";
+import { ArrowBigLeft, Trash2, Palette } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MicToggleButton from "@/components/magicui/listening-indicator";
 import Dialog from "@/components/Dialog";
@@ -34,6 +34,7 @@ export default function DrawPage() {
     isRecording,
     handleStartRecording,
     handleStopRecording,
+    resetVoiceChat,
     questionList,
   } = useVoiceChat({
     enableTTS: false, // 그림 그리기에서는 대화 TTS 비활성화
@@ -235,17 +236,17 @@ export default function DrawPage() {
   const handleGenerateImg = useCallback(async () => {
     setLoading(true);
     try {
-      const finalPrompt = (sketchPrompt || "사과를 그려줘").trim();
       const baseURL = "http://127.0.0.1:59532";
 
+      if (!sketchPrompt) return;
       // 1. URLSearchParams를 사용하여 쿼리 문자열 생성
       const params = new URLSearchParams({
-        prompt: finalPrompt,
+        prompt: sketchPrompt,
         model: sketchModel,
         seed: Math.floor(Math.random() * 1000000), // 매번 다른 시드값 권장
         lang: "ko",
       });
-      setLoadingText(`${finalPrompt}으로 이미지 생성중`);
+      setLoadingText(`${sketchPrompt}으로 이미지 생성중`);
       // 2. Fetch 호출 (Body는 비우고 URL에 파라미터 포함)
       const res = await fetch(`${baseURL}/txt2img?${params.toString()}`, {
         method: "POST", // 방식은 POST 유지
@@ -259,21 +260,27 @@ export default function DrawPage() {
     } catch (error) {
       console.error("ERROR : ", error);
     } finally {
+      resetVoiceChat();
+      setSketchPrompt("");
       setLoading(false);
     }
-  }, [sketchPrompt, sketchModel, drawImageToCanvas]);
+  }, [sketchPrompt, sketchModel, drawImageToCanvas, resetVoiceChat]);
 
   // 음성 인식 및 이미지 생성 핸들러
   const handleStopAndGenerate = useCallback(async () => {
-    handleStopRecording(); // 수정: 훅의 중지 함수 호출
-    if (!aiModelRef.current) {
-      setLoading(true);
-      setLoadingText("이미지 생성을 위한 모델로 전환중");
-      aiModelRef.current = true;
-      await preparedModel(1);
+    setLoading(true);
+    try {
+      handleStopRecording(); // 수정: 훅의 중지 함수 호출
+      if (!aiModelRef.current) {
+        setLoadingText("이미지 생성을 위한 모델로 전환중");
+        aiModelRef.current = true;
+        await preparedModel(1);
+      }
+    } catch (error) {
+      console.log("Faild to Stop and Generate IMG", error);
+    } finally {
       setLoading(false);
     }
-    // STT가 완료되어 sketchPrompt가 업데이트되면 useEffect에서 handleGenerateImg가 실행됨
   }, [handleStopRecording, preparedModel]);
 
   useEffect(() => {
@@ -290,7 +297,7 @@ export default function DrawPage() {
   }, [preparedModel]);
 
   return (
-    <div className="flex flex-col h-full p-4 bg-gray-50 overflow-hidden font-sans">
+    <div className="flex flex-col w-full h-full p-4 bg-gray-50 overflow-hidden font-sans">
       {/* SECTION: 헤더 (연결성 강화) */}
       <header className="flex flex-col items-start pb-4 border-b mb-4">
         <div className="flex items-center text-4xl font-black">
@@ -298,17 +305,14 @@ export default function DrawPage() {
             className="size-12 mr-4 cursor-pointer hover:text-blue-600 transition-colors"
             onClick={() => navigation("/")}
           />
-          <span>AI 예술 활동: 말로 그리기</span>
+          <span>AI 말로 그리기</span>
         </div>
-        <p className="text-2xl text-gray-500 mt-2 ml-16 font-medium">
-          생각하는 것을 말하면 AI가 멋지게 그려줘요
-        </p>
       </header>
 
       <main className="flex flex-grow space-x-6 overflow-hidden">
         {/* SECTION: 캔버스 판 (70%) */}
-        <div className="w-[70%] relative" ref={parentRef}>
-          <div className="w-full h-full bg-white rounded-xl border-[12px] border-white overflow-hidden relative cursor-none">
+        <div className="w-3/4 relative" ref={parentRef}>
+          <div className="w-full h-full bg-white rounded-l-xl border-white overflow-hidden relative cursor-none">
             <canvas
               ref={canvasRef}
               className="w-full h-full block"
@@ -375,49 +379,54 @@ export default function DrawPage() {
         </div>
 
         {/* SECTION: 사이드 바 (30%) */}
-        <aside className="w-[30%] flex flex-col space-y-2">
-          {/* 1. 스타일 선택 */}
-          <div className="bg-white p-6 shadow-xl rounded-xl border-2 border-blue-500 h-full flex flex-col">
-            {/* 제목 영역 */}
-            <p className="text-2xl font-black mb-6 flex items-center shrink-0">
-              <Wand2 className="mr-2 text-blue-600" /> 그림 스타일
+        <aside className="w-1/4 flex flex-col h-full">
+          {/* 1. 스타일 선택 - h-full로 전체 높이 확보 */}
+          <div className="bg-gray-300 p-4 rounded-r-2xl h-full flex flex-col">
+            {/* 제목 영역 - 고정 높이 */}
+            <p className="text-2xl font-black mb-2 flex items-center shrink-0">
+              그림 스타일
             </p>
 
-            {/* 콘텐츠 영역: flex-1과 justify-between을 통해 Y축 고르게 분포 */}
-            <div className="flex-1 flex flex-col justify-between items-center w-full">
-              <button
-                className={`w-full py-6 rounded-2xl text-2xl font-black transition-all border-4 ${
-                  sketchModel === "real"
-                    ? "bg-blue-50 border-blue-600 text-blue-700"
-                    : "bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100"
-                }`}
-                onClick={() => setSketchModel("real")}
-              >
-                현실처럼 (실사)
-              </button>
+            {/* 콘텐츠 영역: flex-1로 남은 모든 공간을 차지 */}
+            <div className="flex-1 flex flex-col gap-4 w-full">
+              {/* 파트 1: 사실 / 그림 (전체 높이의 1/2 차지) */}
+              <div className="flex-1 flex flex-col gap-2">
+                <button
+                  className="w-full flex-1 rounded-2xl text-4xl font-bold transition-all bg-lime-200 text-lime-800 flex items-center justify-center"
+                  onClick={() => setSketchModel("real")}
+                >
+                  사실
+                </button>
+                <button
+                  className="w-full flex-1 rounded-2xl text-4xl font-bold transition-all bg-violet-200 text-violet-800 flex items-center justify-center"
+                  onClick={() => setSketchModel("anim")}
+                >
+                  그림
+                </button>
+              </div>
 
-              <button
-                className={`w-full py-6 rounded-2xl text-2xl font-black transition-all border-4 ${
-                  sketchModel === "anim"
-                    ? "bg-purple-50 border-purple-600 text-purple-700"
-                    : "bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100"
-                }`}
-                onClick={() => setSketchModel("anim")}
-              >
-                만화처럼 (애니)
-              </button>
+              {/* 파트 2: 지우기 / 마이크 (전체 높이의 1/2 차지) */}
+              <div className="flex-1 flex flex-col gap-2">
+                {/* 지우기 버튼: 상대적 작게 (flex-[0.7]) */}
+                <button
+                  onClick={clearCanvas}
+                  className="w-full flex-[0.5] rounded-2xl text-4xl font-bold transition-all bg-red-600 text-white flex items-center justify-center"
+                >
+                  지우기
+                </button>
 
-              {/* 마이크 버튼 영역 */}
-              <div className="flex flex-col items-center justify-center pt-4">
-                <MicToggleButton
-                  onStart={handleStartRecording}
-                  onStop={handleStopAndGenerate}
-                  isListening={isRecording}
-                  micText="text-5xl"
-                />
-                <p className="mt-4 text-gray-400 font-bold">
-                  마이크를 눌러 말씀하세요
-                </p>
+                {/* 마이크 버튼: 상대적 크게 (flex-[1.3]) */}
+                <div className="w-full flex-[1.5] flex flex-col">
+                  <MicToggleButton
+                    onStart={handleStartRecording}
+                    onStop={handleStopAndGenerate}
+                    isListening={isRecording}
+                    // MicToggleButton이 내부에서 h-full을 지원해야 합니다.
+                    className="h-full w-full flex-1"
+                    micText="text-4xl"
+                    iconSize="size-16"
+                  />
+                </div>
               </div>
             </div>
           </div>

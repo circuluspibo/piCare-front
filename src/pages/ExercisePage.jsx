@@ -34,6 +34,7 @@ export default function ExercisePage() {
   const intvRef = useRef(null);
   const startTimeRef = useRef(null);
   const timeOutRef = useRef(null);
+  const pausedTimeRef = useRef(0); // 일시정지된 시간 누적용
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -73,6 +74,7 @@ export default function ExercisePage() {
     clearTimeout(timeOutRef.current);
     initTimeRef.current = null;
     lastTimeRef.current = 0;
+    pausedTimeRef.current = 0;
     totalScoresRef.current = [];
     isPoseDetectedRef.current = false;
   }, []);
@@ -113,18 +115,26 @@ export default function ExercisePage() {
     isPoseDetectedRef.current = false;
     startTimeRef.current = Date.now();
     clearInterval(intvRef.current);
+
     let trialTime = FIXED_LIMIT;
     intvRef.current = setInterval(() => {
-      trialTime -= 1;
-      if (trialTime <= 0) {
-        clearInterval(intvRef.current);
-        if (!isPoseDetectedRef.current) calcRef.current("timeout");
+      // 포즈가 보일 때만 시간이 가도록 설정
+      if (isPoseVisible) {
+        trialTime -= 1;
+        if (trialTime <= 0) {
+          clearInterval(intvRef.current);
+          if (!isPoseDetectedRef.current) calcRef.current("timeout");
+        }
+      } else {
+        // 포즈가 안 보이면 시작 시간을 미뤄서 타이머를 유지시킴
+        startTimeRef.current += 1000;
       }
     }, 1000);
+
     const isLeftTarget = Math.random() < 0.5;
     setTarget(isLeftTarget ? "left" : "right");
     setWrong(isLeftTarget ? "right" : "left");
-  }, []);
+  }, [isPoseVisible]);
 
   const next = useCallback(() => {
     setCount((prev) => {
@@ -143,7 +153,9 @@ export default function ExercisePage() {
       const marks = results.poseLandmarks;
       const canvasEl = canvasRef.current;
       if (!canvasEl) return;
-      setIsPoseVisible(!!marks);
+
+      const visible = !!marks;
+      setIsPoseVisible(visible);
 
       const canvasCtx = canvasEl.getContext("2d");
       canvasCtx.save();
@@ -160,13 +172,19 @@ export default function ExercisePage() {
       }
       canvasCtx.restore();
 
-      if (!isStart) {
+      if (!isStart && visible) {
         initTimeRef.current = Date.now();
         setIsStart(true);
       }
-      if (isPoseDetectedRef.current || !isStart || isFinish) return;
+
+      // 게임 중단 로직: 포즈가 안 보이거나 이미 감지된 경우 리턴
+      if (!visible || isPoseDetectedRef.current || !isStart || isFinish) {
+        // 전체 걸린 시간 측정을 위해 포즈가 안 보이는 동안의 시간을 보정
+        if (!visible && initTimeRef.current) initTimeRef.current += 33; // 약 30fps 기준
+        return;
+      }
+
       if (Date.now() - lastTimeRef.current < 1000) return;
-      if (!marks) return;
 
       const leftHand = marks[15],
         rightHand = marks[16];
@@ -229,6 +247,7 @@ export default function ExercisePage() {
     music.play().catch(() => {});
     return () => music.pause();
   }, [music]);
+
   useEffect(() => {
     if (isStart) startRef.current();
   }, [isStart]);
@@ -266,7 +285,16 @@ export default function ExercisePage() {
 
       <main className="flex flex-grow space-x-6 overflow-hidden">
         {/* SECTION: 메인 게임판 */}
-        <div className="w-[70%] flex items-center gap-2">
+        <div className="w-2/3 flex items-center gap-2 relative p-2">
+          {/* 인식 불가 오버레이: w-2/3 영역 내에서만 표시됨 */}
+          {!isPoseVisible && (
+            <div className="absolute inset-0 z-10 bg-black/70 backdrop-blur-md flex items-center justify-center p-8 text-center rounded-2xl">
+              <p className="text-white text-7xl font-black leading-tight break-keep">
+                몸이 전체적으로 <br /> 나오게 서주세요!
+                <br />
+              </p>
+            </div>
+          )}
           <div
             className={`w-1/2 h-full rounded-2xl border-[5px] flex flex-col items-center justify-center transition-all duration-300 ${getBgClass(
               "right"
@@ -299,51 +327,49 @@ export default function ExercisePage() {
           </div>
         </div>
 
-        {/* SECTION: 사이드 바 (압축형 진행상황 + 거대 카메라) */}
-        <aside className="w-[30%] flex flex-col space-y-4">
-          {/* 1. 진행 상황 (최소화) */}
-          <div className="bg-white p-2 rounded-xl border-4 border-blue-500">
-            <div className="flex flex-wrap gap-1 justify-center">
-              {Array.from({ length: TOTAL_ATTEMPTS }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-10 h-10 rounded-sm flex items-center justify-center text-[22px] font-bold ${
-                    i < count
-                      ? totalScores[i]?.isPass
-                        ? "bg-green-500 text-white"
-                        : "bg-red-500 text-white"
-                      : "bg-gray-100 text-gray-300"
-                  }`}
-                >
-                  {i + 1}
-                </div>
-              ))}
+        {/* SECTION: 사이드 바 */}
+        <aside className="w-1/3 flex flex-col space-y-2">
+          {/* 1. 진행 상황 (5개씩 4줄 그리드) */}
+          <div className="bg-white p-4 rounded-xl shadow-inner border">
+            <div className="grid grid-cols-5 gap-2 justify-items-center">
+              {Array.from({ length: TOTAL_ATTEMPTS }).map((_, i) => {
+                const isCurrent = i === count;
+                const score = totalScores[i];
+                let statusClass = "bg-gray-100 text-gray-300";
+
+                if (isCurrent) {
+                  statusClass =
+                    "bg-blue-500 text-white ring-4 ring-blue-200 animate-pulse";
+                } else if (score) {
+                  statusClass = score.isPass
+                    ? "bg-green-500 text-white"
+                    : "bg-red-200 text-white";
+                }
+
+                return (
+                  <div
+                    key={i}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold transition-colors ${statusClass}`}
+                  >
+                    {i + 1}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* 2. 실시간 카메라 (90% 차지) */}
-          <div
-            className="flex-1 relative bg-black rounded-xl overflow-hidden shadow-2xl border-[2px] transition-all duration-300"
-            style={{ borderColor: isPoseVisible ? "#22c55e" : "#ef4444" }}
-          >
+          {/* 2. 실시간 카메라 (비율 최적화) */}
+          <div className="flex-1 relative bg-black rounded-xl overflow-hidden shadow-2xl border-[2px]">
             <video ref={videoRef} autoPlay playsInline className="hidden" />
             <canvas
               ref={canvasRef}
-              className="w-full h-full object-contain transform"
+              className="absolute inset-0 w-full h-full object-cover aspect-video"
             />
-
-            {!isPoseVisible && (
-              <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-8 text-center pointer-events-none">
-                <p className="text-white text-4xl font-black leading-tight">
-                  몸이 전체적으로 나오게 서주세요!
-                </p>
-              </div>
-            )}
           </div>
         </aside>
       </main>
 
-      {/* 결과 다이얼로그 (텍스트 극대화, 내용 최소화) */}
+      {/* 결과 다이얼로그 */}
       <Dialog
         isOpen={showDialog && isFinish}
         onClose={() => setShowDialog(false)}
