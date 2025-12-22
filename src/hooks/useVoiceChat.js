@@ -2,11 +2,11 @@
 
 import { useState, useRef, useEffect, useCallback, useContext } from "react";
 import { GlobalContext } from "@/contexts/GlobalContext";
-import PERSONA_SYSTEMS from "@/utils/PersonaSystem";
+import { PERSONA_SYSTEMS } from "@/utils/PersonaSystem";
 
 export default function useVoiceChat({ enableTTS }) {
   const mediaRecorderRef = useRef(null);
-  const { currentLang, persona, personaVoice } = useContext(GlobalContext);
+  const { currentLang, personaId, personaVoice } = useContext(GlobalContext);
 
   const [isRecording, setIsRecording] = useState(false);
   const [gumStream, setGumStream] = useState(null);
@@ -17,39 +17,34 @@ export default function useVoiceChat({ enableTTS }) {
   const [fullResponse, setFullResponse] = useState("");
   const [questionTimes, setQuestionTimes] = useState([]);
 
-  const currentSystem = PERSONA_SYSTEMS[persona];
+  const currentSystem = PERSONA_SYSTEMS[personaId];
   const apiBaseURL = import.meta.env.VITE_API_BASE_URL;
   const ttsBaseURL = import.meta.env.VITE_TTS_BASE_URL;
 
   // 1. 실제 오디오 재생 함수
   const playTtsSentence = useCallback(
-    async (text) => {
+    async (text, manualVoice) => {
+      // manualVoice 인자 추가
       if (!text || text.trim().length === 0) return;
+
+      // 인자로 전달된 목소리가 있으면 그것을 쓰고, 없으면 Context의 값을 사용
+      const targetVoice =
+        manualVoice !== undefined ? manualVoice : personaVoice;
+
       const ttsUrl =
         `${ttsBaseURL}/tts?` +
         new URLSearchParams({
           text: text.trim(),
-          voice: `${personaVoice}`,
+          voice: `${targetVoice}`, // 결정된 목소리 값 사용
           lang: currentLang,
           static: "0",
-          isPlay: "0", // 0이면 서버가 파일을 생성/반환하고 자동재생은 클라이언트가 담당
+          isPlay: "0",
         });
 
       return new Promise((resolve) => {
-        console.log("🔊 [TTS 재생 시도]:", text);
         const audio = new Audio(ttsUrl);
-
-        // 재생 성공/실패와 상관없이 다음 문장을 위해 resolve 호출 필수
-        audio.onended = () => {
-          console.log("[재생 완료]:", text);
-          resolve();
-        };
-
-        audio.onerror = (e) => {
-          console.error("[오디오 로드 에러]:", e);
-          resolve();
-        };
-
+        audio.onended = () => resolve();
+        audio.onerror = () => resolve();
         audio.play().catch((err) => {
           console.warn("[재생 차단됨]:", err);
           resolve();
@@ -237,5 +232,6 @@ export default function useVoiceChat({ enableTTS }) {
     currentLang,
     initGreeting: "무엇을 도와드릴까요?",
     resetVoiceChat,
+    playTtsSentence,
   };
 }
