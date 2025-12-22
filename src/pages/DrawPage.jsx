@@ -390,12 +390,12 @@ export default function DrawPage() {
             {/* 콘텐츠 영역: flex-1로 남은 모든 공간을 차지 */}
             <div className="flex-1 flex flex-col gap-4 w-full">
               {/* 파트 1: 사실 / 그림 (전체 높이의 1/2 차지) */}
-              <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 flex flex-col">
                 <button
                   className={`w-full flex-1 text-4xl font-bold transition-all flex items-center justify-center ${
                     sketchModel === "real"
                       ? "border-4 border-blue-500 rounded-2xl"
-                      : ""
+                      : "border-4 border-gray-50"
                   }`}
                   onClick={() => setSketchModel("real")}
                 >
@@ -405,7 +405,7 @@ export default function DrawPage() {
                   className={`w-full flex-1 text-4xl font-bold transition-all flex items-center justify-center ${
                     sketchModel === "anim"
                       ? "border-4 border-green-500 rounded-2xl"
-                      : ""
+                      : "border-4 border-gray-50"
                   }`}
                   onClick={() => setSketchModel("anim")}
                 >
@@ -431,7 +431,7 @@ export default function DrawPage() {
                     isListening={isRecording}
                     // MicToggleButton이 내부에서 h-full을 지원해야 합니다.
                     className="h-full w-full flex-1"
-                    micText="text-6xl"
+                    micText="text-5xl"
                     iconSize="size-16"
                   />
                 </div>
