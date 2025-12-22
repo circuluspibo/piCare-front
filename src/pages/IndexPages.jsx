@@ -38,10 +38,10 @@ export default function Main() {
       }
     }
   };
-  const personaHandler = (persona) => {
-    setSelectedPersona(persona);
-    updatePersona(persona.voice.persona.id);
-  };
+
+  useEffect(() => {
+    updatePersona(selectedPersona.voice, selectedPersona.id);
+  }, [setSelectedPersona, selectedPersona, updatePersona]);
 
   const [isAutoMode, setIsAutoMode] = useState(false);
   const autoTimerRef = useRef(null);
@@ -221,7 +221,7 @@ export default function Main() {
                   icon={p.icon}
                   gender={p.gender}
                   isSelected={selectedPersona.id === p.id}
-                  onClick={() => personaHandler(p)}
+                  onClick={() => setSelectedPersona(p)}
                 />
               ))}
             </div>
