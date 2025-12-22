@@ -7,7 +7,7 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
   const scrollRef = useRef(null);
 
   const enableTTS = true;
-  // Hooks (수정: 제공해주신 useVoiceChat 적용)
+  // Hooks
   const {
     isRecording,
     questionList,

@@ -42,20 +42,33 @@ export default function Main() {
   useEffect(() => {
     const personaId = selectedPersona.id;
     switch (personaId) {
-      case "grandpa":
-        return updatePersona(42, personaId); //91
-      case "grandma":
-        return updatePersona(65, personaId); //57, 88
-      case "man":
-        return updatePersona(48, personaId);
-      case "woman":
-        return updatePersona(49, personaId); //26
-      case "boy":
-        return updatePersona(25, personaId); //17, 18
-      case "girl":
-        return updatePersona(22, personaId); //5, 22, 76, 45
+      case "grandpa": {
+        updatePersona(42, personaId); //91
+        break;
+      }
+      case "grandma": {
+        updatePersona(65, personaId); //57, 88
+        break;
+      }
+      case "man": {
+        updatePersona(48, personaId);
+        break;
+      }
+      case "woman": {
+        updatePersona(49, personaId); //26
+        break;
+      }
+      case "boy": {
+        updatePersona(25, personaId); //17, 18
+        break;
+      }
+      case "girl": {
+        updatePersona(22, personaId); //5, 22, 76, 45
+        break;
+      }
     }
-  }, [selectedPersona, updatePersona]);
+    sendMessage("간단한 자기소개 해줘.");
+  }, [selectedPersona, updatePersona, sendMessage]);
 
   const [isAutoMode, setIsAutoMode] = useState(false);
   const autoTimerRef = useRef(null);
@@ -136,7 +149,7 @@ export default function Main() {
     } catch (error) {
       console.error("Auto Mode 에러:", error);
     }
-  }, [sendMessage, persona]);
+  }, [sendMessage, persona, isTemp]);
 
   // 동일 로직 테스트 용 함수
   // NOTE: 테스트용 1회성 실행 핸들러 ---

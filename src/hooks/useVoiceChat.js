@@ -25,8 +25,6 @@ export default function useVoiceChat({ enableTTS }) {
   const playTtsSentence = useCallback(
     async (text) => {
       if (!text || text.trim().length === 0) return;
-
-      console.log("aaaaa");
       const ttsUrl =
         `${ttsBaseURL}/tts?` +
         new URLSearchParams({
@@ -43,17 +41,17 @@ export default function useVoiceChat({ enableTTS }) {
 
         // 재생 성공/실패와 상관없이 다음 문장을 위해 resolve 호출 필수
         audio.onended = () => {
-          console.log("✅ [재생 완료]:", text);
+          console.log("[재생 완료]:", text);
           resolve();
         };
 
         audio.onerror = (e) => {
-          console.error("❌ [오디오 로드 에러]:", e);
+          console.error("[오디오 로드 에러]:", e);
           resolve();
         };
 
         audio.play().catch((err) => {
-          console.warn("⚠️ [재생 차단됨]:", err);
+          console.warn("[재생 차단됨]:", err);
           resolve();
         });
       });
@@ -73,7 +71,7 @@ export default function useVoiceChat({ enableTTS }) {
       // 큐에서 현재 문장 제외
       setTtsQueue((prev) => prev.slice(1));
 
-      console.log("🚀 [Queue 처리 시작]:", nextSentence);
+      console.log("[Queue 처리 시작]:", nextSentence);
       await playTtsSentence(nextSentence);
 
       setIsPlayingTts(false); // 잠금 해제
