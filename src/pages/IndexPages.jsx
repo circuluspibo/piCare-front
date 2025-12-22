@@ -9,12 +9,14 @@ import { IconRenderer } from "@/components/ui/IconRenderer";
 import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import useVoiceChat from "@/hooks/useVoiceChat";
-import PERSONA_SYSTEMS from "@/utils/PersonaSystem";
+import { PERSONA_SYSTEMS, PERSONA_INTRODUCE } from "@/utils/PersonaSystem";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
 export default function Main() {
-  const { updatePersona, persona } = useContext(GlobalContext);
+  const enableTTS = true;
+  const { updatePersona, personaId } = useContext(GlobalContext);
+  const { playTtsSentence } = useVoiceChat({ enableTTS });
   const navigation = useNavigate();
   // useVoiceChat 훅 연결 (TTS 활성화 상태로 설정)
   const { sendMessage } = useVoiceChat({ enableTTS: true });
@@ -39,9 +41,14 @@ export default function Main() {
     }
   };
 
-  useEffect(() => {
-    updatePersona(selectedPersona.voice, selectedPersona.id);
-  }, [setSelectedPersona, selectedPersona, updatePersona]);
+  const personaHandler = (persona) => {
+    setSelectedPersona(persona);
+    updatePersona(persona);
+    playTtsSentence(PERSONA_INTRODUCE[persona.id], persona.voice);
+  };
+  // useEffect(() => {
+  //   updatePersona(selectedPersona.voice, selectedPersona.id);
+  // }, [setSelectedPersona, selectedPersona, updatePersona]);
 
   const [isAutoMode, setIsAutoMode] = useState(false);
   const autoTimerRef = useRef(null);
@@ -90,7 +97,7 @@ export default function Main() {
 
         // FormData 생성
         const formData = new FormData();
-        const currentSystem = PERSONA_SYSTEMS[persona];
+        const currentSystem = PERSONA_SYSTEMS[personaId];
         formData.append("file", file); // @app.post의 'file' 인자
         formData.append("prompt", `상황에 맞게 짧고 친절하게 인사해줘.`);
         formData.append("system", currentSystem);
@@ -122,7 +129,7 @@ export default function Main() {
     } catch (error) {
       console.error("Auto Mode 에러:", error);
     }
-  }, [sendMessage, persona, isTemp]);
+  }, [sendMessage, personaId, isTemp]);
 
   // 동일 로직 테스트 용 함수
   // NOTE: 테스트용 1회성 실행 핸들러 ---
@@ -160,7 +167,7 @@ export default function Main() {
 
       // FormData 생성
       const formData = new FormData();
-      const currentSystem = PERSONA_SYSTEMS[persona];
+      const currentSystem = PERSONA_SYSTEMS[personaId];
       formData.append("file", file); // @app.post의 'file' 인자
       formData.append("prompt", `상황에 맞게 짧고 친절하게 인사해줘.`);
       formData.append("system", currentSystem);
@@ -193,7 +200,7 @@ export default function Main() {
     } finally {
       setIsTesting(false); // 응답 완료 또는 에러 발생 시 깜빡임 중지
     }
-  }, [sendMessage, persona, setIsTesting, isTesting]);
+  }, [sendMessage, personaId, setIsTesting, isTesting]);
 
   // Auto Mode 루프 설정 (1초마다 상태 체크)
   useEffect(() => {
@@ -221,7 +228,8 @@ export default function Main() {
                   icon={p.icon}
                   gender={p.gender}
                   isSelected={selectedPersona.id === p.id}
-                  onClick={() => setSelectedPersona(p)}
+                  // onClick={() => setSelectedPersona(p)}
+                  onClick={() => personaHandler(p)}
                 />
               ))}
             </div>
