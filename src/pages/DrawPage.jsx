@@ -381,7 +381,7 @@ export default function DrawPage() {
         {/* SECTION: 사이드 바 (30%) */}
         <aside className="w-1/4 flex flex-col h-full">
           {/* 1. 스타일 선택 - h-full로 전체 높이 확보 */}
-          <div className="bg-gray-300 p-4 rounded-r-2xl h-full flex flex-col">
+          <div className="rounded-r-2xl h-full flex flex-col">
             {/* 제목 영역 - 고정 높이 */}
             <p className="text-2xl font-black mb-2 flex items-center shrink-0">
               그림 스타일
@@ -390,15 +390,23 @@ export default function DrawPage() {
             {/* 콘텐츠 영역: flex-1로 남은 모든 공간을 차지 */}
             <div className="flex-1 flex flex-col gap-4 w-full">
               {/* 파트 1: 사실 / 그림 (전체 높이의 1/2 차지) */}
-              <div className="flex-1 flex flex-col gap-2">
+              <div className="flex-1 flex flex-col overflow-hidden">
                 <button
-                  className="w-full flex-1 rounded-2xl text-4xl font-bold transition-all bg-lime-200 text-lime-800 flex items-center justify-center"
+                  className={`w-full flex-1 text-4xl font-bold transition-all flex items-center justify-center ${
+                    sketchModel === "real"
+                      ? "border-4 border-blue-500 rounded-2xl"
+                      : ""
+                  }`}
                   onClick={() => setSketchModel("real")}
                 >
                   사실
                 </button>
                 <button
-                  className="w-full flex-1 rounded-2xl text-4xl font-bold transition-all bg-violet-200 text-violet-800 flex items-center justify-center"
+                  className={`w-full flex-1 text-4xl font-bold transition-all flex items-center justify-center ${
+                    sketchModel === "anim"
+                      ? "border-4 border-green-500 rounded-2xl"
+                      : ""
+                  }`}
                   onClick={() => setSketchModel("anim")}
                 >
                   그림
@@ -410,20 +418,20 @@ export default function DrawPage() {
                 {/* 지우기 버튼: 상대적 작게 (flex-[0.7]) */}
                 <button
                   onClick={clearCanvas}
-                  className="w-full flex-[0.5] rounded-2xl text-4xl font-bold transition-all bg-red-600 text-white flex items-center justify-center"
+                  className="w-full flex-[0.6] rounded-2xl text-4xl font-bold transition-all bg-red-200 text-red-800 flex items-center justify-center"
                 >
                   지우기
                 </button>
 
                 {/* 마이크 버튼: 상대적 크게 (flex-[1.3]) */}
-                <div className="w-full flex-[1.5] flex flex-col">
+                <div className="w-full flex-[1.4] flex flex-col">
                   <MicToggleButton
                     onStart={handleStartRecording}
                     onStop={handleStopAndGenerate}
                     isListening={isRecording}
                     // MicToggleButton이 내부에서 h-full을 지원해야 합니다.
                     className="h-full w-full flex-1"
-                    micText="text-4xl"
+                    micText="text-6xl"
                     iconSize="size-16"
                   />
                 </div>

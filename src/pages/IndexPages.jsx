@@ -38,36 +38,10 @@ export default function Main() {
       }
     }
   };
-
-  useEffect(() => {
-    const personaId = selectedPersona.id;
-    switch (personaId) {
-      case "grandpa": {
-        updatePersona(42, personaId); //91
-        break;
-      }
-      case "grandma": {
-        updatePersona(88, personaId); //65, 67
-        break;
-      }
-      case "man": {
-        updatePersona(48, personaId);
-        break;
-      }
-      case "woman": {
-        updatePersona(35, personaId); //
-        break;
-      }
-      case "boy": {
-        updatePersona(25, personaId); //17, 18
-        break;
-      }
-      case "girl": {
-        updatePersona(22, personaId); //5, 22, 76, 45
-        break;
-      }
-    }
-  }, [selectedPersona, updatePersona]);
+  const personaHandler = (persona) => {
+    setSelectedPersona(persona);
+    updatePersona(persona.voice.persona.id);
+  };
 
   const [isAutoMode, setIsAutoMode] = useState(false);
   const autoTimerRef = useRef(null);
@@ -234,7 +208,7 @@ export default function Main() {
   }, [isAutoMode, runAutoCaptureProcess]);
   return (
     <>
-      <div className="flex w-full h-full mx-auto bg-gray-200 p-2 rounded-xl overflow-hidden">
+      <div className="flex w-full h-full mx-auto p-2 rounded-xl overflow-hidden">
         {/** SECTION:페르소나 (10%) */}
         <div
           className={`w-1/10 flex flex-col items-center justify-start rounded-l-xl m-1`}
@@ -247,7 +221,7 @@ export default function Main() {
                   icon={p.icon}
                   gender={p.gender}
                   isSelected={selectedPersona.id === p.id}
-                  onClick={() => setSelectedPersona(p)}
+                  onClick={() => personaHandler(p)}
                 />
               ))}
             </div>
@@ -262,7 +236,7 @@ export default function Main() {
         </div>
 
         {/** SECTION: 버튼 영역 (25%) */}
-        <div className="w-1/4 flex flex-col h-full p-2 gap-2 rounded-r-2xl">
+        <div className="w-1/4 flex flex-col h-full p-2 gap-4 rounded-r-2xl">
           {/** NOTE: 임시 테스트 버튼 */}
           <div className="flex flex-row w-full justify-between">
             <div className="flex items-center">
@@ -273,7 +247,7 @@ export default function Main() {
                   "w-6 h-6 rounded-full transition-all duration-300 shadow-sm",
                   isTesting
                     ? "bg-yellow-400 animate-pulse scale-110 shadow-[0_0_10px_rgba(250,204,21,0.6)]"
-                    : "bg-gray-400 hover:bg-yellow-500 active:scale-95"
+                    : "bg-gray-400 active:scale-95"
                 )}
                 title="즉시 테스트"
               />

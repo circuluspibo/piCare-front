@@ -384,14 +384,14 @@ export default function ExercisePage() {
         ]}
       >
         <div className="flex flex-col items-center py-10 space-y-12">
-          <div className="text-center">
+          <div className="flex flex-row items-center gap-4">
             <p className="text-4xl font-bold text-gray-400 mb-4">성공 횟수</p>
-            <p className="text-[10rem] leading-none font-black text-green-600">
+            <p className="text-8xl leading-none font-black text-green-600">
               {finalResult.passCount}
               <span className="text-5xl">회</span>
             </p>
           </div>
-          <div className="text-center border-t-2 w-full pt-10 border-dashed">
+          <div className="flex flex-row items-center gap-4">
             <p className="text-4xl font-bold text-gray-400 mb-4">걸린 시간</p>
             <p className="text-8xl font-black text-blue-600">
               {Math.round(finalResult.totalTime / 1000)}

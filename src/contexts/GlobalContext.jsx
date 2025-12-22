@@ -10,7 +10,7 @@ export const GlobalContext = createContext({
 
 // Provider 컴포넌트 생성 (오타 수정됨)
 export const GlobalContextProvider = ({ children }) => {
-  const [persona, setPersona] = useState('grandpa');
+  const [persona, setPersona] = useState("grandpa");
   const [currentLang, setCurrentLang] = useState("ko");
   const [personaVoice, setPersonaVoice] = useState(33);
 
