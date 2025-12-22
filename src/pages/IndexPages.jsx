@@ -47,7 +47,7 @@ export default function Main() {
         break;
       }
       case "grandma": {
-        updatePersona(65, personaId); //57, 88
+        updatePersona(88, personaId); //65, 67
         break;
       }
       case "man": {
@@ -55,7 +55,7 @@ export default function Main() {
         break;
       }
       case "woman": {
-        updatePersona(49, personaId); //26
+        updatePersona(35, personaId); //
         break;
       }
       case "boy": {
@@ -67,8 +67,7 @@ export default function Main() {
         break;
       }
     }
-    sendMessage("간단한 자기소개 해줘.");
-  }, [selectedPersona, updatePersona, sendMessage]);
+  }, [selectedPersona, updatePersona]);
 
   const [isAutoMode, setIsAutoMode] = useState(false);
   const autoTimerRef = useRef(null);
