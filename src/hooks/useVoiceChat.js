@@ -121,7 +121,13 @@ export default function useVoiceChat({ enableTTS }) {
               .slice(lastSentenceEnd)
               .trim();
             if (remainingText) addToTtsQueue(remainingText);
-            setAnswerList((prev) => [...prev, accumulatedResponse]);
+
+            // 한글 필터링
+            const koreanResponse = accumulatedResponse.replace(
+              /[^ㄱ-ㅎㅏ-ㅣ가-힣\s]/g,
+              ""
+            );
+            setAnswerList((prev) => [...prev, koreanResponse]);
             break;
           }
 
@@ -179,7 +185,7 @@ export default function useVoiceChat({ enableTTS }) {
 
           // 필터: 특수기호 제거 및 유효 텍스트 확인
           const cleanedText = recognizedText
-            .replace(/[^\w\s가-힣ㄱ-ㅎㅏ-ㅣ?.!,]/g, "")
+            .replace(/[^ㄱ-ㅎㅏ-ㅣ가-힣\s]/g, "")
             .trim();
 
           if (cleanedText) {
