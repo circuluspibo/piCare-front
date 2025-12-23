@@ -121,7 +121,13 @@ export default function useVoiceChat({ enableTTS }) {
               .slice(lastSentenceEnd)
               .trim();
             if (remainingText) addToTtsQueue(remainingText);
-            setAnswerList((prev) => [...prev, accumulatedResponse]);
+
+            // 한글 필터링
+            const koreanResponse = accumulatedResponse.replace(
+              /[^가-힣\s]/g,
+              ""
+            );
+            setAnswerList((prev) => [...prev, koreanResponse]);
             break;
           }
 
