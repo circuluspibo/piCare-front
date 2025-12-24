@@ -89,21 +89,29 @@ const thumbnailVariants = cva(
   }
 );
 // Persona
+// PersonaThumbnail
 const PersonaThumbnail = React.forwardRef(
-  ({ icon, isSelected, gender, onClick, className, ...props }, ref) => {
+  ({ imageSrc, isSelected, gender, onClick, className, ...props }, ref) => {
     return (
       <button
         type="button"
         onClick={onClick}
         className={cn(
-          `flex items-center justify-center rounded-full shadow-inner`,
+          // w-16 h-16으로 고정하여 완벽한 원형 유지
+          "w-20 h-20 flex items-center justify-center rounded-full shadow-inner overflow-hidden border-2",
           thumbnailVariants({ isSelected, gender, className })
         )}
         ref={ref}
         {...props}
       >
-        <div className="text-[60px] aspect-square flex items-center justify-center">
-          {icon}
+        {/* 이미지가 없을 경우를 대비한 컨테이너 */}
+        <div className="w-full h-full flex items-center justify-center bg-white/50">
+          <img
+            src={imageSrc}
+            alt="persona"
+            // object-cover: 비율 유지하며 꽉 채움, object-top: 인물 얼굴 위주로 배치
+            className="w-full h-full object-cover object-top"
+          />
         </div>
       </button>
     );
