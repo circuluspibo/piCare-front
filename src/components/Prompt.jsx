@@ -1,16 +1,13 @@
 import { useRef, useCallback, useEffect } from "react";
 import MicToggleButton from "./magicui/listening-indicator";
+import useVoiceChat from "@/hooks/useVoiceChat"; // 수정: 통합 훅 임포트
 import Dialog from "./Dialog";
 
-// [수정 포인트]: voiceChat 객체를 Props로 수신
-export default function Prompt({
-  voiceChat,
-  text = "text-6xl",
-  micText = "text-7xl",
-}) {
+export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
   const scrollRef = useRef(null);
 
-  // [수정 포인트]: 자체 훅 호출 제거 및 부모로부터 받은 데이터 구조 분해
+  const enableTTS = true;
+  // Hooks
   const {
     isRecording,
     questionList,
@@ -21,7 +18,7 @@ export default function Prompt({
     handleStopRecording,
     initGreeting,
     currentLang,
-  } = voiceChat;
+  } = useVoiceChat({ enableTTS });
 
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
@@ -46,10 +43,10 @@ export default function Prompt({
     }
   }, []);
 
+  // EventHandler
   const onStopClick = () => {
     handleStopRecording();
   };
-
   const isThinking =
     !isRecording &&
     questionList.length > 0 &&
@@ -58,7 +55,7 @@ export default function Prompt({
 
   useEffect(() => {
     scrollToBottom();
-  }, [fullResponse, questionList, scrollToBottom]);
+  }, [fullResponse, questionList, scrollToBottom]); // questionList 추가하여 신규 질문 시에도 작동
 
   return (
     <div className="flex flex-col h-full">
@@ -81,6 +78,7 @@ export default function Prompt({
                 {formatTime(questionTimes[idx])}
               </span>
             </div>
+
             <div className="flex justify-start mt-2">
               <div className="bg-white p-3 rounded-xl rounded-tl-none border">
                 <p
@@ -99,14 +97,14 @@ export default function Prompt({
 
       <div className="flex justify-center mt-4">
         <MicToggleButton
-          onStart={handleStartRecording}
-          onStop={onStopClick}
+          onStart={handleStartRecording} // 핸들러 명칭 일치
+          onStop={onStopClick} // 핸들러 명칭 일치
           isListening={isRecording}
           micText={micText}
           iconSize="size-24"
         />
       </div>
-
+      {/* 대화용 로딩 다이얼로그 */}
       <Dialog
         isOpen={isThinking}
         onClose={() => {}}
@@ -114,6 +112,7 @@ export default function Prompt({
       >
         <div className="text-center p-10 flex flex-col items-center">
           <div className="flex space-x-2 mb-8">
+            {/* 점이 통통 튀는 애니메이션 */}
             <div className="w-4 h-4 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
             <div className="w-4 h-4 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
             <div className="w-4 h-4 bg-blue-600 rounded-full animate-bounce"></div>
