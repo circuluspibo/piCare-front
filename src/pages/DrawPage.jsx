@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { ArrowBigLeft, Trash2, Palette } from "lucide-react";
+import { ArrowBigLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MicToggleButton from "@/components/magicui/listening-indicator";
 import Dialog from "@/components/Dialog";
@@ -29,23 +29,26 @@ export default function DrawPage() {
   const ERASER_WIDTH = 40;
   const cursorSize = ERASER_WIDTH;
 
-  // Hooks (수정: 제공해주신 useVoiceChat 적용)
+  // Hooks
   const {
     isRecording,
     handleStartRecording,
     handleStopRecording,
     resetVoiceChat,
-    questionList,
+    messages,
   } = useVoiceChat({
     enableTTS: false, // 그림 그리기에서는 대화 TTS 비활성화
   });
 
-  // [신규 로직] questionList가 업데이트되면(STT 완료) 마지막 질문을 sketchPrompt로 설정
+  // messages가 업데이트되면 마지막 user 메시지를 추출하여 프롬프트로 설정
   useEffect(() => {
-    if (questionList.length > 0) {
-      setSketchPrompt(questionList[questionList.length - 1]);
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === "user") {
+        setSketchPrompt(lastMessage.text);
+      }
     }
-  }, [questionList]);
+  }, [messages]);
 
   // 마우스/터치 위치 계산 함수
   const getPos = useCallback((e) => {

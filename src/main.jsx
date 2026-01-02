@@ -22,6 +22,7 @@ import DrawPage from "@/pages/DrawPage";
 // Components
 import { Loading } from "@/components/Loading";
 import { GlobalContextProvider } from "./contexts/GlobalContext";
+import { VoiceChatProvider } from "./contexts/VoiceChatContext";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -38,7 +39,9 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <Suspense fallback={<Loading />}>
       <GlobalContextProvider>
-        <RouterProvider router={router} />
+        <VoiceChatProvider>
+          <RouterProvider router={router} />
+        </VoiceChatProvider>
       </GlobalContextProvider>
     </Suspense>
   </StrictMode>
