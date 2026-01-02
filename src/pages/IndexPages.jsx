@@ -8,17 +8,14 @@ import { buttonLabels } from "@/assets/data/buttonLabels";
 import { IconRenderer } from "@/components/ui/IconRenderer";
 import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "@/contexts/GlobalContext";
-import useVoiceChat from "@/hooks/useVoiceChat";
+import { useVoiceChat } from "@/contexts/VoiceChatContext";
 import { PERSONA_SYSTEMS, PERSONA_INTRODUCE } from "@/utils/PersonaSystem";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 
 export default function Main() {
-  const enableTTS = true;
   const { updatePersona, personaId } = useContext(GlobalContext);
-  const { playTtsSentence } = useVoiceChat({ enableTTS });
+  const { setEnableTTS, sendMessage, playTtsSentence } = useVoiceChat();
   const navigation = useNavigate();
-  const { sendMessage } = useVoiceChat({ enableTTS: true });
   const [selectedPersona, setSelectedPersona] = useState(PERSONAS[0]);
 
   // --- 추가된 상태 및 Ref ---
@@ -137,10 +134,12 @@ export default function Main() {
     }
   }, [sendMessage, personaId, isTemp]);
 
+  // NOTE: TEST이후 삭제
   const [isTesting, setIsTesting] = useState(false);
   const runTestCapture = useCallback(async () => {
     if (isTesting) return;
     setIsTesting(true);
+
     try {
       const video = document.querySelector("video");
       const canvas = document.createElement("canvas");
@@ -207,23 +206,27 @@ export default function Main() {
     };
   }, [isAutoMode, runAutoCaptureProcess]);
 
+  useEffect(() => {
+    setEnableTTS(true);
+  }, [setEnableTTS]);
+
   return (
     <>
       <div className="flex w-full h-full mx-auto p-2 rounded-xl overflow-hidden">
-        <div className="w-4/12 flex flex-col items-center justify-between m-1 h-full pb-12">
+        <div className="w-4/12 flex flex-col items-center justify-between h-full">
           {/* 메인 이미지/비디오 전환 영역 */}
-          <div className="w-full flex-[3] flex items-center justify-center overflow-hidden relative cursor-pointer">
+          <div className="w-full flex-[3] flex items-center justify-center overflow-hidden relative cursor-pointer p-3">
             {!showVideoFeed ? (
               // 페르소나 메인 이미지: 클릭 시 start_collection 호출 및 화면 전환
               <img
                 src={`/images/persona/${selectedPersona.id}.png`}
                 alt={selectedPersona.name}
-                className="max-w-none w-[110%] h-[110%] object-contain drop-shadow-xl"
+                className="w-full h-full object-cover"
                 onClick={mainImageClickHandler}
               />
             ) : (
               // 비디오 피드: 클릭 시 다시 페르소나 이미지로 전환
-              <div 
+              <div
                 className="w-full h-full"
                 onClick={() => setShowVideoFeed(false)}
               >
@@ -236,7 +239,7 @@ export default function Main() {
             )}
           </div>
 
-          <div className="w-full flex-[1] flex flex-col items-center justify-center mt-4">
+          <div className="w-full flex-[1] flex flex-col items-center justify-center p-3">
             <PersonaContainer className="w-full">
               <div className="grid grid-cols-3 gap-4 w-full">
                 {PERSONAS.map((p) => (
@@ -253,7 +256,7 @@ export default function Main() {
           </div>
         </div>
 
-        <div className="w-8/12 p-3 bg-white rounded-xl ">
+        <div className="w-8/12 bg-white rounded-xl ">
           <div className="text-xl text-gray-600 h-full">
             <Prompt />
           </div>

@@ -18,7 +18,6 @@ export const GlobalContextProvider = ({ children }) => {
 
   // 공유할 함수는 useCallback으로 메모이제이션
   const updatePersona = useCallback((persona) => {
-    setCurrentLang("ko");
     setPersonaId(persona.id);
     setPersonaVoice(persona.voice);
   }, []);
