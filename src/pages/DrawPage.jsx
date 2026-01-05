@@ -3,6 +3,7 @@ import { ArrowBigLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MicToggleButton from "@/components/magicui/listening-indicator";
 import Dialog from "@/components/Dialog";
+import { cn } from "@/lib/utils";
 import useVoiceChat from "@/hooks/useVoiceChat"; // 수정: 통합 훅 임포트
 
 export default function DrawPage() {
@@ -249,7 +250,7 @@ export default function DrawPage() {
         seed: 0, // 매번 다른 시드값 권장
         lang: "ko",
       });
-      setLoadingText(`${sketchPrompt}으로 이미지 생성중`);
+      setLoadingText(`"${sketchPrompt}"으로 이미지 생성중...`);
       // 2. Fetch 호출 (Body는 비우고 URL에 파라미터 포함)
       const res = await fetch(`${baseURL}/txt2img?${params.toString()}`, {
         method: "POST", // 방식은 POST 유지
@@ -271,18 +272,14 @@ export default function DrawPage() {
 
   // 음성 인식 및 이미지 생성 핸들러
   const handleStopAndGenerate = useCallback(async () => {
-    setLoading(true);
     try {
       handleStopRecording(); // 수정: 훅의 중지 함수 호출
       if (!aiModelRef.current) {
-        setLoadingText("이미지 생성을 위한 모델로 전환중");
         aiModelRef.current = true;
         await preparedModel(1);
       }
     } catch (error) {
       console.log("Faild to Stop and Generate IMG", error);
-    } finally {
-      setLoading(false);
     }
   }, [handleStopRecording, preparedModel]);
 
@@ -300,25 +297,24 @@ export default function DrawPage() {
   }, [preparedModel]);
 
   return (
-    <div className="flex flex-col w-full h-full p-4 bg-gray-50 overflow-hidden font-sans">
+    <div className="flex flex-col w-full h-full p-4 bg-gray-50 overflow-hidden font-extrabold">
       {/* SECTION: 헤더 (연결성 강화) */}
-      <header className="flex flex-col items-start pb-4 border-b mb-4">
-        <div className="flex items-center text-4xl font-black">
+      <header className="flex flex-col items-start pb-4 border-b mb-4 text-[#2D3A5A]">
+        <div className="flex items-center text-4xl">
           <ArrowBigLeft
-            className="size-12 mr-4 cursor-pointer hover:text-blue-600 transition-colors"
+            className="size-14 mr-2"
             onClick={() => navigation("/")}
           />
-          <span>AI 말로 그리기</span>
+          <span>말하는 대로 그리기</span>
         </div>
       </header>
 
-      <main className="flex flex-grow space-x-6 overflow-hidden">
+      <main className="flex flex-grow space-x-6 overflow-hidden p-3">
         {/* SECTION: 캔버스 판 (70%) */}
         <div className="w-3/4 relative" ref={parentRef}>
-          <div className="w-full h-full bg-white rounded-l-xl border-white overflow-hidden relative cursor-none">
+          <div className="w-full h-full rounded-3xl shadow-sm bg-white overflow-hidden relative">
             <canvas
               ref={canvasRef}
-              className="w-full h-full block"
               onMouseDown={startDraw}
               onMouseMove={(e) => {
                 moveCursor(e);
@@ -334,7 +330,7 @@ export default function DrawPage() {
               onTouchEnd={endDraw}
             />
             {/* 커서 가이드 */}
-            <div
+            {/* <div
               ref={cursorRef}
               className={`absolute pointer-events-none rounded-full border-4 ${
                 tool === "eraser"
@@ -347,111 +343,70 @@ export default function DrawPage() {
                 transform: "translate(-50%, -50%)",
                 display: "block",
               }}
-            />
+            /> */}
           </div>
-          {/* 하단 툴바 */}
-          {/* <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-1 bg-white/80 backdrop-blur-md rounded-xl shadow-xl border border-white">
-            <button
-              onClick={() => setTool("pencil")}
-              className={`px-2 rounded-xl transition-all ${
-                tool === "pencil"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-400"
-              }`}
-            >
-              <Palette size={20} />
-            </button>
-            <button
-              onClick={() => setTool("eraser")}
-              className={`px-2 rounded-xl transition-all ${
-                tool === "eraser"
-                  ? "bg-red-600 text-white"
-                  : "bg-gray-100 text-gray-400"
-              }`}
-            >
-              <Trash2 size={20} />
-            </button>
-            <div className="w-[2px] bg-gray-300 mx-2" />
-            <button
-              onClick={clearCanvas}
-              className="p-4 rounded-xl bg-gray-800 text-white hover:bg-black transition-all"
-            >
-              <span className="font-bold text-xl px-1">전체 삭제</span>
-            </button>
-          </div> */}
         </div>
 
-        {/* SECTION: 사이드 바 (30%) */}
-        <aside className="w-1/4 flex flex-col h-full">
-          {/* 1. 스타일 선택 - h-full로 전체 높이 확보 */}
-          <div className="rounded-r-2xl h-full flex flex-col">
-            {/* 제목 영역 - 고정 높이 */}
-            <p className="text-2xl font-black mb-2 flex items-center shrink-0">
-              그림 스타일
-            </p>
+        {/* 3. 오른쪽 영역: 조작 버튼 */}
+        <div className="w-4/12 flex flex-col gap-4">
+          {/* 스타일 스위치 영역 */}
+          <div className="bg-white p-3 rounded-3xl border-2 border-gray-100 flex flex-col gap-3">
+            <button
+              onClick={() => setSketchModel("real")}
+              className={cn(
+                "h-20 text-3xl font-black rounded-2xl transition-all duration-200", // 애니메이션 추가
+                sketchModel === "real"
+                  ? "bg-orange-600 text-white shadow-lg" // 선택 시 스타일 강조
+                  : "bg-gray-100 text-gray-400 border-transparent" // 미선택 시
+              )}
+            >
+              사진처럼
+            </button>
+            <button
+              onClick={() => setSketchModel("anim")}
+              className={cn(
+                "h-20 text-3xl font-black rounded-2xl",
+                sketchModel === "anim"
+                  ? "bg-lime-600 text-white"
+                  : "bg-gray-100 text-gray-400"
+              )}
+            >
+              만화처럼
+            </button>
+          </div>
 
-            {/* 콘텐츠 영역: flex-1로 남은 모든 공간을 차지 */}
-            <div className="flex-1 flex flex-col gap-4 w-full">
-              {/* 파트 1: 사실 / 그림 (전체 높이의 1/2 차지) */}
-              <div className="flex-1 flex flex-col">
-                <button
-                  className={`w-full flex-1 text-4xl font-bold transition-all flex items-center justify-center ${
-                    sketchModel === "real"
-                      ? "border-4 border-blue-500 rounded-2xl"
-                      : "border-4 border-gray-50"
-                  }`}
-                  onClick={() => setSketchModel("real")}
-                >
-                  사실
-                </button>
-                <button
-                  className={`w-full flex-1 text-4xl font-bold transition-all flex items-center justify-center ${
-                    sketchModel === "anim"
-                      ? "border-4 border-green-500 rounded-2xl"
-                      : "border-4 border-gray-50"
-                  }`}
-                  onClick={() => setSketchModel("anim")}
-                >
-                  그림
-                </button>
-              </div>
+          {/* 액션 버튼 리스트 (IndexPage 스타일 계승) */}
+          <div className="flex flex-col flex-1 gap-4">
+            <button
+              onClick={clearCanvas}
+              className="flex-1 flex flex-col items-center justify-center bg-red-100 text-red-800 rounded-2xl"
+            >
+              <span className="text-3xl font-black">전체삭제</span>
+            </button>
 
-              {/* 파트 2: 지우기 / 마이크 (전체 높이의 1/2 차지) */}
-              <div className="flex-1 flex flex-col gap-2">
-                {/* 지우기 버튼: 상대적 작게 (flex-[0.7]) */}
-                <button
-                  onClick={clearCanvas}
-                  className="w-full flex-[0.6] rounded-2xl text-4xl font-bold transition-all bg-red-200 text-red-800 flex items-center justify-center"
-                >
-                  지우기
-                </button>
-
-                {/* 마이크 버튼: 상대적 크게 (flex-[1.3]) */}
-                <div className="w-full flex-[1.4] flex flex-col">
-                  <MicToggleButton
-                    onStart={handleStartRecording}
-                    onStop={handleStopAndGenerate}
-                    isListening={isRecording}
-                    // MicToggleButton이 내부에서 h-full을 지원해야 합니다.
-                    className="h-full w-full flex-1"
-                    micText="text-5xl"
-                    iconSize="size-16"
-                  />
-                </div>
-              </div>
+            {/* 마이크 버튼 (최우선 버튼) */}
+            <div className="flex-[1.5] relative">
+              <MicToggleButton
+                onStart={handleStartRecording}
+                onStop={handleStopAndGenerate}
+                isListening={isRecording}
+                className="w-full h-full flex flex-col items-center justify-center"
+                iconSize="size-24"
+                micText="text-[54px] font-black"
+              />
             </div>
           </div>
-        </aside>
+        </div>
       </main>
 
       {/* 로딩 다이얼로그 (일관된 스타일) */}
       <Dialog
         isOpen={loading}
         onClose={() => setLoading(false)}
-        title="AI 화가가 그리는 중..."
+        title="잠시만 기다려 주세요"
       >
         <div className="text-center p-10 flex flex-col items-center">
-          <div className="w-20 h-20 border-8 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-8" />
+          <div className="w-20 h-20 border-8 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-8" />
           <p className="text-3xl font-black text-gray-700 break-keep">
             {loadingText}
           </p>

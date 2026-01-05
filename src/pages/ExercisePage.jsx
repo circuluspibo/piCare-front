@@ -20,8 +20,8 @@ const DETECTORS = {
   HEAD: (marks) => {
     const lEye1 = marks[2],
       rEye0 = marks[4];
-    if (lEye1.x < 0.45) return "right";
-    if (rEye0.x > 0.55) return "left";
+    if (lEye1.x < 0.45) return "left";
+    if (rEye0.x > 0.55) return "right";
     return null;
   },
   GRAB: (multiHandMarks) => {
@@ -32,7 +32,7 @@ const DETECTORS = {
         marks[12].y > marks[9].y &&
         marks[16].y > marks[13].y &&
         marks[20].y > marks[17].y;
-      if (isClosed) return marks[0].x < 0.5 ? "right" : "left";
+      if (isClosed) return marks[0].x < 0.5 ? "left" : "right";
     }
     return null;
   },
@@ -196,7 +196,9 @@ export default function ExercisePage() {
       setCameraError(false);
 
       const marks =
-        gameMode === "GRAB" ? results.multiHandMarks : results.poseLandmarks;
+        gameMode === "GRAB"
+          ? results.multiHandLandmarks
+          : results.poseLandmarks;
       const canvasEl = canvasRef.current;
       if (!canvasEl) return;
 
@@ -241,58 +243,80 @@ export default function ExercisePage() {
     [isStart, isFinish, gameMode, calc, cameraError]
   );
 
+  const onResultsRef = useRef(onResults);
   useEffect(() => {
-    if (lastFrameTimeRef.current === null)
-      lastFrameTimeRef.current = Date.now();
+    onResultsRef.current = onResults;
+  }, [onResults]);
+
+  useEffect(() => {
     const videoEl = videoRef.current;
-    if (!videoEl || !gameMode) return;
+    if (!videoEl || !gameMode || !isStart) return;
 
-    const instance =
-      gameMode === "GRAB"
-        ? new Hands({
-            locateFile: (file) =>
-              `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-          })
-        : new Pose({
-            locateFile: (file) =>
-              `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
-          });
+    let isAlive = true;
+    let instance = null;
+    let camera = null;
 
-    instance.setOptions({
-      maxNumHands: 2,
-      modelComplexity: 1,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5,
-    });
-    instance.onResults(onResults);
+    const initMediaPipe = async () => {
+      try {
+        // 1. 인스턴스 생성
+        instance =
+          gameMode === "GRAB"
+            ? new Hands({
+                locateFile: (f) =>
+                  `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`,
+              })
+            : new Pose({
+                locateFile: (f) =>
+                  `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`,
+              });
 
-    const camera = new Camera(videoEl, {
-      onFrame: async () => {
-        await instance.send({ image: videoEl });
-      },
-      width: 1280,
-      height: 720,
-    });
+        instance.setOptions({
+          maxNumHands: 2,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        });
 
-    camera.start().catch((err) => {
-      console.error("Camera start failed:", err);
-      setCameraError(true);
-    });
+        // 2. Ref를 사용하여 최신 onResults를 호출 (인스턴스 재생성 방지)
+        instance.onResults((results) => {
+          if (isAlive && onResultsRef.current) {
+            onResultsRef.current(results);
+          }
+        });
 
-    const checkIntv = setInterval(() => {
-      if (
-        lastFrameTimeRef.current &&
-        Date.now() - lastFrameTimeRef.current > 3000
-      )
-        setCameraError(true);
-    }, 1000);
+        // 3. 카메라 설정
+        camera = new Camera(videoEl, {
+          onFrame: async () => {
+            if (isAlive && instance) {
+              try {
+                await instance.send({ image: videoEl });
+              } catch (err) {
+                // 이미 close된 경우 에러 무시
+              }
+            }
+          },
+          width: 1280,
+          height: 720,
+        });
+
+        await camera.start();
+        console.log(`${gameMode} Camera Started`);
+      } catch (error) {
+        console.error("Init Error:", error);
+        if (isAlive) setCameraError(true);
+      }
+    };
+
+    initMediaPipe();
 
     return () => {
-      clearInterval(checkIntv);
-      instance.close();
-      camera.stop();
+      console.log("Cleaning up...");
+      isAlive = false;
+      if (camera) camera.stop();
+      if (instance) instance.close();
     };
-  }, [gameMode, onResults]);
+    // 의존성 배열에서 onResults를 제거하고 gameMode에만 반응하게 합니다.
+  }, [gameMode, isStart]);
 
   useEffect(() => {
     if (isStart && !cameraError) music.play().catch(() => {});
@@ -325,11 +349,11 @@ export default function ExercisePage() {
   };
 
   return (
-    <div className="flex flex-col h-full p-4 bg-gray-50 overflow-hidden font-sans relative">
+    <div className="flex flex-col h-full p-4 bg-gray-50 overflow-hidden relative">
       {/* 카운트다운 UI: 에러가 없을 때만 표시되도록 안전장치 */}
       {countdown && !cameraError && (
         <div className="absolute inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center">
-          <span className="text-[25rem] font-black text-white animate-ping">
+          <span className="text-[25rem] font-black text-white animate-in zoom-in duration-300">
             {countdown}
           </span>
         </div>
@@ -351,9 +375,9 @@ export default function ExercisePage() {
         </div>
       </Dialog>
 
-      <header className="flex flex-row items-center justify-between pb-2 border-b mb-4">
+      <header className="flex flex-row items-center justify-between pb-2 border-b mb-4 font-extrabold">
         <div
-          className="flex items-center text-4xl font-black cursor-pointer"
+          className="flex items-center text-4xl font-black cursor-pointer text-[#2D3A5A]"
           onClick={() => {
             resetGame();
             setShowModeSelect(true);
@@ -361,7 +385,7 @@ export default function ExercisePage() {
           }}
         >
           <ArrowBigLeft
-            className="size-12 mr-4"
+            className="size-14 mr-2 "
             onClick={(e) => {
               e.stopPropagation();
               navigation("/");
@@ -371,7 +395,7 @@ export default function ExercisePage() {
         </div>
         <div
           className={cn(
-            "px-10 py-3 rounded-full text-3xl font-black text-white",
+            "px-10 py-3 rounded-full text-3xl",
             isPoseVisible && !cameraError
               ? "bg-green-500"
               : "bg-red-500 animate-pulse"
@@ -444,12 +468,12 @@ export default function ExercisePage() {
         onClose={() => {}}
         title="게임을 선택하세요"
       >
-        <div className="flex flex-col gap-4 p-6">
+        <div className="flex flex-col gap-2 p-3">
           {Object.entries(GAME_INFO).map(([key, info]) => (
             <button
               key={key}
               onClick={() => runCountdown(key)}
-              className="py-8 text-4xl font-black bg-white border-4 border-gray-100 rounded-3xl hover:border-blue-500 transition-all shadow-sm"
+              className="py-4 text-4xl font-black bg-white border-4 border-gray-100 rounded-3xl"
             >
               {info.title}
             </button>

@@ -18,7 +18,7 @@ export default function Dialog({
   title,
   children,
   actions,
-  titleStyle = "text-2xl font-bold mb-4",
+  titleStyle = "text-3xl font-bold mb-4",
 }) {
   if (!isOpen) return null;
 
