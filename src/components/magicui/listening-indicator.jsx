@@ -45,7 +45,7 @@ function MicToggleButton({
   };
 
   const buttonClass = cn(
-    "flex items-center justify-center w-full rounded-xl px-2 py-2 shadow-lg transition-colors duration-300",
+    "flex items-center justify-center w-full rounded-xl p-1 transition-colors duration-300",
     {
       "bg-yellow-700 text-black": isListening,
       "bg-indigo-700 text-white": !isListening,
@@ -83,7 +83,7 @@ function MicToggleButton({
             className={cn("flex items-center justify-center", micText)}
           >
             {/* 대기 상태일 때 아이콘 크기 적용 */}
-            <Mic className={cn("mr-2", iconSize)} />
+            <Mic className={cn("mr-1", iconSize)} />
             <p className="text-center font-black">말하기</p>
           </motion.div>
         )}
