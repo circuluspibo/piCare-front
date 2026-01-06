@@ -5,15 +5,9 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import {
-  Trophy,
-  ArrowUpCircle,
-  ArrowDownCircle,
-  CheckCircle2,
-} from "lucide-react";
 import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
-import { fireInfoConfetti } from "./magicui/connfetti";
+import { fireInfoConfetti } from "@/components/magicui/connfetti";
 
 const TOTAL_ROUNDS = 5;
 const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -38,7 +32,7 @@ export default function NumberTraining({ onComplete }) {
   const [totalElapsedTime, setTotalElapsedTime] = useState(0);
 
   const startTimeRef = useRef(null);
-  const totalStartRef = useRef(Date.now());
+  const totalStartRef = useRef(null);
 
   const audio = useMemo(
     () => ({
@@ -120,9 +114,17 @@ export default function NumberTraining({ onComplete }) {
     ]
   );
 
+  const getFeedbackMsg = () => {
+    const passCnt = scores.length;
+    if (passCnt >= 8) return "정말 잘했어요!";
+    if (passCnt >= 4) return "집중력이 대단해요!";
+    return "천천히 다시 해봐요!";
+  };
   useEffect(() => {
+    if (totalStartRef.current === null) {
+      totalStartRef.current = Date.now();
+    }
     startTimeRef.current = Date.now();
-    totalStartRef.current = Date.now();
   }, []);
 
   useEffect(() => {
@@ -225,7 +227,9 @@ export default function NumberTraining({ onComplete }) {
         titleStyle="text-5xl font-bold mb-2"
       >
         <div className="text-center p-4 flex flex-col items-center gap-4">
-          <h2 className="text-6xl font-black mb-10">참 잘했어요!</h2>
+          <h2 className="text-5xl font-black mb-10 text-slate-800 break-keep leading-snug">
+            {getFeedbackMsg()}
+          </h2>
 
           <div className="flex flex-row items-center gap-6 text-center">
             <div>

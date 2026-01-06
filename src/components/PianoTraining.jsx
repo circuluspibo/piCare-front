@@ -1,16 +1,10 @@
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useRef,
-} from "react";
-import { Music, PlayCircle, CheckCircle2 } from "lucide-react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Music, PlayCircle, CheckCircle2, XCircle } from "lucide-react"; // XCircle 추가
 import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
 import { fireInfoConfetti } from "./magicui/connfetti";
 
-const TOTAL_ROUNDS = 10;
+const TOTAL_ROUNDS = 5;
 const PIANO_KEYS = [
   { id: "snd1", label: "도", color: "bg-white" },
   { id: "snd2", label: "레", color: "bg-white" },
@@ -24,34 +18,33 @@ const PIANO_KEYS = [
 
 export default function PianoTraining({ onComplete }) {
   const [targetSequence, setTargetSequence] = useState([]);
-  const [userSequence, setUserSequence] = useState([]);
+  const [userSequence, setUserSequence] = useState([]); // {val: 숫자, isCorrect: boolean} 형태
   const [scores, setScores] = useState([]);
   const [isFinish, setIsFinish] = useState(false);
   const [isPlayingTarget, setIsPlayingTarget] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false); // 판정 중 입력 방지
   const [activeKey, setActiveKey] = useState(null);
   const [totalElapsedTime, setTotalElapsedTime] = useState(0);
 
-  const totalStartRef = useRef(Date.now());
+  const totalStartRef = useRef(null);
+  const soundsRef = useRef(null);
 
-  // 오디오 리소스 설정
-  const sounds = useMemo(
-    () => ({
-      snd1: new Audio("/app/PIANO/sound/sound1.mp3"),
-      snd2: new Audio("/app/PIANO/sound/sound2.mp3"),
-      snd3: new Audio("/app/PIANO/sound/sound3.mp3"),
-      snd4: new Audio("/app/PIANO/sound/sound4.mp3"),
-      snd5: new Audio("/app/PIANO/sound/sound5.mp3"),
-      snd6: new Audio("/app/PIANO/sound/sound6.mp3"),
-      snd7: new Audio("/app/PIANO/sound/sound7.mp3"),
-      snd8: new Audio("/app/PIANO/sound/sound8.mp3"),
-      pass: new Audio("/app/COLOR/sound/pass.mp3"),
-      fail: new Audio("/app/COLOR/sound/fail.mp3"),
-      complete: new Audio("/app/COLOR/sound/complete.mp3"),
-    }),
-    []
-  );
+  if (soundsRef.current === null) {
+    soundsRef.current = {
+      snd1: new Audio("/sound/piano/sound1.mp3"),
+      snd2: new Audio("/sound/piano/sound2.mp3"),
+      snd3: new Audio("/sound/piano/sound3.mp3"),
+      snd4: new Audio("/sound/piano/sound4.mp3"),
+      snd5: new Audio("/sound/piano/sound5.mp3"),
+      snd6: new Audio("/sound/piano/sound6.mp3"),
+      snd7: new Audio("/sound/piano/sound7.mp3"),
+      snd8: new Audio("/sound/piano/sound8.mp3"),
+      pass: new Audio("/sound/pass.mp3"),
+      fail: new Audio("/sound/fail.mp3"),
+      complete: new Audio("/sound/complete.mp3"),
+    };
+  }
 
-  // 새로운 문제 생성 및 재생
   const startNewRound = useCallback(async () => {
     const newSequence = Array.from(
       { length: 3 },
@@ -60,41 +53,54 @@ export default function PianoTraining({ onComplete }) {
     setTargetSequence(newSequence);
     setUserSequence([]);
     setIsPlayingTarget(true);
+    setIsEvaluating(false);
 
-    // 순차적으로 음 재생 (시각적 피드백 포함)
     for (let i = 0; i < newSequence.length; i++) {
       const sndId = `snd${newSequence[i]}`;
       setActiveKey(sndId);
-      sounds[sndId].currentTime = 0;
-      await sounds[sndId].play();
+      soundsRef.current[sndId].currentTime = 0;
+      await soundsRef.current[sndId].play();
       await new Promise((resolve) => setTimeout(resolve, 800));
       setActiveKey(null);
       await new Promise((resolve) => setTimeout(resolve, 200));
     }
     setIsPlayingTarget(false);
-  }, [sounds]);
+  }, [soundsRef]);
 
-  // 건반 클릭 핸들러
   const handleKeyClick = useCallback(
     (keyId) => {
-      if (isPlayingTarget || isFinish) return;
+      // 재생 중이거나, 판정 중이거나, 종료 상태면 클릭 무시
+      if (isPlayingTarget || isFinish || isEvaluating) return;
 
-      // 해당 건반 소리 재생
-      sounds[keyId].currentTime = 0;
-      sounds[keyId].play().catch(() => {});
+      soundsRef.current[keyId].currentTime = 0;
+      soundsRef.current[keyId].play().catch(() => {});
       setActiveKey(keyId);
       setTimeout(() => setActiveKey(null), 300);
 
       const keyNum = parseInt(keyId.replace("snd", ""));
-      const nextUserSeq = [...userSequence, keyNum];
       const currentIndex = userSequence.length;
 
-      // 정답 체크
-      if (keyNum === targetSequence[currentIndex]) {
-        if (nextUserSeq.length === targetSequence.length) {
-          // 라운드 성공
-          sounds.pass.play().catch(() => {});
-          const nextScores = [...scores, { isPass: true }];
+      // 개별 입력에 대한 정답 여부 판단 (UI 표시용)
+      const isCorrect = keyNum === targetSequence[currentIndex];
+      const nextUserSeq = [...userSequence, { val: keyNum, isCorrect }];
+
+      setUserSequence(nextUserSeq);
+
+      // 3개를 모두 입력했을 때
+      if (nextUserSeq.length === 3) {
+        setIsEvaluating(true); // 추가 입력 방지
+
+        // 전체 시퀀스가 모두 맞는지 확인
+        const isAllCorrect = nextUserSeq.every((item) => item.isCorrect);
+
+        setTimeout(() => {
+          if (isAllCorrect) {
+            soundsRef.current.pass.play().catch(() => {});
+          } else {
+            soundsRef.current.fail.play().catch(() => {});
+          }
+
+          const nextScores = [...scores, { isPass: isAllCorrect }];
           setScores(nextScores);
 
           if (nextScores.length >= TOTAL_ROUNDS) {
@@ -103,28 +109,12 @@ export default function PianoTraining({ onComplete }) {
             );
             setTimeout(() => {
               setIsFinish(true);
-              sounds.complete.play().catch(() => {});
+              soundsRef.current.complete.play().catch(() => {});
             }, 1000);
           } else {
             setTimeout(startNewRound, 1200);
           }
-        } else {
-          setUserSequence(nextUserSeq);
-        }
-      } else {
-        // 오답
-        sounds.fail.play().catch(() => {});
-        const nextScores = [...scores, { isPass: false }];
-        setScores(nextScores);
-
-        if (nextScores.length >= TOTAL_ROUNDS) {
-          setTotalElapsedTime(
-            ((Date.now() - totalStartRef.current) / 1000).toFixed(0)
-          );
-          setTimeout(() => setIsFinish(true), 1000);
-        } else {
-          setTimeout(startNewRound, 1200);
-        }
+        }, 500); // 마지막 건반 소리가 들릴 시간을 준 후 판정음 재생
       }
     },
     [
@@ -132,40 +122,54 @@ export default function PianoTraining({ onComplete }) {
       targetSequence,
       isPlayingTarget,
       isFinish,
-      sounds,
+      isEvaluating,
+      soundsRef,
       scores,
       startNewRound,
     ]
   );
 
+  const getFeedbackMsg = () => {
+    const passCnt = scores.filter((s) => s.isPass).length;
+    if (passCnt >= 8) return "음악가 수준이에요!";
+    if (passCnt >= 4) return "리듬감이 대단하세요!";
+    return "조금 더 연습해 볼까요?";
+  };
+
   useEffect(() => {
-    startNewRound();
+    if (totalStartRef.current === null) {
+      totalStartRef.current = Date.now();
+    }
+  }, []);
+
+  useEffect(() => {
+    const initTimer = setTimeout(() => {
+      startNewRound();
+    }, 100);
+    return () => clearTimeout(initTimer);
   }, [startNewRound]);
 
   useEffect(() => {
-    if (isFinish) {
-      fireInfoConfetti();
-    }
+    if (isFinish) fireInfoConfetti();
   }, [isFinish]);
+
   return (
     <div className="flex h-full gap-6 animate-in fade-in duration-500 font-extrabold text-[#2D3A5A] p-3">
-      {/* 좌측: 피아노 건반 영역 */}
       <section className="w-3/4 h-full flex flex-col gap-6">
         <div className="flex-1 bg-slate-800 rounded-3xl p-12 flex items-stretch gap-2 shadow-2xl relative overflow-hidden">
-          {/* 피아노 상단 장식 */}
           <div className="absolute top-0 left-0 w-full h-12 bg-gradient-to-b from-black/50 to-transparent" />
-
           {PIANO_KEYS.map((key) => (
             <button
               key={key.id}
               onClick={() => handleKeyClick(key.id)}
-              disabled={isPlayingTarget}
+              disabled={isPlayingTarget || isEvaluating}
               className={cn(
                 "flex-1 flex flex-col items-center justify-end pb-10 rounded-b-[2rem] transition-all duration-150 relative",
                 "bg-white border-x border-slate-200 shadow-[0_10px_0_0_#e2e8f0]",
                 "hover:bg-slate-50",
                 activeKey === key.id && "translate-y-2 shadow-none bg-blue-50",
-                isPlayingTarget && "cursor-default"
+                (isPlayingTarget || isEvaluating) &&
+                  "cursor-default active:translate-y-0 shadow-[0_10px_0_0_#e2e8f0]"
               )}
             >
               <span
@@ -178,36 +182,45 @@ export default function PianoTraining({ onComplete }) {
               >
                 {key.label}
               </span>
-              {/* 눌림 효과를 위한 내부 선 */}
               <div className="w-full h-1 bg-slate-100 absolute top-0" />
             </button>
           ))}
         </div>
 
-        {/* 현재 입력 상태 표시 */}
+        {/* 현재 입력 상태 표시 (수정됨: 색상 로직 반영) */}
         <div className="h-32 bg-white rounded-3xl border flex items-center justify-center gap-6">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
               className={cn(
-                "size-16 rounded-full flex items-center justify-center border-4",
+                "size-20 rounded-2xl flex items-center justify-center border-4 transition-all duration-300",
                 userSequence[i]
-                  ? "bg-blue-600 border-blue-200 text-white animate-bounce"
+                  ? userSequence[i].isCorrect
+                    ? "bg-green-500 border-green-200 text-white shadow-lg shadow-green-200" // 정답: 초록
+                    : "bg-red-500 border-red-200 text-white shadow-lg shadow-red-200" // 오답: 빨간
                   : "bg-slate-50 border-slate-100"
               )}
             >
-              {userSequence[i] && <CheckCircle2 className="size-10" />}
+              {userSequence[i] ? (
+                userSequence[i].isCorrect ? (
+                  <CheckCircle2 className="size-12" />
+                ) : (
+                  <XCircle className="size-12" />
+                )
+              ) : null}
             </div>
           ))}
           <p className="ml-4 text-3xl font-black text-slate-400">
             {isPlayingTarget
               ? "소리를 잘 들어보세요..."
+              : isEvaluating
+              ? "결과를 확인합니다!"
               : "기억한 건반을 누르세요!"}
           </p>
         </div>
       </section>
 
-      {/* 우측: 가이드 및 진행상황 */}
+      {/* 우측 영역 생략 (기존과 동일하므로 유지) */}
       <aside className="w-1/4 flex flex-col space-y-2">
         <div className="bg-white p-4 rounded-xl shadow-inner border grid grid-cols-5 gap-2">
           {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (
@@ -242,14 +255,12 @@ export default function PianoTraining({ onComplete }) {
               className={cn("size-20", isPlayingTarget && "animate-spin-slow")}
             />
           </div>
-
           <div className="py-2">
             <p className="text-4xl font-black text-slate-800 break-keep">
               {isPlayingTarget ? "소리가 나옵니다" : "순서대로 누르세요"}
             </p>
           </div>
-
-          {!isPlayingTarget && (
+          {!isPlayingTarget && !isEvaluating && (
             <button
               onClick={startNewRound}
               className="flex items-center gap-3 px-8 py-4 bg-slate-800 text-white rounded-2xl hover:bg-black transition-colors"
@@ -261,14 +272,11 @@ export default function PianoTraining({ onComplete }) {
         </div>
       </aside>
 
-      <Dialog
-        isOpen={isFinish}
-        onClose={onComplete}
-        title="훈련 결과"
-        titleStyle="text-5xl font-bold mb-2"
-      >
+      <Dialog isOpen={isFinish} onClose={onComplete} title="훈련 결과">
         <div className="text-center p-4 flex flex-col items-center gap-4">
-          <h2 className="text-6xl font-black mb-10">음악가 수준이에요!</h2>
+          <h2 className="text-5xl font-black mb-10 text-slate-800 break-keep leading-snug">
+            {getFeedbackMsg()}
+          </h2>
           <div className="flex flex-row items-center gap-6 text-center">
             <div>
               <p className="text-gray-400 font-bold text-2xl">성공 횟수</p>
@@ -285,7 +293,7 @@ export default function PianoTraining({ onComplete }) {
           </div>
           <button
             onClick={onComplete}
-            className="w-full py-2 bg-[#2D3A5A] text-white text-4xl font-black rounded-2xl shadow-2xl hover:bg-[#1a233a] active:scale-95 transition-all"
+            className="w-full mt-6 py-4 bg-[#2D3A5A] text-white text-4xl font-black rounded-2xl"
           >
             확인
           </button>

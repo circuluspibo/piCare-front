@@ -10,34 +10,37 @@ import Dialog from "./Dialog";
 import { fireInfoConfetti } from "./magicui/connfetti";
 
 const COLORS = [
-  "#79aad9",
-  "#ee789d",
-  "#a987d1",
-  "#e4a6c7",
-  "#f1d86f",
-  "#d2c0a0",
-  "#f5a35c",
-  "#c47c6c",
-  "#ff7e62",
-  "#6dccb1",
+  // 1. 따뜻한 계열 (서로 다른 3종)
+  "#E57373", // [부드러운 레드] 토마토색
+  "#FFB74D", // [부드러운 오렌지] 귤색
+  "#FFF176", // [부드러운 노랑] 바나나색
+
+  // 2. 초록 계열 (서로 다른 3종)
+  "#81C784", // [부드러운 초록] 숲색
+  "#DCE775", // [부드러운 연두] 라임색
+  "#4DB6AC", // [부드러운 청록] 민트바다색
+
+  // 3. 파랑/보라 계열 (서로 다른 3종)
+  "#64B5F6", // [부드러운 파랑] 맑은 하늘색
+  "#7986CB", // [부드러운 남색] 제비꽃색
+  "#BA68C8", // [부드러운 보라] 라벤더색
+
+  // 4. 무채색/대비 계열 (서로 다른 3종)
+  "#A1887F", // [부드러운 갈색] 커피색
+  "#90A4AE", // [부드러운 회색] 바다회색
+  "#455A64", // [짙은 먹색] 깊은 밤색
 ];
+
 const TOTAL_ROUNDS = 10;
 
 const createGameData = () => {
-  const newGrid = Array.from(
-    { length: 9 },
-    () => COLORS[Math.floor(Math.random() * COLORS.length)]
-  );
-  const counts = {};
-  let maxCount = 0;
-  let target = newGrid[0];
-  newGrid.forEach((c) => {
-    counts[c] = (counts[c] || 0) + 1;
-    if (counts[c] > maxCount) {
-      maxCount = counts[c];
-      target = c;
-    }
-  });
+  // 2. 색상 중복 방지 로직: 셔플 후 앞에서 9개 선택
+  const shuffled = [...COLORS].sort(() => Math.random() - 0.5);
+  const newGrid = shuffled.slice(0, 9);
+
+  // 9개 중 무작위로 하나를 타겟으로 지정 (중복 없음)
+  const target = newGrid[Math.floor(Math.random() * 9)];
+
   return { grid: newGrid, target };
 };
 
@@ -50,7 +53,7 @@ export default function ColorTraining({ onComplete }) {
   const [totalElapsedTime, setTotalElapsedTime] = useState(0);
 
   const startTimeRef = useRef(null);
-  const totalStartRef = useRef(Date.now());
+  const totalStartRef = useRef(null);
 
   const audio = useMemo(
     () => ({
@@ -110,10 +113,20 @@ export default function ColorTraining({ onComplete }) {
     [gameData.target, isFinish, isProcessing, scores, startNextRound, audio]
   ); // scores 의존성 추가
 
+  const getFeedbackMsg = () => {
+    const passCnt = scores.filter((s) => s.isPass);
+    if (passCnt >= 8) return "꽃사슴 같은 눈썰미네요!";
+    if (passCnt >= 4) return "색깔을 정말 잘 구별하세요!";
+    return "차근차근 다시 해봐요!";
+  };
+
   useEffect(() => {
     startTimeRef.current = Date.now();
-    totalStartRef.current = Date.now();
+    if (totalStartRef.current === null) {
+      totalStartRef.current = Date.now();
+    }
   }, []);
+
   useEffect(() => {
     if (isFinish) {
       fireInfoConfetti();
@@ -185,8 +198,8 @@ export default function ColorTraining({ onComplete }) {
         titleStyle="text-5xl font-bold mb-2"
       >
         <div className="text-center p-4 flex flex-col items-center gap-4">
-          <h2 className="text-5xl font-black mb-10 break-keep">
-            정말 잘하셨어요!
+          <h2 className="text-5xl font-black mb-10 text-slate-800 break-keep leading-snug">
+            {getFeedbackMsg()}
           </h2>
           <div className="flex flex-row items-center gap-6 text-center">
             <div>
