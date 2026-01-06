@@ -83,7 +83,7 @@ export default function TrainingPage() {
         title="인지 훈련을 선택해주세요"
         titleStyle="text-3xl font-bold mb-2"
       >
-        <div className="flex flex-col gap-6 p-2">
+        <div className="flex flex-col gap-4 p-2">
           {Object.entries(TRAINING_MODES).map(([key, info]) => {
             return (
               <button

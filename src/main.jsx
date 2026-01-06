@@ -38,7 +38,6 @@ const router = createBrowserRouter(
 );
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
     <Suspense fallback={<Loading />}>
       <GlobalContextProvider>
         <VoiceChatProvider>
@@ -46,5 +45,4 @@ createRoot(document.getElementById("root")).render(
         </VoiceChatProvider>
       </GlobalContextProvider>
     </Suspense>
-  </StrictMode>
 );

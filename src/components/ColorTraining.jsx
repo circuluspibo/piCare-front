@@ -114,7 +114,7 @@ export default function ColorTraining({ onComplete }) {
   ); // scores 의존성 추가
 
   const getFeedbackMsg = () => {
-    const passCnt = scores.filter((s) => s.isPass);
+    const passCnt = scores.filter((s) => s.isPass).length;
     if (passCnt >= 8) return "꽃사슴 같은 눈썰미네요!";
     if (passCnt >= 4) return "색깔을 정말 잘 구별하세요!";
     return "차근차근 다시 해봐요!";
@@ -133,7 +133,7 @@ export default function ColorTraining({ onComplete }) {
     }
   }, [isFinish]);
   return (
-    <div className="flex h-full gap-6 animate-in fade-in duration-500 font-extrabold p-3">
+    <div className="flex h-full gap-6 animate-in fade-in duration-500 font-extrabold">
       {/* LEFT: Game Grid */}
       <section className="w-2/3 h-full">
         <div className="h-full bg-white rounded-3xl p-2 grid grid-cols-3 gap-2 border place-items-center">
@@ -157,7 +157,7 @@ export default function ColorTraining({ onComplete }) {
 
       {/* RIGHT: Status & Target */}
       <aside className="w-1/3 flex flex-col space-y-2">
-        <div className="bg-white p-4 rounded-xl shadow-inner border grid grid-cols-5 gap-2">
+        <div className="bg-white p-2 rounded-xl shadow-inner border grid grid-cols-5 gap-1">
           {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (
             <div
               key={i}
@@ -177,12 +177,12 @@ export default function ColorTraining({ onComplete }) {
           ))}
         </div>
 
-        <div className="flex-1 flex flex-col rounded-xl bg-white shadow-inner border items-center justify-center gap-4">
+        <div className="flex-1 flex flex-col rounded-xl bg-white shadow-inner border items-center justify-center gap-2 p-4">
           <div
             className="w-28 h-28 rounded-3xl border-8 border-slate-50 shadow-2xl"
             style={{ backgroundColor: gameData.target }}
           />
-          <h2 className="text-4xl font-black leading-tight text-slate-800 text-center">
+          <h2 className="text-3xl font-black leading-relaxed text-slate-800 text-center">
             <span className="text-blue-600 underline underline-offset-8">
               같은 색
             </span>
@@ -198,7 +198,7 @@ export default function ColorTraining({ onComplete }) {
         titleStyle="text-5xl font-bold mb-2"
       >
         <div className="text-center p-4 flex flex-col items-center gap-4">
-          <h2 className="text-5xl font-black mb-10 text-slate-800 break-keep leading-snug">
+          <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
             {getFeedbackMsg()}
           </h2>
           <div className="flex flex-row items-center gap-6 text-center">

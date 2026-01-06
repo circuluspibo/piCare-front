@@ -51,20 +51,9 @@ export default function PianoTraining({ onComplete }) {
       () => Math.floor(Math.random() * 8) + 1
     );
     setTargetSequence(newSequence);
-    setUserSequence([]);
-    setIsPlayingTarget(true);
     setIsEvaluating(false);
 
-    for (let i = 0; i < newSequence.length; i++) {
-      const sndId = `snd${newSequence[i]}`;
-      setActiveKey(sndId);
-      soundsRef.current[sndId].currentTime = 0;
-      await soundsRef.current[sndId].play();
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      setActiveKey(null);
-      await new Promise((resolve) => setTimeout(resolve, 200));
-    }
-    setIsPlayingTarget(false);
+   await playSequence(newSequence)
   }, [soundsRef]);
 
   const handleKeyClick = useCallback(
@@ -72,10 +61,16 @@ export default function PianoTraining({ onComplete }) {
       // 재생 중이거나, 판정 중이거나, 종료 상태면 클릭 무시
       if (isPlayingTarget || isFinish || isEvaluating) return;
 
-      soundsRef.current[keyId].currentTime = 0;
-      soundsRef.current[keyId].play().catch(() => {});
+      const sound = soundsRef.current[keyId];
+      if(sound) {
+        sound.pause();
+        sound.currentTime = 0;
+        sound.volume = 0.5;
+        sound.play().catch(() => {})
+      }
+      sound.play().catch(() => {})
       setActiveKey(keyId);
-      setTimeout(() => setActiveKey(null), 300);
+      setTimeout(() => setActiveKey(null), 200);
 
       const keyNum = parseInt(keyId.replace("snd", ""));
       const currentIndex = userSequence.length;
@@ -129,6 +124,33 @@ export default function PianoTraining({ onComplete }) {
     ]
   );
 
+  const playSequence = useCallback(async(sequence) => {
+    if(!sequence || sequence.length === 0) return;
+
+    setIsPlayingTarget(true);
+    setUserSequence([]);
+
+    for(let i = 0; i < sequence.length; i++) {
+      const sndId = `snd${sequence[i]}`;
+      setActiveKey(sndId);
+
+      const sound = soundsRef.current[sndId];
+      sound.pause();
+      sound.currentTime = 0;
+      sound.volume = 0.5;
+      await sound.play();
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      setActiveKey(null);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    setIsPlayingTarget(false)
+  })
+
+  const handleReplay = useCallback(() => {
+    if(isPlayingTarget || isEvaluating || isFinish) return;
+    playSequence(targetSequence); // 기존 문제 리플레이
+
+  }, [isPlayingTarget, isEvaluating, isFinish, playSequence, targetSequence])
   const getFeedbackMsg = () => {
     const passCnt = scores.filter((s) => s.isPass).length;
     if (passCnt >= 8) return "음악가 수준이에요!";
@@ -153,8 +175,18 @@ export default function PianoTraining({ onComplete }) {
     if (isFinish) fireInfoConfetti();
   }, [isFinish]);
 
+  useEffect(() => {
+    return () => {
+      if(soundsRef.current) {
+        Object.values(soundsRef.current).forEach((audio) => {
+          audio.pause();
+          audio.currentTime = 0;
+        })
+      }
+    }
+  }, [])
   return (
-    <div className="flex h-full gap-6 animate-in fade-in duration-500 font-extrabold text-[#2D3A5A] p-3">
+    <div className="flex h-full gap-6 animate-in fade-in duration-500 font-extrabold text-[#2D3A5A]">
       <section className="w-3/4 h-full flex flex-col gap-6">
         <div className="flex-1 bg-slate-800 rounded-3xl p-12 flex items-stretch gap-2 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-12 bg-gradient-to-b from-black/50 to-transparent" />
@@ -222,12 +254,12 @@ export default function PianoTraining({ onComplete }) {
 
       {/* 우측 영역 생략 (기존과 동일하므로 유지) */}
       <aside className="w-1/4 flex flex-col space-y-2">
-        <div className="bg-white p-4 rounded-xl shadow-inner border grid grid-cols-5 gap-2">
+        <div className="bg-white p-2 rounded-xl shadow-inner border grid grid-cols-5 gap-1">
           {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (
             <div
               key={i}
               className={cn(
-                "w-full aspect-square rounded-full flex items-center justify-center text-2xl font-black",
+                "w-full aspect-square rounded-full flex items-center justify-center text-2xl transition-all",
                 i === scores.length
                   ? "bg-blue-500 text-white animate-pulse"
                   : scores[i]?.isPass
@@ -262,7 +294,7 @@ export default function PianoTraining({ onComplete }) {
           </div>
           {!isPlayingTarget && !isEvaluating && (
             <button
-              onClick={startNewRound}
+              onClick={handleReplay}
               className="flex items-center gap-3 px-8 py-4 bg-slate-800 text-white rounded-2xl hover:bg-black transition-colors"
             >
               <PlayCircle className="size-6" />
@@ -273,8 +305,8 @@ export default function PianoTraining({ onComplete }) {
       </aside>
 
       <Dialog isOpen={isFinish} onClose={onComplete} title="훈련 결과">
-        <div className="text-center p-4 flex flex-col items-center gap-4">
-          <h2 className="text-5xl font-black mb-10 text-slate-800 break-keep leading-snug">
+        <div className="text-center p-1 flex flex-col items-center gap-2">
+          <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
             {getFeedbackMsg()}
           </h2>
           <div className="flex flex-row items-center gap-6 text-center">

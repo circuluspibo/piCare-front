@@ -27,7 +27,7 @@ export const PERSONAS = [
     id: "woman",
     gender: "female",
     icon: "👩🏻",
-    voice: 49,
+    voice: 7, //49, 4
   },
   {
     id: "girl",

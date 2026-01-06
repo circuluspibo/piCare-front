@@ -291,7 +291,16 @@ export default function ExercisePage() {
   useEffect(() => {
     if (isStart && !cameraError) music.play().catch(() => {});
     else music.pause();
-  }, [isStart, music, cameraError]);
+    return () => {
+      music.pause();
+      passAudio.pause();
+      failAudio.pause();
+      
+      music.currentTime = 0;
+      passAudio.currentTime = 0;
+      failAudio.currentTime = 0;
+    }
+  }, [isStart, music, cameraError, passAudio, failAudio]);
 
   useEffect(() => {
     if (isFinish) {
@@ -391,9 +400,9 @@ export default function ExercisePage() {
                   i === currentCount
                     ? "bg-blue-500 text-white animate-pulse"
                     : totalScores[i]?.isPass
-                    ? "bg-green-500 text-white"
+                    ? "bg-green-500 border-green-200 text-white shadow-lg shadow-green-200"
                     : totalScores[i]
-                    ? "bg-red-200 text-white"
+                    ? "bg-red-500 border-red-200 text-white shadow-lg shadow-red-200"
                     : "bg-gray-100 text-gray-300"
                 )}
               >
@@ -410,15 +419,13 @@ export default function ExercisePage() {
           </div>
         </aside>
       </main>
-
-      {/* Dialogs... (기존과 동일) */}
       <Dialog
         isOpen={showModeSelect}
         onClose={() => {}}
         title="게임을 선택하세요"
         titleStyle="text-4xl font-bold mb-2"
       >
-        <div className="flex flex-col gap-6 p-2">
+        <div className="flex flex-col gap-4 p-2">
           {Object.entries(GAME_INFO).map(([key, info]) => (
             <button
               key={key}
@@ -449,7 +456,7 @@ export default function ExercisePage() {
       >
         <div className="text-center p-2 flex flex-col items-center gap-6">
           <div className="flex flex-row items-center gap-2">
-            <h2 className="text-5xl font-bold mb-4">잘하셨어요!</h2>
+            <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">잘하셨어요!</h2>
           </div>
           <div className="flex flex-row items-center gap-6 text-center">
             <div>

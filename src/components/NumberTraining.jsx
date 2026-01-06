@@ -165,14 +165,12 @@ export default function NumberTraining({ onComplete }) {
       {/* 2. 우측: 정보 및 가이드 영역 (30%) */}
       <aside className="flex-[3] h-full flex flex-col gap-2">
         {/* 라운드 진행도 카드 */}
-        <div className="bg-white p-4 rounded-xl shadow-md border">
-          <div className="flex justify-between items-end px-2"></div>
-          <div className="grid grid-cols-5 gap-3">
+        <div className="bg-white p-2 rounded-xl shadow-inner border grid grid-cols-5 gap-1">
             {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (
               <div
                 key={i}
                 className={cn(
-                  "aspect-square rounded-2xl flex items-center justify-center text-2xl transition-all",
+                  "w-full aspect-square rounded-full flex items-center justify-center text-2xl transition-all",
                   i === scores.length
                     ? "bg-blue-500 text-white animate-pulse"
                     : scores[i]?.isPass
@@ -183,7 +181,6 @@ export default function NumberTraining({ onComplete }) {
                 {i + 1}
               </div>
             ))}
-          </div>
         </div>
 
         {/* 현재 타겟 숫자 안내 카드 (가장 시각적으로 강조됨) */}
@@ -227,7 +224,7 @@ export default function NumberTraining({ onComplete }) {
         titleStyle="text-5xl font-bold mb-2"
       >
         <div className="text-center p-4 flex flex-col items-center gap-4">
-          <h2 className="text-5xl font-black mb-10 text-slate-800 break-keep leading-snug">
+          <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
             {getFeedbackMsg()}
           </h2>
 

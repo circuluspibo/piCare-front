@@ -14,7 +14,7 @@ export default function DrawPage() {
   const ctxRef = useRef(null);
   const parentRef = useRef(null);
   const cursorRef = useRef(null);
-  const aiModelRef = useRef(null);
+
 
   // States
   const [sketchPrompt, setSketchPrompt] = useState("");
@@ -274,25 +274,24 @@ export default function DrawPage() {
   const handleStopAndGenerate = useCallback(async () => {
     try {
       handleStopRecording(); // 수정: 훅의 중지 함수 호출
-      if (!aiModelRef.current) {
-        aiModelRef.current = true;
-        await preparedModel(1);
-      }
     } catch (error) {
       console.log("Faild to Stop and Generate IMG", error);
     }
-  }, [handleStopRecording, preparedModel]);
+  }, [handleStopRecording]);
 
   useEffect(() => {
-    if (sketchPrompt && !isRecording && aiModelRef.current) {
+    if (sketchPrompt && !isRecording) {
       handleGenerateImg();
     }
   }, [sketchPrompt, isRecording, handleGenerateImg]);
 
   useEffect(() => {
+    preparedModel(1)
+    console.log('이미지 생성용으로 AI 모델 변경 완료')
     return () => {
       // Unmoute시 모델 다시 변경
       preparedModel(0);
+      console.log('기존으로 AI 모델 변경 완료')
     };
   }, [preparedModel]);
 
