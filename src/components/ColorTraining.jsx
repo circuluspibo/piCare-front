@@ -5,7 +5,6 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import { Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Dialog from "./Dialog";
 import { fireInfoConfetti } from "./magicui/connfetti";
@@ -132,7 +131,7 @@ export default function ColorTraining({ onComplete }) {
               style={{ backgroundColor: color }}
               disabled={isProcessing}
               className={cn(
-                "w-32 h-32 border-4 border-white shadow-lg rounded-3xl transition-all",
+                "w-28 h-28 border-4 border-white shadow-lg rounded-3xl transition-all",
                 "active:scale-95",
                 wrongIdx === i &&
                   "animate-shake border-red-500 ring-[10px] ring-red-50",
@@ -167,7 +166,7 @@ export default function ColorTraining({ onComplete }) {
 
         <div className="flex-1 flex flex-col rounded-xl bg-white shadow-inner border items-center justify-center gap-4">
           <div
-            className="w-36 h-36 rounded-3xl border-8 border-slate-50 shadow-2xl"
+            className="w-28 h-28 rounded-3xl border-8 border-slate-50 shadow-2xl"
             style={{ backgroundColor: gameData.target }}
           />
           <h2 className="text-4xl font-black leading-tight text-slate-800 text-center">
@@ -185,8 +184,10 @@ export default function ColorTraining({ onComplete }) {
         title="훈련 종료"
         titleStyle="text-5xl font-bold mb-2"
       >
-        <div className="text-center p-6 flex flex-col items-center gap-6">
-          <h2 className="text-6xl font-black mb-10">정말 잘하셨어요!</h2>
+        <div className="text-center p-4 flex flex-col items-center gap-4">
+          <h2 className="text-5xl font-black mb-10 break-keep">
+            정말 잘하셨어요!
+          </h2>
           <div className="flex flex-row items-center gap-6 text-center">
             <div>
               <p className="text-gray-400 font-bold text-2xl">성공 횟수</p>
@@ -203,7 +204,7 @@ export default function ColorTraining({ onComplete }) {
           </div>
           <button
             onClick={onComplete}
-            className="w-full py-4 bg-[#2D3A5A] text-white text-4xl font-black rounded-2xl shadow-2xl hover:bg-[#1a233a] active:scale-95 transition-all"
+            className="w-full py-2 bg-[#2D3A5A] text-white text-4xl font-black rounded-2xl shadow-2xl hover:bg-[#1a233a] active:scale-95 transition-all"
           >
             확인
           </button>

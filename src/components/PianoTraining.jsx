@@ -232,7 +232,7 @@ export default function PianoTraining({ onComplete }) {
         <div className="flex-1 flex flex-col items-center justify-center text-center bg-white shaodow-inner border rounded-xl gap-4 p-2">
           <div
             className={cn(
-              "size-36 rounded-full flex items-center justify-center transition-all duration-500",
+              "size-28 rounded-xl flex items-center justify-center transition-all duration-500",
               isPlayingTarget
                 ? "bg-blue-100 text-blue-600 scale-110"
                 : "bg-slate-100 text-slate-400"
@@ -262,12 +262,12 @@ export default function PianoTraining({ onComplete }) {
       </aside>
 
       <Dialog
-        isOpen={!isFinish}
+        isOpen={isFinish}
         onClose={onComplete}
         title="훈련 결과"
         titleStyle="text-5xl font-bold mb-2"
       >
-        <div className="text-center p-8 flex flex-col items-center gap-6">
+        <div className="text-center p-4 flex flex-col items-center gap-4">
           <h2 className="text-6xl font-black mb-10">음악가 수준이에요!</h2>
           <div className="flex flex-row items-center gap-6 text-center">
             <div>
@@ -285,7 +285,7 @@ export default function PianoTraining({ onComplete }) {
           </div>
           <button
             onClick={onComplete}
-            className="w-full py-4 bg-[#2D3A5A] text-white text-4xl font-black rounded-2xl shadow-2xl hover:bg-[#1a233a] active:scale-95 transition-all"
+            className="w-full py-2 bg-[#2D3A5A] text-white text-4xl font-black rounded-2xl shadow-2xl hover:bg-[#1a233a] active:scale-95 transition-all"
           >
             확인
           </button>

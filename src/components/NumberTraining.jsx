@@ -130,7 +130,7 @@ export default function NumberTraining({ onComplete }) {
   }, [isFinish]);
 
   return (
-    <div className="flex h-full w-full gap-8 p-6 bg-[#F8FAFC] font-extrabold text-[#2D3A5A] overflow-hidden">
+    <div className="flex h-full w-full gap-6 bg-[#F8FAFC] font-extrabold text-[#2D3A5A] overflow-hidden">
       {/* 1. 좌측: 메인 숫자 패드 영역 (70%) */}
       <section className="flex-[7] h-full flex flex-col">
         <div className="flex-1 bg-white p-4 rounded-xl shadow-inner border grid grid-cols-3 gap-6">
@@ -161,7 +161,7 @@ export default function NumberTraining({ onComplete }) {
       </section>
 
       {/* 2. 우측: 정보 및 가이드 영역 (30%) */}
-      <aside className="flex-[3] flex flex-col gap-2">
+      <aside className="flex-[3] h-full flex flex-col gap-2">
         {/* 라운드 진행도 카드 */}
         <div className="bg-white p-4 rounded-xl shadow-md border">
           <div className="flex justify-between items-end px-2"></div>
@@ -224,7 +224,7 @@ export default function NumberTraining({ onComplete }) {
         title="훈련 결과"
         titleStyle="text-5xl font-bold mb-2"
       >
-        <div className="text-center p-6 flex flex-col items-center gap-6">
+        <div className="text-center p-4 flex flex-col items-center gap-4">
           <h2 className="text-6xl font-black mb-10">참 잘했어요!</h2>
 
           <div className="flex flex-row items-center gap-6 text-center">
@@ -244,7 +244,7 @@ export default function NumberTraining({ onComplete }) {
 
           <button
             onClick={onComplete}
-            className="w-full py-4 bg-[#2D3A5A] text-white text-4xl font-black rounded-2xl shadow-2xl hover:bg-[#1a233a] active:scale-95 transition-all"
+            className="w-full py-2 bg-[#2D3A5A] text-white text-4xl font-black rounded-2xl shadow-2xl hover:bg-[#1a233a] active:scale-95 transition-all"
           >
             확인
           </button>

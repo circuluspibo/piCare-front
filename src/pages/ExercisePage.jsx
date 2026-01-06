@@ -434,7 +434,7 @@ export default function ExercisePage() {
         <div className="py-4 flex justify-center">
           <button
             onClick={() => navigation("/")}
-            className="px-10 py-4 text-4xl font-bold text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-8 decoration-slate-200"
+            className="px-10 text-4xl font-bold text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-8 decoration-slate-200"
           >
             나중에 할래요
           </button>

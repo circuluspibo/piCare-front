@@ -356,7 +356,7 @@ export default function DrawPage() {
         {/* 오른쪽 조작 버튼 영역 (기존 스타일 유지하되 톤 조정) */}
         <div className="w-1/4 flex flex-col space-y-4">
           {/* 스타일 스위치 */}
-          <div className="bg-white/50 p-4 rounded-3xl shadow-sm border-2 border-stone-200 grid gap-4">
+          <div className="bg-white/50 p-2 rounded-3xl shadow-sm border-2 border-stone-200 grid gap-2">
             <p className="text-center text-xl text-stone-400 font-bold">
               화풍 선택
             </p>
@@ -385,7 +385,7 @@ export default function DrawPage() {
           </div>
 
           {/* 액션 버튼 */}
-          <div className="flex flex-col flex-1 gap-4">
+          <div className="flex flex-col flex-1 gap-3">
             <button
               onClick={clearCanvas}
               className="flex-1 flex items-center justify-center bg-rose-50 border-2 border-rose-100 text-rose-600 rounded-xl shadow-sm hover:bg-rose-100 transition-colors"
@@ -399,8 +399,8 @@ export default function DrawPage() {
                 onStop={handleStopAndGenerate}
                 isListening={isRecording}
                 className="w-full h-full flex flex-col items-center justify-center"
-                iconSize="size-24"
-                micText="text-4xl font-black mt-4"
+                iconSize="size-20"
+                micText="text-[38px]"
               />
             </div>
           </div>
