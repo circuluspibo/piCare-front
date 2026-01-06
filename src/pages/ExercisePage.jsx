@@ -232,6 +232,11 @@ export default function ExercisePage() {
     onResultsRef.current = onResults;
   }, [onResults]);
 
+  const onLeavePresentGame = () => {
+    setGameMode(null)
+    setIsFinish(true);
+    resetGame();
+  }
   useEffect(() => {
     const videoEl = videoRef.current;
     if (!videoEl || !gameMode || !isStart) return;
@@ -437,7 +442,7 @@ export default function ExercisePage() {
             </div>
           </div>
           <button
-            onClick={() => setGameMode(null)}
+            onClick={onLeavePresentGame}
             className="w-full py-6 bg-[#2D3A5A] text-white text-4xl font-black rounded-3xl hover:bg-slate-800 transition-all shadow-xl"
           >
             다른 활동 하러가기
