@@ -11,6 +11,7 @@ import FlagGame from "@/components/FlagGame";
 import HeadGame from "@/components/HeadGame";
 import GrabGame from "@/components/GrabGame";
 import { fireInfoConfetti } from "@/components/magicui/connfetti";
+import ModeSelectView from "@/components/ModelSelectView";
 
 const DETECTORS = {
   FLAG: (marks) => {
@@ -42,9 +43,9 @@ const DETECTORS = {
 };
 
 const GAME_INFO = {
-  FLAG: { title: "깃발 들기" },
-  HEAD: { title: "손바닥 피하기" },
-  GRAB: { title: "사과 잡기" },
+  FLAG: { title: "깃발 들기", value: "flag" },
+  HEAD: { title: "손바닥 피하기", value: "head" },
+  GRAB: { title: "사과 잡기", value: "grab" },
 };
 
 export default function ExercisePage() {
@@ -58,7 +59,6 @@ export default function ExercisePage() {
   const [target, setTarget] = useState("");
   const [totalScores, setTotalScores] = useState([]);
   const [lastResult, setLastResult] = useState({ target: null, isPass: null });
-  const [showModeSelect, setShowModeSelect] = useState(true);
   const [countdown, setCountdown] = useState(null);
   const [cameraError, setCameraError] = useState(false);
   const [finalTime, setFinalTime] = useState(0);
@@ -70,7 +70,6 @@ export default function ExercisePage() {
   const startTimeRef = useRef(null);
   const initTimeRef = useRef(null);
   const isPoseDetectedRef = useRef(false);
-  const lastFrameTimeRef = useRef(null);
   const startNextTrialRef = useRef(null);
 
   const currentCount = totalScores.length;
@@ -120,10 +119,7 @@ export default function ExercisePage() {
         setTimeout(() => {
           setLastResult({ target: null, isPass: null });
           if (updated.length >= TOTAL_ATTEMPTS) {
-            const timeSpent = Math.round(
-              (Date.now() - initTimeRef.current) / 1000
-            );
-            setFinalTime(timeSpent);
+            setFinalTime(Math.round((Date.now() - initTimeRef.current) / 1000));
             setIsFinish(true);
           } else {
             if (startNextTrialRef.current) startNextTrialRef.current();
@@ -162,7 +158,6 @@ export default function ExercisePage() {
     (mode) => {
       if (cameraError) return;
       setGameMode(mode);
-      setShowModeSelect(false);
       resetGame();
       setCountdown(3);
       const timer = setInterval(() => {
@@ -183,7 +178,6 @@ export default function ExercisePage() {
 
   const onResults = useCallback(
     (results) => {
-      lastFrameTimeRef.current = Date.now();
       setCameraError(false);
       const marks =
         gameMode === "GRAB"
@@ -293,22 +287,17 @@ export default function ExercisePage() {
     else music.pause();
     return () => {
       music.pause();
-      passAudio.pause();
-      failAudio.pause();
-      
       music.currentTime = 0;
-      passAudio.currentTime = 0;
-      failAudio.currentTime = 0;
-    }
-  }, [isStart, music, cameraError, passAudio, failAudio]);
+    };
+  }, [isStart, music, cameraError]);
 
   useEffect(() => {
-    if (isFinish) {
-      fireInfoConfetti();
-    }
+    if (isFinish) fireInfoConfetti();
   }, [isFinish]);
+
   return (
     <div className="flex flex-col h-full p-4 bg-gray-50 overflow-hidden relative font-extrabold text-[#2D3A5A]">
+      {/* 카운트다운 */}
       {countdown && !cameraError && (
         <div className="absolute inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center">
           <span className="text-[25rem] font-black text-white animate-in zoom-in duration-300">
@@ -317,10 +306,106 @@ export default function ExercisePage() {
         </div>
       )}
 
+      {/* 헤더 */}
+      <header className="flex flex-row items-center justify-between pb-2 border-b mb-4">
+        <div
+          className="flex items-center text-4xl font-black cursor-pointer"
+          onClick={() => {
+            resetGame();
+            setGameMode(null);
+          }}
+        >
+          <ArrowBigLeft
+            className="size-14 mr-2"
+            onClick={(e) => {
+              if (!gameMode) {
+                e.stopPropagation();
+                navigation("/");
+              }
+            }}
+          />
+          <span>{gameMode ? GAME_INFO[gameMode].title : "오늘의 활동"}</span>
+        </div>
+        {gameMode && (
+          <div
+            className={cn(
+              "px-10 py-3 rounded-full text-3xl",
+              isPoseVisible && !cameraError
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white animate-pulse"
+            )}
+          >
+            {isPoseVisible && !cameraError ? "인식 중" : "인식 불가"}
+          </div>
+        )}
+      </header>
+
+      {/* 메인 영역 */}
+      <main className="flex flex-grow overflow-hidden relative">
+        {gameMode ? (
+          /* 게임 진행 화면 */
+          <div className="flex w-full h-full space-x-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="w-2/3 flex items-center gap-2 relative p-2">
+              {!isPoseVisible && isStart && !cameraError && (
+                <div className="absolute inset-0 z-10 bg-black/70 flex items-center justify-center rounded-2xl text-white text-7xl font-black text-center break-keep">
+                  화면 정중앙에 위치해 주세요!
+                </div>
+              )}
+              {gameMode === "FLAG" && (
+                <FlagGame target={target} lastResult={lastResult} />
+              )}
+              {gameMode === "HEAD" && (
+                <HeadGame target={target} lastResult={lastResult} />
+              )}
+              {gameMode === "GRAB" && (
+                <GrabGame
+                  target={target}
+                  lastResult={lastResult}
+                  currentCount={currentCount}
+                />
+              )}
+            </div>
+
+            <aside className="w-1/3 flex flex-col space-y-2">
+              <div className="bg-white p-4 rounded-xl shadow-inner border grid grid-cols-5 gap-2">
+                {Array.from({ length: TOTAL_ATTEMPTS }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold transition-all",
+                      i === currentCount
+                        ? "bg-blue-500 text-white animate-pulse"
+                        : totalScores[i]?.isPass
+                        ? "bg-green-500 text-white"
+                        : totalScores[i]
+                        ? "bg-red-500 text-white"
+                        : "bg-gray-100 text-gray-300"
+                    )}
+                  >
+                    {i + 1}
+                  </div>
+                ))}
+              </div>
+              <div className="flex-1 relative bg-black rounded-xl overflow-hidden border-[2px]">
+                <video ref={videoRef} autoPlay playsInline className="hidden" />
+                <canvas
+                  ref={canvasRef}
+                  className="absolute inset-0 w-full h-full object-cover aspect-video"
+                />
+              </div>
+            </aside>
+          </div>
+        ) : (
+          /* 게임 선택 화면 */
+          <ModeSelectView gameInfo={GAME_INFO} onSelect={runCountdown} />
+        )}
+      </main>
+
+      {/* 공통 다이얼로그 */}
       <Dialog isOpen={cameraError} onClose={() => {}} title="카메라 연결 오류">
         <div className="flex flex-col items-center p-8 space-y-4">
           <AlertCircle className="size-24 text-red-500" />
-          <p className="text-3xl font-bold text-center break-keep">
+          <p className="text-3xl font-bold">
             카메라 연결 상태를 확인해 주세요.
           </p>
           <button
@@ -332,149 +417,30 @@ export default function ExercisePage() {
         </div>
       </Dialog>
 
-      <header className="flex flex-row items-center justify-between pb-2 border-b mb-4 font-extrabold">
-        <div
-          className="flex items-center text-4xl font-black cursor-pointer"
-          onClick={() => {
-            resetGame();
-            setShowModeSelect(true);
-            setGameMode(null);
-          }}
-        >
-          <ArrowBigLeft
-            className="size-14 mr-2"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigation("/");
-            }}
-          />
-          <span>{gameMode ? GAME_INFO[gameMode].title : "활동 선택"}</span>
-        </div>
-        {gameMode && (
-          <div
-            className={cn(
-              "px-10 py-3 rounded-full text-3xl",
-              isPoseVisible && !cameraError
-                ? "bg-green-500"
-                : "bg-red-500 animate-pulse"
-            )}
-          >
-            {isPoseVisible && !cameraError ? "인식 중" : "인식 불가"}
-          </div>
-        )}
-      </header>
-
-      <main className="flex flex-grow space-x-6 overflow-hidden">
-        <div className="w-2/3 flex items-center gap-2 relative p-2">
-          {!isPoseVisible && isStart && !cameraError && (
-            <div className="absolute inset-0 z-10 bg-black/70 flex items-center justify-center rounded-2xl text-white text-7xl font-black text-center break-keep">
-              화면 정중앙에
-              <br />
-              위치해 주세요!
-            </div>
-          )}
-
-          {/* 게임별 컴포넌트 호출 */}
-          {gameMode === "FLAG" && (
-            <FlagGame target={target} lastResult={lastResult} />
-          )}
-          {gameMode === "HEAD" && (
-            <HeadGame target={target} lastResult={lastResult} />
-          )}
-          {gameMode === "GRAB" && (
-            <GrabGame
-              target={target}
-              lastResult={lastResult}
-              currentCount={currentCount}
-            />
-          )}
-        </div>
-
-        <aside className="w-1/3 flex flex-col space-y-2">
-          <div className="bg-white p-4 rounded-xl shadow-inner border grid grid-cols-5 gap-2">
-            {Array.from({ length: TOTAL_ATTEMPTS }).map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold",
-                  i === currentCount
-                    ? "bg-blue-500 text-white animate-pulse"
-                    : totalScores[i]?.isPass
-                    ? "bg-green-500 border-green-200 text-white shadow-lg shadow-green-200"
-                    : totalScores[i]
-                    ? "bg-red-500 border-red-200 text-white shadow-lg shadow-red-200"
-                    : "bg-gray-100 text-gray-300"
-                )}
-              >
-                {i + 1}
-              </div>
-            ))}
-          </div>
-          <div className="flex-1 relative bg-black rounded-xl overflow-hidden border-[2px]">
-            <video ref={videoRef} autoPlay playsInline className="hidden" />
-            <canvas
-              ref={canvasRef}
-              className="absolute inset-0 w-full h-full object-cover aspect-video"
-            />
-          </div>
-        </aside>
-      </main>
-      <Dialog
-        isOpen={showModeSelect}
-        onClose={() => {}}
-        title="게임을 선택하세요"
-        titleStyle="text-4xl font-bold mb-2"
-      >
-        <div className="flex flex-col gap-4 p-2">
-          {Object.entries(GAME_INFO).map(([key, info]) => (
-            <button
-              key={key}
-              onClick={() => runCountdown(key)}
-              className="bg-lime-100/80 border-lime-200 hover:bg-lime-200 group flex items-center justify-between p-4 rounded-3xl border-4"
-            >
-              <span className="text-5xl font-black text-lime-800 w-full text-center">
-                {info.title}
-              </span>
-            </button>
-          ))}
-        </div>
-        <div className="py-4 flex justify-center">
-          <button
-            onClick={() => navigation("/")}
-            className="px-10 text-4xl font-bold text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-8 decoration-slate-200"
-          >
-            나중에 할래요
-          </button>
-        </div>
-      </Dialog>
-
       <Dialog
         isOpen={isFinish}
         onClose={() => setIsFinish(false)}
-        title="게임 종료"
-        titleStyle="text-5xl font-bold mb-2"
+        title="참 잘하셨어요!"
       >
-        <div className="text-center p-2 flex flex-col items-center gap-6">
-          <div className="flex flex-row items-center gap-2">
-            <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">잘하셨어요!</h2>
-          </div>
-          <div className="flex flex-row items-center gap-6 text-center">
+        <div className="text-center p-4 flex flex-col items-center gap-8">
+          <Trophy className="size-24 text-yellow-500 animate-bounce" />
+          <div className="flex gap-10">
             <div>
               <p className="text-gray-400 font-bold text-2xl">성공 횟수</p>
-              <p className="text-6xl font-black text-green-600">
+              <p className="text-7xl font-black text-green-600">
                 {totalScores.filter((s) => s.isPass).length}회
               </p>
             </div>
             <div>
               <p className="text-gray-400 font-bold text-2xl">소요 시간</p>
-              <p className="text-6xl font-black text-blue-600">{finalTime}초</p>
+              <p className="text-7xl font-black text-blue-600">{finalTime}초</p>
             </div>
           </div>
           <button
-            onClick={() => runCountdown(gameMode)}
-            className="w-full py-4 bg-[#2D3A5A] text-white text-3xl font-black rounded-2xl hover:bg-slate-800 transition-all"
+            onClick={() => setGameMode(null)}
+            className="w-full py-6 bg-[#2D3A5A] text-white text-4xl font-black rounded-3xl hover:bg-slate-800 transition-all shadow-xl"
           >
-            다시하기
+            다른 활동 하러가기
           </button>
         </div>
       </Dialog>

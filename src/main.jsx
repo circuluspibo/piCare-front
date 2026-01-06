@@ -38,11 +38,11 @@ const router = createBrowserRouter(
 );
 
 createRoot(document.getElementById("root")).render(
-    <Suspense fallback={<Loading />}>
-      <GlobalContextProvider>
-        <VoiceChatProvider>
-          <RouterProvider router={router} />
-        </VoiceChatProvider>
-      </GlobalContextProvider>
-    </Suspense>
+  <Suspense fallback={<Loading />}>
+    <GlobalContextProvider>
+      <VoiceChatProvider>
+        <RouterProvider router={router} />
+      </VoiceChatProvider>
+    </GlobalContextProvider>
+  </Suspense>
 );
