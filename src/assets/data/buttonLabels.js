@@ -17,6 +17,12 @@ export const buttonLabels = [
     icon: "Image",
     color: "violet",
   },
+  {
+    label: "인지",
+    value: "training",
+    icon: "Lightbulb",
+    color: "cyan",
+  },
   // {
   //   label: "실내",
   //   value: "IAQ",

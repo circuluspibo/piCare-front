@@ -3,12 +3,15 @@ import { Pose, POSE_CONNECTIONS } from "@mediapipe/pose";
 import { Hands, HAND_CONNECTIONS } from "@mediapipe/hands";
 import { Camera } from "@mediapipe/camera_utils";
 import { drawConnectors, drawLandmarks } from "@mediapipe/drawing_utils";
-import { ArrowBigLeft, AlertCircle } from "lucide-react";
+import { ArrowBigLeft, AlertCircle, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
+import FlagGame from "@/components/FlagGame";
+import HeadGame from "@/components/HeadGame";
+import GrabGame from "@/components/GrabGame";
+import { fireInfoConfetti } from "@/components/magicui/connfetti";
 
-// 게임 감지 로직
 const DETECTORS = {
   FLAG: (marks) => {
     const leftHand = marks[15],
@@ -44,8 +47,6 @@ const GAME_INFO = {
   GRAB: { title: "사과 잡기" },
 };
 
-const BASE_IMAGE_PATH = "/images/exercise";
-
 export default function ExercisePage() {
   const navigation = useNavigate();
 
@@ -75,15 +76,6 @@ export default function ExercisePage() {
   const currentCount = totalScores.length;
   const TOTAL_ATTEMPTS = 20;
   const FIXED_LIMIT = 10;
-  const fruits = [
-    "cherries",
-    "grape",
-    "kiwi",
-    "orange",
-    "peach",
-    "pear",
-    "strawberry",
-  ];
 
   const passAudio = useMemo(() => new Audio("/sound/pass.mp3"), []);
   const failAudio = useMemo(() => new Audio("/sound/fail.mp3"), []);
@@ -169,7 +161,6 @@ export default function ExercisePage() {
   const runCountdown = useCallback(
     (mode) => {
       if (cameraError) return;
-
       setGameMode(mode);
       setShowModeSelect(false);
       resetGame();
@@ -194,7 +185,6 @@ export default function ExercisePage() {
     (results) => {
       lastFrameTimeRef.current = Date.now();
       setCameraError(false);
-
       const marks =
         gameMode === "GRAB"
           ? results.multiHandLandmarks
@@ -251,14 +241,12 @@ export default function ExercisePage() {
   useEffect(() => {
     const videoEl = videoRef.current;
     if (!videoEl || !gameMode || !isStart) return;
-
     let isAlive = true;
     let instance = null;
     let camera = null;
 
     const initMediaPipe = async () => {
       try {
-        // 1. 인스턴스 생성
         instance =
           gameMode === "GRAB"
             ? new Hands({
@@ -276,46 +264,28 @@ export default function ExercisePage() {
           minDetectionConfidence: 0.5,
           minTrackingConfidence: 0.5,
         });
-
-        // 2. Ref를 사용하여 최신 onResults를 호출 (인스턴스 재생성 방지)
         instance.onResults((results) => {
-          if (isAlive && onResultsRef.current) {
-            onResultsRef.current(results);
-          }
+          if (isAlive && onResultsRef.current) onResultsRef.current(results);
         });
 
-        // 3. 카메라 설정
         camera = new Camera(videoEl, {
           onFrame: async () => {
-            if (isAlive && instance) {
-              try {
-                await instance.send({ image: videoEl });
-              } catch (err) {
-                // 이미 close된 경우 에러 무시
-              }
-            }
+            if (isAlive && instance) await instance.send({ image: videoEl });
           },
           width: 1280,
           height: 720,
         });
-
         await camera.start();
-        console.log(`${gameMode} Camera Started`);
       } catch (error) {
-        console.error("Init Error:", error);
         if (isAlive) setCameraError(true);
       }
     };
-
     initMediaPipe();
-
     return () => {
-      console.log("Cleaning up...");
       isAlive = false;
       if (camera) camera.stop();
       if (instance) instance.close();
     };
-    // 의존성 배열에서 onResults를 제거하고 gameMode에만 반응하게 합니다.
   }, [gameMode, isStart]);
 
   useEffect(() => {
@@ -323,34 +293,13 @@ export default function ExercisePage() {
     else music.pause();
   }, [isStart, music, cameraError]);
 
-  const getBgClass = (side) => {
-    if (lastResult.target === null) return "bg-white border-gray-100 shadow-sm";
-    const isTarget = side === lastResult.target;
-    if (lastResult.isPass)
-      return isTarget
-        ? "bg-green-100 border-green-500 shadow-2xl scale-[1.03]"
-        : "bg-white opacity-20";
-    return !isTarget
-      ? "bg-red-100 border-red-500 shadow-2xl scale-[1.03]"
-      : "bg-white opacity-20";
-  };
-
-  const getImgSrc = (side) => {
-    const isT = side === target;
-    if (gameMode === "FLAG")
-      return `${BASE_IMAGE_PATH}/flag/${
-        side !== target ? "shrug" : side === "left" ? "right" : "left"
-      }.png`;
-    if (gameMode === "HEAD")
-      return `${BASE_IMAGE_PATH}/head/${isT ? "check" : "hand"}.png`;
-    return `${BASE_IMAGE_PATH}/grab/${
-      isT ? "apple" : fruits[currentCount % fruits.length]
-    }.png`;
-  };
-
+  useEffect(() => {
+    if (isFinish) {
+      fireInfoConfetti();
+    }
+  }, [isFinish]);
   return (
-    <div className="flex flex-col h-full p-4 bg-gray-50 overflow-hidden relative">
-      {/* 카운트다운 UI: 에러가 없을 때만 표시되도록 안전장치 */}
+    <div className="flex flex-col h-full p-4 bg-gray-50 overflow-hidden relative font-extrabold text-[#2D3A5A]">
       {countdown && !cameraError && (
         <div className="absolute inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center">
           <span className="text-[25rem] font-black text-white animate-in zoom-in duration-300">
@@ -359,7 +308,6 @@ export default function ExercisePage() {
         </div>
       )}
 
-      {/* 카메라 오류 안내 Dialog */}
       <Dialog isOpen={cameraError} onClose={() => {}} title="카메라 연결 오류">
         <div className="flex flex-col items-center p-8 space-y-4">
           <AlertCircle className="size-24 text-red-500" />
@@ -377,7 +325,7 @@ export default function ExercisePage() {
 
       <header className="flex flex-row items-center justify-between pb-2 border-b mb-4 font-extrabold">
         <div
-          className="flex items-center text-4xl font-black cursor-pointer text-[#2D3A5A]"
+          className="flex items-center text-4xl font-black cursor-pointer"
           onClick={() => {
             resetGame();
             setShowModeSelect(true);
@@ -385,7 +333,7 @@ export default function ExercisePage() {
           }}
         >
           <ArrowBigLeft
-            className="size-14 mr-2 "
+            className="size-14 mr-2"
             onClick={(e) => {
               e.stopPropagation();
               navigation("/");
@@ -393,16 +341,18 @@ export default function ExercisePage() {
           />
           <span>{gameMode ? GAME_INFO[gameMode].title : "활동 선택"}</span>
         </div>
-        <div
-          className={cn(
-            "px-10 py-3 rounded-full text-3xl",
-            isPoseVisible && !cameraError
-              ? "bg-green-500"
-              : "bg-red-500 animate-pulse"
-          )}
-        >
-          {isPoseVisible && !cameraError ? "인식 중" : "인식 불가"}
-        </div>
+        {gameMode && (
+          <div
+            className={cn(
+              "px-10 py-3 rounded-full text-3xl",
+              isPoseVisible && !cameraError
+                ? "bg-green-500"
+                : "bg-red-500 animate-pulse"
+            )}
+          >
+            {isPoseVisible && !cameraError ? "인식 중" : "인식 불가"}
+          </div>
+        )}
       </header>
 
       <main className="flex flex-grow space-x-6 overflow-hidden">
@@ -414,23 +364,21 @@ export default function ExercisePage() {
               위치해 주세요!
             </div>
           )}
-          {["right", "left"].map((side) => (
-            <div
-              key={side}
-              className={cn(
-                "w-1/2 h-full rounded-2xl border-[5px] flex flex-col items-center justify-center transition-all duration-300",
-                getBgClass(side)
-              )}
-            >
-              {gameMode && (
-                <img
-                  className="w-3/4 object-contain"
-                  src={getImgSrc(side)}
-                  alt={side}
-                />
-              )}
-            </div>
-          ))}
+
+          {/* 게임별 컴포넌트 호출 */}
+          {gameMode === "FLAG" && (
+            <FlagGame target={target} lastResult={lastResult} />
+          )}
+          {gameMode === "HEAD" && (
+            <HeadGame target={target} lastResult={lastResult} />
+          )}
+          {gameMode === "GRAB" && (
+            <GrabGame
+              target={target}
+              lastResult={lastResult}
+              currentCount={currentCount}
+            />
+          )}
         </div>
 
         <aside className="w-1/3 flex flex-col space-y-2">
@@ -463,48 +411,64 @@ export default function ExercisePage() {
         </aside>
       </main>
 
+      {/* Dialogs... (기존과 동일) */}
       <Dialog
         isOpen={showModeSelect}
         onClose={() => {}}
         title="게임을 선택하세요"
+        titleStyle="text-4xl font-bold mb-2"
       >
-        <div className="flex flex-col gap-2 p-3">
+        <div className="flex flex-col gap-6 p-2">
           {Object.entries(GAME_INFO).map(([key, info]) => (
             <button
               key={key}
               onClick={() => runCountdown(key)}
-              className="py-4 text-4xl font-black bg-white border-4 border-gray-100 rounded-3xl"
+              className="bg-lime-100/80 border-lime-200 hover:bg-lime-200 group flex items-center justify-between p-4 rounded-3xl border-4"
             >
-              {info.title}
+              <span className="text-5xl font-black text-lime-800 w-full text-center">
+                {info.title}
+              </span>
             </button>
           ))}
+        </div>
+        <div className="py-4 flex justify-center">
+          <button
+            onClick={() => navigation("/")}
+            className="px-10 py-4 text-4xl font-bold text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-8 decoration-slate-200"
+          >
+            나중에 할래요
+          </button>
         </div>
       </Dialog>
 
       <Dialog
         isOpen={isFinish}
         onClose={() => setIsFinish(false)}
-        title="게임 결과"
-        actions={[
-          {
-            text: "다시하기",
-            onClick: () => runCountdown(gameMode),
-            style:
-              "bg-blue-600 text-white w-full py-4 text-4xl font-black rounded-2xl",
-          },
-        ]}
+        title="게임 종료"
+        titleStyle="text-5xl font-bold mb-2"
       >
-        <div className="flex flex-col items-center py-6 space-y-8 text-center">
-          <div>
-            <p className="text-gray-400 font-bold text-2xl">성공 횟수</p>
-            <p className="text-7xl font-black text-green-600">
-              {totalScores.filter((s) => s.isPass).length}회
-            </p>
+        <div className="text-center p-2 flex flex-col items-center gap-6">
+          <div className="flex flex-row items-center gap-2">
+            <h2 className="text-5xl font-bold mb-4">잘하셨어요!</h2>
           </div>
-          <div>
-            <p className="text-gray-400 font-bold text-2xl">소요 시간</p>
-            <p className="text-7xl font-black text-blue-600">{finalTime}초</p>
+          <div className="flex flex-row items-center gap-6 text-center">
+            <div>
+              <p className="text-gray-400 font-bold text-2xl">성공 횟수</p>
+              <p className="text-6xl font-black text-green-600">
+                {totalScores.filter((s) => s.isPass).length}회
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-400 font-bold text-2xl">소요 시간</p>
+              <p className="text-6xl font-black text-blue-600">{finalTime}초</p>
+            </div>
           </div>
+          <button
+            onClick={() => runCountdown(gameMode)}
+            className="w-full py-4 bg-[#2D3A5A] text-white text-3xl font-black rounded-2xl hover:bg-slate-800 transition-all"
+          >
+            다시하기
+          </button>
         </div>
       </Dialog>
     </div>

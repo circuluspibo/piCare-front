@@ -297,12 +297,12 @@ export default function DrawPage() {
   }, [preparedModel]);
 
   return (
-    <div className="flex flex-col w-full h-full p-4 bg-gray-50 overflow-hidden font-extrabold">
-      {/* SECTION: 헤더 (연결성 강화) */}
-      <header className="flex flex-col items-start pb-4 border-b mb-4 text-[#2D3A5A]">
-        <div className="flex items-center text-4xl">
+    <div className="flex flex-col w-full h-full p-4 bg-[#f8f5f0] overflow-hidden font-extrabold text-[#2D3A5A]">
+      {/* SECTION: 헤더 */}
+      <header className="flex flex-col items-start pb-4 border-b border-stone-200 mb-4">
+        <div className="flex items-center text-4xl font-black">
           <ArrowBigLeft
-            className="size-14 mr-2"
+            className="size-14 mr-2 cursor-pointer hover:scale-110 transition-transform"
             onClick={() => navigation("/")}
           />
           <span>말하는 대로 그리기</span>
@@ -310,54 +310,63 @@ export default function DrawPage() {
       </header>
 
       <main className="flex flex-grow space-x-6 overflow-hidden p-3">
-        {/* SECTION: 캔버스 판 (70%) */}
-        <div className="w-3/4 relative" ref={parentRef}>
-          <div className="w-full h-full rounded-3xl shadow-sm bg-white overflow-hidden relative">
-            <canvas
-              ref={canvasRef}
-              onMouseDown={startDraw}
-              onMouseMove={(e) => {
-                moveCursor(e);
-                draw(e);
-              }}
-              onMouseUp={endDraw}
-              onMouseLeave={endDraw}
-              onTouchStart={startDraw}
-              onTouchMove={(e) => {
-                moveCursor(e);
-                draw(e);
-              }}
-              onTouchEnd={endDraw}
-            />
-            {/* 커서 가이드 */}
-            {/* <div
-              ref={cursorRef}
-              className={`absolute pointer-events-none rounded-full border-4 ${
-                tool === "eraser"
-                  ? "border-red-500 bg-red-100/50 border-dashed"
-                  : "border-blue-500 bg-blue-100/30"
-              }`}
-              style={{
-                width: cursorSize,
-                height: cursorSize,
-                transform: "translate(-50%, -50%)",
-                display: "block",
-              }}
-            /> */}
+        {/* SECTION: 캔버스 판 (실제 미술 캔버스 스타일) */}
+        <div className="w-3/4 relative group" ref={parentRef}>
+          {/* 1. 이젤/액자 프레임 느낌의 테두리 */}
+          <div className="w-full h-full p-4 bg-[#dcc6a1] rounded-sm shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] border-[10px] border-[#8b5a2b] relative overflow-hidden flex items-center justify-center">
+            {/* 2. 캔버스 천 질감 및 본체 */}
+            <div className="w-full h-full bg-[#fdfdfd] shadow-inner relative flex items-center justify-center overflow-hidden">
+              {/* 3. 캔버스 천 텍스처 오버레이 (실제 천 느낌) */}
+              <div
+                className="absolute inset-0 pointer-events-none opacity-40"
+                style={{
+                  backgroundImage: `url('https://www.transparenttextures.com/patterns/canvas-fabric.png')`,
+                  zIndex: 1,
+                }}
+              />
+
+              <canvas
+                ref={canvasRef}
+                className="relative z-10 cursor-crosshair touch-none"
+                onMouseDown={startDraw}
+                onMouseMove={(e) => {
+                  moveCursor(e);
+                  draw(e);
+                }}
+                onMouseUp={endDraw}
+                onMouseLeave={endDraw}
+                onTouchStart={startDraw}
+                onTouchMove={(e) => {
+                  moveCursor(e);
+                  draw(e);
+                }}
+                onTouchEnd={endDraw}
+                style={{
+                  backgroundColor: "transparent",
+                  imageRendering: "pixelated",
+                }}
+              />
+            </div>
+
+            {/* 캔버스를 고정하는 핀 느낌의 디테일 */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-[#5d3a1a] rounded-b-lg shadow-md z-20"></div>
           </div>
         </div>
 
-        {/* 3. 오른쪽 영역: 조작 버튼 */}
-        <div className="w-4/12 flex flex-col gap-4">
-          {/* 스타일 스위치 영역 */}
-          <div className="bg-white p-3 rounded-3xl border-2 border-gray-100 flex flex-col gap-3">
+        {/* 오른쪽 조작 버튼 영역 (기존 스타일 유지하되 톤 조정) */}
+        <div className="w-1/4 flex flex-col space-y-4">
+          {/* 스타일 스위치 */}
+          <div className="bg-white/50 p-4 rounded-3xl shadow-sm border-2 border-stone-200 grid gap-4">
+            <p className="text-center text-xl text-stone-400 font-bold">
+              화풍 선택
+            </p>
             <button
               onClick={() => setSketchModel("real")}
               className={cn(
-                "h-20 text-3xl font-black rounded-2xl transition-all duration-200", // 애니메이션 추가
+                "h-20 text-3xl rounded-2xl transition-all border-b-8 active:border-b-0 active:translate-y-1",
                 sketchModel === "real"
-                  ? "bg-orange-600 text-white shadow-lg" // 선택 시 스타일 강조
-                  : "bg-gray-100 text-gray-400 border-transparent" // 미선택 시
+                  ? "bg-violet-200 border-violet-300 text-violet-900"
+                  : "bg-gray-100 border-gray-300 text-gray-400"
               )}
             >
               사진처럼
@@ -365,26 +374,25 @@ export default function DrawPage() {
             <button
               onClick={() => setSketchModel("anim")}
               className={cn(
-                "h-20 text-3xl font-black rounded-2xl",
+                "h-20 text-3xl font-black rounded-2xl transition-all border-b-8 active:border-b-0 active:translate-y-1",
                 sketchModel === "anim"
-                  ? "bg-lime-600 text-white"
-                  : "bg-gray-100 text-gray-400"
+                  ? "bg-lime-200 border-lime-300 text-lime-900"
+                  : "bg-gray-100 border-gray-300 text-gray-400"
               )}
             >
-              만화처럼
+              그림처럼
             </button>
           </div>
 
-          {/* 액션 버튼 리스트 (IndexPage 스타일 계승) */}
+          {/* 액션 버튼 */}
           <div className="flex flex-col flex-1 gap-4">
             <button
               onClick={clearCanvas}
-              className="flex-1 flex flex-col items-center justify-center bg-red-100 text-red-800 rounded-2xl"
+              className="flex-1 flex items-center justify-center bg-rose-50 border-2 border-rose-100 text-rose-600 rounded-xl shadow-sm hover:bg-rose-100 transition-colors"
             >
-              <span className="text-3xl font-black">전체삭제</span>
+              <span className="text-3xl font-black">도화지 교체</span>
             </button>
 
-            {/* 마이크 버튼 (최우선 버튼) */}
             <div className="flex-[1.5] relative">
               <MicToggleButton
                 onStart={handleStartRecording}
@@ -392,7 +400,7 @@ export default function DrawPage() {
                 isListening={isRecording}
                 className="w-full h-full flex flex-col items-center justify-center"
                 iconSize="size-24"
-                micText="text-[54px] font-black"
+                micText="text-4xl font-black mt-4"
               />
             </div>
           </div>

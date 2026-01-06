@@ -23,6 +23,7 @@ import DrawPage from "@/pages/DrawPage";
 import { Loading } from "@/components/Loading";
 import { GlobalContextProvider } from "./contexts/GlobalContext";
 import { VoiceChatProvider } from "./contexts/VoiceChatContext";
+import TrainingPage from "@/pages/TrainingPage";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -31,6 +32,7 @@ const router = createBrowserRouter(
       <Route path="/" element={<Main />} />
       <Route path="/exercise" element={<ExercisePage />} />
       <Route path="/draw" element={<DrawPage />} />
+      <Route path="/training" element={<TrainingPage />} />
     </Route>
   )
 );
