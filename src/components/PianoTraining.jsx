@@ -44,6 +44,27 @@ export default function PianoTraining({ onComplete }) {
       complete: new Audio("/sound/complete.mp3"),
     };
   }
+  const playSequence = useCallback(async (sequence) => {
+    if (!sequence || sequence.length === 0) return;
+
+    setIsPlayingTarget(true);
+    setUserSequence([]);
+
+    for (let i = 0; i < sequence.length; i++) {
+      const sndId = `snd${sequence[i]}`;
+      setActiveKey(sndId);
+
+      const sound = soundsRef.current[sndId];
+      sound.pause();
+      sound.currentTime = 0;
+      sound.volume = 0.5;
+      await sound.play();
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      setActiveKey(null);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    setIsPlayingTarget(false);
+  }, []);
 
   const startNewRound = useCallback(async () => {
     const newSequence = Array.from(
@@ -53,8 +74,8 @@ export default function PianoTraining({ onComplete }) {
     setTargetSequence(newSequence);
     setIsEvaluating(false);
 
-   await playSequence(newSequence)
-  }, [soundsRef]);
+    await playSequence(newSequence);
+  }, [playSequence]);
 
   const handleKeyClick = useCallback(
     (keyId) => {
@@ -62,13 +83,13 @@ export default function PianoTraining({ onComplete }) {
       if (isPlayingTarget || isFinish || isEvaluating) return;
 
       const sound = soundsRef.current[keyId];
-      if(sound) {
+      if (sound) {
         sound.pause();
         sound.currentTime = 0;
         sound.volume = 0.5;
-        sound.play().catch(() => {})
+        sound.play().catch(() => {});
       }
-      sound.play().catch(() => {})
+      sound.play().catch(() => {});
       setActiveKey(keyId);
       setTimeout(() => setActiveKey(null), 200);
 
@@ -124,33 +145,10 @@ export default function PianoTraining({ onComplete }) {
     ]
   );
 
-  const playSequence = useCallback(async(sequence) => {
-    if(!sequence || sequence.length === 0) return;
-
-    setIsPlayingTarget(true);
-    setUserSequence([]);
-
-    for(let i = 0; i < sequence.length; i++) {
-      const sndId = `snd${sequence[i]}`;
-      setActiveKey(sndId);
-
-      const sound = soundsRef.current[sndId];
-      sound.pause();
-      sound.currentTime = 0;
-      sound.volume = 0.5;
-      await sound.play();
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      setActiveKey(null);
-      await new Promise((resolve) => setTimeout(resolve, 300));
-    }
-    setIsPlayingTarget(false)
-  })
-
   const handleReplay = useCallback(() => {
-    if(isPlayingTarget || isEvaluating || isFinish) return;
+    if (isPlayingTarget || isEvaluating || isFinish) return;
     playSequence(targetSequence); // 기존 문제 리플레이
-
-  }, [isPlayingTarget, isEvaluating, isFinish, playSequence, targetSequence])
+  }, [isPlayingTarget, isEvaluating, isFinish, playSequence, targetSequence]);
   const getFeedbackMsg = () => {
     const passCnt = scores.filter((s) => s.isPass).length;
     if (passCnt >= 8) return "음악가 수준이에요!";
@@ -177,14 +175,14 @@ export default function PianoTraining({ onComplete }) {
 
   useEffect(() => {
     return () => {
-      if(soundsRef.current) {
+      if (soundsRef.current) {
         Object.values(soundsRef.current).forEach((audio) => {
           audio.pause();
           audio.currentTime = 0;
-        })
+        });
       }
-    }
-  }, [])
+    };
+  }, []);
   return (
     <div className="flex h-full gap-6 animate-in fade-in duration-500 font-extrabold text-[#2D3A5A]">
       <section className="w-3/4 h-full flex flex-col gap-6">
