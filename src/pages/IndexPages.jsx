@@ -35,6 +35,9 @@ export default function Main() {
       case "draw": {
         return navigation("/draw");
       }
+      case "training": {
+        return navigation("/training");
+      }
       default: {
         return;
       }
@@ -221,7 +224,7 @@ export default function Main() {
               <img
                 src={`/images/persona/${selectedPersona.id}.png`}
                 alt={selectedPersona.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover rounded-xl"
                 onClick={mainImageClickHandler}
               />
             ) : (
@@ -262,7 +265,7 @@ export default function Main() {
           </div>
         </div>
 
-        <div className="w-2/12 flex flex-col h-full p-2 gap-4 rounded-r-2xl">
+        <div className="w-2/12 flex flex-col h-full p-3 gap-4">
           <div className="flex flex-row w-full justify-between">
             <div className="flex items-center">
               <button
@@ -301,8 +304,8 @@ export default function Main() {
               onClick={() => handleClickEvent(v.value)}
               size="sm"
               className={cn(
-                "flex flex-1 flex-col justify-center text-xl font-bold rounded-2xl text-center shadow-lg ",
-                `bg-${v.color}-200 text-${v.color}-800`
+                "flex flex-1 flex-col justify-center text-xl font-bold rounded-2xl text-center border-b-8",
+                `bg-${v.color}-200 text-${v.color}-800 border-${v.color}-300 active:border-b-0 active:translate-y-1`
               )}
             >
               <div className="flex flex row items-center gap-2">
