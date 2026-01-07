@@ -11,6 +11,8 @@ import { GlobalContext } from "@/contexts/GlobalContext";
 import { useVoiceChat } from "@/contexts/VoiceChatContext";
 import { PERSONA_SYSTEMS, PERSONA_INTRODUCE } from "@/utils/PersonaSystem";
 import { Switch } from "@/components/ui/switch";
+import { getHeartbeat, getStartCollection } from "@/api/npuService";
+import { postImg2Chat } from "@/api/gpuService";
 
 export default function Main() {
   const { updatePersona, personaId } = useContext(GlobalContext);
@@ -57,7 +59,7 @@ export default function Main() {
     if (!hasStartedCollection.current) {
       try {
         console.log("최초 클릭: /start_collection 호출 중...");
-        await fetch(`http://127.0.0.1:59531/start_collection`);
+        await getStartCollection();
         hasStartedCollection.current = true; // 이후 실행 방지
       } catch (error) {
         console.error("start_collection 호출 에러:", error);
@@ -76,7 +78,7 @@ export default function Main() {
   const runAutoCaptureProcess = useCallback(async () => {
     if (isTemp) return;
     try {
-      const hbResp = await fetch(`http://127.0.0.1:59531/heartbeat`);
+      const hbResp = await getHeartbeat();
       const hbResult = await hbResp.json();
       const hbData = hbResult.data;
 
@@ -104,19 +106,9 @@ export default function Main() {
           canvas.toBlob(resolve, "image/jpeg")
         );
         const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-
-        const formData = new FormData();
         const currentSystem = PERSONA_SYSTEMS[personaId];
-        formData.append("file", file);
-        formData.append("prompt", `상황에 맞게 짧고 친절하게 인사해줘.`);
-        formData.append("system", currentSystem);
-        formData.append("lang", "ko");
-        formData.append("isPlay", "0");
 
-        const response = await fetch(`http://127.0.0.1:59532/v1/img2chat`, {
-          method: "POST",
-          body: formData,
-        });
+        const response = await postImg2Chat(file, currentSystem);
 
         if (!response.ok) throw new Error("네트워크 응답 에러");
 
@@ -164,23 +156,11 @@ export default function Main() {
         canvas.toBlob(resolve, "image/jpeg")
       );
       const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-
-      const formData = new FormData();
       const currentSystem = PERSONA_SYSTEMS[personaId];
-      formData.append("file", file);
-      formData.append("prompt", `상황에 맞게 짧고 친절하게 인사해줘.`);
-      formData.append("system", currentSystem);
-      formData.append("lang", "ko");
-      formData.append("isPlay", "0");
 
-      const response = await fetch(`http://127.0.0.1:59532/v1/img2chat`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error("네트워크 응답 에러");
-
-      const reader = response.body.getReader();
+      const response = await postImg2Chat(file, currentSystem);
+  
+      const reader = response.getReader();
       const decoder = new TextDecoder();
       let fullText = "";
 
