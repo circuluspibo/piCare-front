@@ -42,11 +42,17 @@ export default function useVoiceChat({ enableTTS }) {
       const targetVoice =
         manualVoice !== undefined ? manualVoice : personaVoice;
 
-      const ttsUrl = getTts(text, targetVoice, currentLang);
+      const ttsUrl = await getTts(text, targetVoice, currentLang);
       return new Promise((resolve) => {
         const audio = new Audio(ttsUrl);
-        audio.onended = () => resolve();
-        audio.onerror = () => resolve();
+        audio.onended = () => {
+          URL.revokeObjectURL(ttsUrl)
+          resolve();
+        }
+        audio.onerror = () => {
+          URL.revokeObjectURL(ttsUrl)
+          resolve();
+        }
         audio.play().catch((err) => {
           console.warn("[재생 차단됨]:", err);
           resolve();
@@ -93,11 +99,9 @@ export default function useVoiceChat({ enableTTS }) {
       let lastSentenceEnd = 0;
 
       try {
-        const res = getTxt2Chat(message, currentSystem, currentLang);
+        const res = await getTxt2Chat(message, currentSystem, currentLang);
 
-        if (!res.ok) throw new Error(`NETWORK ERROR: ${res.status}`);
-
-        const reader = res.body.getReader();
+        const reader = res.getReader();
         const decoder = new TextDecoder();
         const sentenceRegex = /[^.!?\n]+[.!?\n]/g;
 
@@ -162,18 +166,15 @@ export default function useVoiceChat({ enableTTS }) {
 
         try {
           const res = await postStt(formData, currentLang);
-          if (!res.ok) throw new Error(`STT ERROR: ${res.status}`);
-
-          const result = await res.json();
-          const recognizedText = (result.text || result.data || "").trim();
-
-          const cleanedText = recognizedText
+          const cleanedText = res
             .replace(/[^ㄱ-ㅎㅏ-ㅣ가-힣\s]/g, "")
             .trim();
 
           if (cleanedText) {
             addMessage("user", cleanedText);
-            await sendMessage(cleanedText);
+            if(enableTTS) {
+              await sendMessage(cleanedText);
+            }
           }
         } catch (error) {
           console.error("STT Process error:", error);

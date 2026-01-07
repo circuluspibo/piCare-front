@@ -159,9 +159,8 @@ export default function Main() {
       const currentSystem = PERSONA_SYSTEMS[personaId];
 
       const response = await postImg2Chat(file, currentSystem);
-      if (!response.ok) throw new Error("네트워크 응답 에러");
-
-      const reader = response.body.getReader();
+  
+      const reader = response.getReader();
       const decoder = new TextDecoder();
       let fullText = "";
 

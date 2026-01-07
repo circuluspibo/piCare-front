@@ -1,4 +1,4 @@
-import { saveApiLog } from "./logService"; // 로그 저장용 유틸
+// import { saveApiLog } from "./logService"; // 로그 저장용 유틸
 
 export const setInterceptors = (instance) => {
   instance.interceptors.request.use((config) => {
@@ -22,11 +22,11 @@ export const setInterceptors = (instance) => {
       return response;
     },
     (error) => {
-      saveApiLog({
-        url: error.config?.url,
-        error: error.message,
-        isError: true,
-      });
+      // saveApiLog({
+      //   url: error.config?.url,
+      //   error: error.message,
+      //   isError: true,
+      // });
       return Promise.reject(error);
     }
   );

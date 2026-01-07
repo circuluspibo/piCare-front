@@ -10,7 +10,7 @@ const cpuApi = setInterceptors(axios.create({ baseURL: CPU_BASE_URL }));
 // NOTE: 입력한 텍스트를 음성으로 생성 API
 export const getTts = async (text, targetVoice, currentLang) => {
   try {
-    const res = cpuApi.get("/v1/tts", {
+    const {data, status } = await cpuApi.get("/v1/tts", {
       params: {
         text: text.trim(),
         voice: targetVoice,
@@ -18,8 +18,11 @@ export const getTts = async (text, targetVoice, currentLang) => {
         static: "0",
         isPlay: "0",
       },
+      responseType: 'blob'
     });
-    return res.data;
+    if(status !== 200) throw new Error(status)
+    
+    return URL.createObjectURL(data)
   } catch (error) {
     console.error(`[FAILED TO REQEUEST TTS : ${error}]`);
   }

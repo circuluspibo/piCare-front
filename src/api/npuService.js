@@ -10,8 +10,10 @@ const npuApi = setInterceptors(axios.create({ baseURL: NPU_BASE_URL }));
 // NOTE: NPU 엔진 웜업 API
 export const getStartCollection = async () => {
   try {
-    const res = await npuApi.get("/start_collection");
-    return res.data;
+    const {data, status} = await npuApi.get("/start_collection");
+    if(status !== 200) throw new Error(status)
+    
+    return data;
   } catch (error) {
     console.log(`[FAILED TO REQ getStartCollection : ${error}]`);
   }
@@ -28,8 +30,10 @@ export const getStartCollection = async () => {
 // NOTE: 상태 측정 AI
 export const getHeartbeat = async () => {
   try {
-    const res = await npuApi.get("/heartbeat");
-    return res.data;
+    const { data, status } = await npuApi.get("/heartbeat");
+    if(status !== 200) throw new Error(status)
+    
+    return data
   } catch (error) {
     console.log(`[FAILED TO REQ getHeartbeat : ${error}]`);
   }

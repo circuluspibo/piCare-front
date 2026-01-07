@@ -240,11 +240,7 @@ export default function DrawPage() {
       setLoadingText(`"${sketchPrompt}"으로 이미지 생성중...`);
 
       const res = await postTxt2Img(sketchPrompt, sketchModel);
-      if (!res.ok) throw new Error(`ERROR: ${res.status}`);
-
-      const imageBlob = await res.blob();
-      const imageURL = URL.createObjectURL(imageBlob);
-      drawImageToCanvas(imageURL);
+      drawImageToCanvas(res);
     } catch (error) {
       console.error("ERROR : ", error);
     } finally {
