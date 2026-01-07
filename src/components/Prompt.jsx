@@ -3,6 +3,7 @@ import MicToggleButton from "./magicui/listening-indicator";
 import Dialog from "./Dialog";
 import { useVoiceChat } from "@/contexts/VoiceChatContext";
 import { cn } from "@/lib/utils";
+import { ThreeDot } from "react-loading-indicators";
 
 export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
   const scrollRef = useRef(null);
@@ -129,14 +130,12 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
       </div>
 
       {/* 3. 로딩/생각 중 다이얼로그 */}
-      <Dialog isOpen={isThinking} onClose={() => {}} title="생각 중...">
-        <div className="text-center p-10 flex flex-col items-center">
+      <Dialog isOpen={!isThinking} onClose={() => {}} title="생각 중...">
+        <div className="text-center px-10 py-5 flex flex-col items-center">
           <div className="flex space-x-2 mb-8">
-            <div className="w-4 h-4 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-            <div className="w-4 h-4 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-            <div className="w-4 h-4 bg-blue-600 rounded-full animate-bounce"></div>
+                 <ThreeDot variant="bounce" color="#3174cc" size="large" text="" textColor=""/>
           </div>
-          <p className="text-3xl font-black text-gray-700">
+          <p className="text-3xl font-black text-gray-700 break-keep">
             질문을 이해하고 있어요...
           </p>
         </div>

@@ -5,6 +5,7 @@ import MicToggleButton from "@/components/magicui/listening-indicator";
 import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
 import useVoiceChat from "@/hooks/useVoiceChat"; // 수정: 통합 훅 임포트
+import { ThreeDot } from "react-loading-indicators";
 
 export default function DrawPage() {
   const navigation = useNavigate();
@@ -412,8 +413,8 @@ export default function DrawPage() {
         onClose={() => setLoading(false)}
         title="잠시만 기다려 주세요"
       >
-        <div className="text-center p-10 flex flex-col items-center">
-          <div className="w-20 h-20 border-8 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-8" />
+        <div className="text-center px-10 py-5 flex flex-col items-center gap-4">
+            <ThreeDot variant="bounce" color="#3174cc" size="large" text="" textColor=""/>
           <p className="text-3xl font-black text-gray-700 break-keep">
             {loadingText}
           </p>
