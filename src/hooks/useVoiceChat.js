@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, useCallback, useContext } from "react";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { PERSONA_SYSTEMS } from "@/utils/PersonaSystem";
+import { getTxt2Chat, postStt } from "@/api/gpuService";
+import { getTts } from "@/api/cpuService";
 
 export default function useVoiceChat({ enableTTS }) {
   const mediaRecorderRef = useRef(null);
@@ -18,8 +20,6 @@ export default function useVoiceChat({ enableTTS }) {
   const [fullResponse, setFullResponse] = useState("");
 
   const currentSystem = PERSONA_SYSTEMS[personaId];
-  const apiBaseURL = import.meta.env.VITE_API_BASE_URL;
-  const ttsBaseURL = import.meta.env.VITE_TTS_BASE_URL;
 
   // 메시지 추가 헬퍼 함수
   const addMessage = useCallback((role, text) => {
@@ -42,16 +42,7 @@ export default function useVoiceChat({ enableTTS }) {
       const targetVoice =
         manualVoice !== undefined ? manualVoice : personaVoice;
 
-      const ttsUrl =
-        `${ttsBaseURL}/tts?` +
-        new URLSearchParams({
-          text: text.trim(),
-          voice: `${targetVoice}`, // 결정된 목소리 값 사용
-          lang: currentLang,
-          static: "0",
-          isPlay: "0",
-        });
-
+      const ttsUrl = getTts(text, targetVoice, currentLang);
       return new Promise((resolve) => {
         const audio = new Audio(ttsUrl);
         audio.onended = () => resolve();
@@ -62,7 +53,7 @@ export default function useVoiceChat({ enableTTS }) {
         });
       });
     },
-    [ttsBaseURL, currentLang, personaVoice]
+    [currentLang, personaVoice]
   );
 
   // 2. TTS 큐 감시 및 실행 (이 부분이 "playTtsQueue" 역할을 수행)
@@ -102,15 +93,7 @@ export default function useVoiceChat({ enableTTS }) {
       let lastSentenceEnd = 0;
 
       try {
-        const res = await fetch(
-          `${apiBaseURL}/txt2chat?` +
-            new URLSearchParams({
-              prompt: message,
-              system: currentSystem,
-              isPlay: "0",
-              lang: currentLang,
-            })
-        );
+        const res = getTxt2Chat(message, currentSystem, currentLang);
 
         if (!res.ok) throw new Error(`NETWORK ERROR: ${res.status}`);
 
@@ -155,7 +138,7 @@ export default function useVoiceChat({ enableTTS }) {
         console.error(`TEXT MESSAGE ERROR : `, error);
       }
     },
-    [apiBaseURL, currentSystem, currentLang, addToTtsQueue, addMessage]
+    [currentSystem, currentLang, addToTtsQueue, addMessage]
   );
 
   // 5. 음성 녹음 및 STT 전송
@@ -178,11 +161,7 @@ export default function useVoiceChat({ enableTTS }) {
         formData.append("file", audioBlob, "voice.ogg");
 
         try {
-          const res = await fetch(
-            `${apiBaseURL}/stt?lang=${currentLang}&isPlay=0`,
-            { method: "POST", body: formData }
-          );
-
+          const res = await postStt(formData, currentLang);
           if (!res.ok) throw new Error(`STT ERROR: ${res.status}`);
 
           const result = await res.json();

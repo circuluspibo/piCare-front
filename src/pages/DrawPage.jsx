@@ -6,6 +6,7 @@ import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
 import useVoiceChat from "@/hooks/useVoiceChat"; // 수정: 통합 훅 임포트
 import { ThreeDot } from "react-loading-indicators";
+import { getPrepare, postTxt2Img } from "@/api/gpuService";
 
 export default function DrawPage() {
   const navigation = useNavigate();
@@ -15,7 +16,6 @@ export default function DrawPage() {
   const ctxRef = useRef(null);
   const parentRef = useRef(null);
   const cursorRef = useRef(null);
-
 
   // States
   const [sketchPrompt, setSketchPrompt] = useState("");
@@ -189,12 +189,7 @@ export default function DrawPage() {
 
   // AI 모델 변경함수
   const preparedModel = useCallback(async (mode) => {
-    const res = await fetch(
-      `http://127.0.0.1:59532/prepare?` +
-        new URLSearchParams({
-          mode: mode,
-        })
-    );
+    const res = await getPrepare(mode);
     return res;
   }, []);
 
@@ -241,22 +236,10 @@ export default function DrawPage() {
   const handleGenerateImg = useCallback(async () => {
     setLoading(true);
     try {
-      const baseURL = "http://127.0.0.1:59532";
-
       if (!sketchPrompt) return;
-      // 1. URLSearchParams를 사용하여 쿼리 문자열 생성
-      const params = new URLSearchParams({
-        prompt: sketchPrompt,
-        model: sketchModel,
-        seed: 0, // 매번 다른 시드값 권장
-        lang: "ko",
-      });
       setLoadingText(`"${sketchPrompt}"으로 이미지 생성중...`);
-      // 2. Fetch 호출 (Body는 비우고 URL에 파라미터 포함)
-      const res = await fetch(`${baseURL}/txt2img?${params.toString()}`, {
-        method: "POST", // 방식은 POST 유지
-      });
 
+      const res = await postTxt2Img(sketchPrompt, sketchModel);
       if (!res.ok) throw new Error(`ERROR: ${res.status}`);
 
       const imageBlob = await res.blob();
@@ -287,12 +270,12 @@ export default function DrawPage() {
   }, [sketchPrompt, isRecording, handleGenerateImg]);
 
   useEffect(() => {
-    preparedModel(1)
-    console.log('이미지 생성용으로 AI 모델 변경 완료')
+    preparedModel(1);
+    console.log("이미지 생성용으로 AI 모델 변경 완료");
     return () => {
       // Unmoute시 모델 다시 변경
       preparedModel(0);
-      console.log('기존으로 AI 모델 변경 완료')
+      console.log("기존으로 AI 모델 변경 완료");
     };
   }, [preparedModel]);
 
@@ -414,7 +397,13 @@ export default function DrawPage() {
         title="잠시만 기다려 주세요"
       >
         <div className="text-center px-10 py-5 flex flex-col items-center gap-4">
-            <ThreeDot variant="bounce" color="#3174cc" size="large" text="" textColor=""/>
+          <ThreeDot
+            variant="bounce"
+            color="#3174cc"
+            size="large"
+            text=""
+            textColor=""
+          />
           <p className="text-3xl font-black text-gray-700 break-keep">
             {loadingText}
           </p>
