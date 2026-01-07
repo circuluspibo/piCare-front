@@ -287,6 +287,12 @@ export default function ExercisePage() {
     };
   }, [gameMode, isStart]);
 
+  const getFeedbackMsg = () =>{
+    const passCnt = totalScores.filter((s) => s.isPass).length;
+    if(passCnt >= 8) return '정말 최고에요!';
+    if(passCnt >= 4) return '아주 잘하셨어요!';
+    return '움직임이 보약! 조금 더 해볼까요?'
+  }
   useEffect(() => {
     if (isStart && !cameraError) music.play().catch(() => {});
     else music.pause();
@@ -301,7 +307,7 @@ export default function ExercisePage() {
   }, [isFinish]);
 
   return (
-    <div className="flex flex-col h-full p-4 bg-gray-50 overflow-hidden relative font-extrabold text-[#2D3A5A]">
+    <div className="flex flex-col h-full p-2 bg-gray-50 overflow-hidden relative font-extrabold text-[#2D3A5A]">
       {/* 카운트다운 */}
       {countdown && !cameraError && (
         <div className="absolute inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center">
@@ -371,13 +377,13 @@ export default function ExercisePage() {
               )}
             </div>
 
-            <aside className="w-1/3 flex flex-col space-y-2">
-              <div className="bg-white p-4 rounded-xl shadow-inner border grid grid-cols-5 gap-2">
+            <aside className="w-1/3 flex flex-col space-y-2 p-2">
+              <div className="bg-white p-2 rounded-xl shadow-inner border grid grid-cols-5 gap-1">
                 {Array.from({ length: TOTAL_ATTEMPTS }).map((_, i) => (
                   <div
                     key={i}
                     className={cn(
-                      "w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold transition-all",
+                      "w-[40px] aspect-square rounded-full flex items-center justify-center text-2xl transition-all",
                       i === currentCount
                         ? "bg-blue-500 text-white animate-pulse"
                         : totalScores[i]?.isPass
@@ -425,28 +431,32 @@ export default function ExercisePage() {
       <Dialog
         isOpen={isFinish}
         onClose={() => setIsFinish(false)}
-        title="참 잘하셨어요!"
+        title="훈련 결과"
       >
-        <div className="text-center p-4 flex flex-col items-center gap-8">
-          <Trophy className="size-24 text-yellow-500 animate-bounce" />
-          <div className="flex gap-10">
-            <div>
-              <p className="text-gray-400 font-bold text-2xl">성공 횟수</p>
-              <p className="text-7xl font-black text-green-600">
-                {totalScores.filter((s) => s.isPass).length}회
-              </p>
+         <div className="text-center flex flex-col items-center gap-2">
+            <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
+              {getFeedbackMsg()}
+            </h2>
+            <div className="flex flex-row items-center gap-6 text-center">
+              <div>
+                <p className="text-gray-400 font-bold text-2xl">성공 횟수</p>
+                <p className="text-6xl font-black text-green-600">
+                  {totalScores.filter((s) => s.isPass).length}회
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-400 font-bold text-2xl">소요 시간</p>
+                <p className="text-6xl font-black text-blue-600">
+                  {finalTime}초
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-gray-400 font-bold text-2xl">소요 시간</p>
-              <p className="text-7xl font-black text-blue-600">{finalTime}초</p>
-            </div>
-          </div>
-          <button
-            onClick={onLeavePresentGame}
-            className="w-full py-6 bg-[#2D3A5A] text-white text-4xl font-black rounded-3xl hover:bg-slate-800 transition-all shadow-xl"
-          >
-            다른 활동 하러가기
-          </button>
+            <button
+              onClick={onLeavePresentGame}
+              className="w-full py-6 bg-[#2D3A5A] text-white text-4xl font-black rounded-3xl hover:bg-slate-800 transition-all shadow-xl"
+            >
+              다른 활동 하러가기
+            </button>
         </div>
       </Dialog>
     </div>

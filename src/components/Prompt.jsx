@@ -130,7 +130,7 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
       </div>
 
       {/* 3. 로딩/생각 중 다이얼로그 */}
-      <Dialog isOpen={!isThinking} onClose={() => {}} title="생각 중...">
+      <Dialog isOpen={isThinking} onClose={() => {}} title="생각 중...">
         <div className="text-center px-10 py-5 flex flex-col items-center">
           <div className="flex space-x-2 mb-8">
                  <ThreeDot variant="bounce" color="#3174cc" size="large" text="" textColor=""/>

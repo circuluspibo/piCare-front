@@ -221,9 +221,8 @@ export default function NumberTraining({ onComplete }) {
         isOpen={isFinish}
         onClose={onComplete}
         title="훈련 결과"
-        titleStyle="text-5xl font-bold mb-2"
       >
-        <div className="text-center p-4 flex flex-col items-center gap-4">
+        <div className="text-center flex flex-col items-center gap-2">
           <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
             {getFeedbackMsg()}
           </h2>
@@ -245,7 +244,7 @@ export default function NumberTraining({ onComplete }) {
 
           <button
             onClick={onComplete}
-            className="w-full py-2 bg-[#2D3A5A] text-white text-4xl font-black rounded-2xl shadow-2xl hover:bg-[#1a233a] active:scale-95 transition-all"
+            className="w-full mt-4 py-4 bg-[#2D3A5A] text-white text-5xl font-black rounded-2xl"
           >
             확인
           </button>

@@ -89,7 +89,6 @@ export default function PianoTraining({ onComplete }) {
         sound.volume = 0.5;
         sound.play().catch(() => {});
       }
-      sound.play().catch(() => {});
       setActiveKey(keyId);
       setTimeout(() => setActiveKey(null), 200);
 
@@ -170,10 +169,6 @@ export default function PianoTraining({ onComplete }) {
   }, [startNewRound]);
 
   useEffect(() => {
-    if (isFinish) fireInfoConfetti();
-  }, [isFinish]);
-
-  useEffect(() => {
     return () => {
       if (soundsRef.current) {
         Object.values(soundsRef.current).forEach((audio) => {
@@ -183,6 +178,10 @@ export default function PianoTraining({ onComplete }) {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (isFinish) fireInfoConfetti();
+  }, [isFinish]);
   return (
     <div className="flex h-full gap-6 animate-in fade-in duration-500 font-extrabold text-[#2D3A5A]">
       <section className="w-3/4 h-full flex flex-col gap-6">
@@ -303,7 +302,7 @@ export default function PianoTraining({ onComplete }) {
       </aside>
 
       <Dialog isOpen={isFinish} onClose={onComplete} title="훈련 결과">
-        <div className="text-center p-1 flex flex-col items-center gap-2">
+        <div className="text-center flex flex-col items-center gap-2">
           <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
             {getFeedbackMsg()}
           </h2>
@@ -323,7 +322,7 @@ export default function PianoTraining({ onComplete }) {
           </div>
           <button
             onClick={onComplete}
-            className="w-full mt-6 py-4 bg-[#2D3A5A] text-white text-4xl font-black rounded-2xl"
+            className="w-full mt-4 py-4 bg-[#2D3A5A] text-white text-5xl font-black rounded-2xl"
           >
             확인
           </button>
