@@ -4,7 +4,7 @@ const logClient = axios.create({
   baseURL: "", // MongoDB server
 });
 
-export const apiLog = async (logData) => {
+export const postLogger = async (logData) => {
   try {
     await logClient.post("/api/logs", logData);
   } catch (error) {

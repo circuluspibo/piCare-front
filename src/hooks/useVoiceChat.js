@@ -5,6 +5,7 @@ import { GlobalContext } from "@/contexts/GlobalContext";
 import { PERSONA_SYSTEMS } from "@/utils/PersonaSystem";
 import { getTxt2Chat, postStt } from "@/api/gpuService";
 import { getTts } from "@/api/cpuService";
+import { postLogger } from "@/api/loggerService";
 
 export default function useVoiceChat({ enableTTS }) {
   const mediaRecorderRef = useRef(null);
@@ -21,6 +22,29 @@ export default function useVoiceChat({ enableTTS }) {
 
   const currentSystem = PERSONA_SYSTEMS[personaId];
 
+  // 고유 대화 ID 생성
+  const generateConvId = () => {
+    return typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
+  // 로거 호출 함수
+  const sendToLogger = useCallback(
+    async (convId, userPrompt, aiResponse = "") => {
+      try {
+        await postLogger({
+          conversation_id: convId,
+          user_prompt: userPrompt,
+          ai_response: aiResponse,
+          personaId: personaId,
+        });
+        console.log("[Logger] 데이터 저장 성공");
+      } catch (err) {
+        console.error("[Logger] 데이터 저장 실패:", err);
+      }
+    },
+    [personaId]
+  );
   // 메시지 추가 헬퍼 함수
   const addMessage = useCallback((role, text) => {
     setMessages((prev) => [
@@ -46,15 +70,16 @@ export default function useVoiceChat({ enableTTS }) {
       return new Promise((resolve) => {
         const audio = new Audio(ttsUrl);
         audio.onended = () => {
-          URL.revokeObjectURL(ttsUrl)
+          URL.revokeObjectURL(ttsUrl);
           resolve();
-        }
+        };
         audio.onerror = () => {
-          URL.revokeObjectURL(ttsUrl)
+          URL.revokeObjectURL(ttsUrl);
           resolve();
-        }
+        };
         audio.play().catch((err) => {
           console.warn("[재생 차단됨]:", err);
+          URL.revokeObjectURL(ttsUrl);
           resolve();
         });
       });
@@ -91,7 +116,7 @@ export default function useVoiceChat({ enableTTS }) {
 
   // 4. LLM 스트리밍 응답 처리
   const sendMessage = useCallback(
-    async (message) => {
+    async (message, convId) => {
       if (!message) return;
 
       setFullResponse("");
@@ -118,6 +143,10 @@ export default function useVoiceChat({ enableTTS }) {
               /[^ㄱ-ㅎㅏ-ㅣ가-힣\s]/g,
               ""
             );
+
+            if (convId) {
+              sendToLogger(convId, message, koreanResponse);
+            }
             addMessage("ai", koreanResponse);
             setFullResponse("");
             break;
@@ -142,7 +171,7 @@ export default function useVoiceChat({ enableTTS }) {
         console.error(`TEXT MESSAGE ERROR : `, error);
       }
     },
-    [currentSystem, currentLang, addToTtsQueue, addMessage]
+    [currentSystem, currentLang, addToTtsQueue, addMessage, sendToLogger]
   );
 
   // 5. 음성 녹음 및 STT 전송
@@ -151,6 +180,8 @@ export default function useVoiceChat({ enableTTS }) {
     let chunks = [];
     try {
       setIsRecording(true);
+      const currentConvId = generateConvId();
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setGumStream(stream);
 
@@ -166,14 +197,15 @@ export default function useVoiceChat({ enableTTS }) {
 
         try {
           const res = await postStt(formData, currentLang);
-          const cleanedText = res
-            .replace(/[^ㄱ-ㅎㅏ-ㅣ가-힣\s]/g, "")
-            .trim();
+          const cleanedText = res.replace(/[^ㄱ-ㅎㅏ-ㅣ가-힣\s]/g, "").trim();
 
           if (cleanedText) {
             addMessage("user", cleanedText);
-            if(enableTTS) {
-              await sendMessage(cleanedText);
+            if (enableTTS) {
+              await sendMessage(cleanedText, currentConvId);
+            } else {
+              // [케이스 B] STT만 실행되는 경우: 즉시 로깅 (ai_response는 빈 값)
+              sendToLogger(currentConvId, cleanedText, "");
             }
           }
         } catch (error) {
