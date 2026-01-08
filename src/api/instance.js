@@ -1,32 +1,38 @@
 // import { saveApiLog } from "./logService"; // 로그 저장용 유틸
-
+import axios from "axios";
+// const logServer = "http://localhost:5000/v1/logs";
 export const setInterceptors = (instance) => {
+  // NOTE: Request Interceptor
   instance.interceptors.request.use((config) => {
-    config.metadata = { startTime: new Date() };
-    console.log("[REQ 인터셉터 동작 : 확인 완료]");
+    if (config.stackLog) {
+      // const logData = {
+      //   type: "request",
+      //   method: config.method,
+      //   url: config.url,
+      //   timeStamp: new Date(),
+      // };
+      console.log("config = ", config);
+      // axios.post(logServer, logData).catch(() => {});
+    }
+
     return config;
   });
-
+  // NOTE: Response Interceptor
   instance.interceptors.response.use(
     (response) => {
-      const duration = new Date() - response.config.metadata.startTime;
-      // 비동기 로그 저장 (응답에 지장을 주지 않음)
-      //   saveApiLog({
-      //     url: response.config.url,
-      //     method: response.config.method,
-      //     status: response.status,
-      //     duration: `${duration}ms`,
-      //     res: response.data,
-      //   });
-      console.log("[RES 인터셉터 동작 : 확인 완료]");
+      if (response.config.stackLog) {
+        // const logData = {
+        //   type: "response",
+        //   status: response.status,
+        //   url: response.config.url,
+        //   timeStamp: new Date(),
+        // };
+        // axios.post(logServer, logData).catch(() => {});
+        console.log("response.config = ", response.config);
+      }
       return response;
     },
     (error) => {
-      // saveApiLog({
-      //   url: error.config?.url,
-      //   error: error.message,
-      //   isError: true,
-      // });
       return Promise.reject(error);
     }
   );

@@ -14,9 +14,9 @@ export const getPrepare = async (mode) => {
         mode,
       },
     });
-    if(status !== 200) throw new Error(status)
-    
-    return data
+    if (status !== 200) throw new Error(status);
+
+    return data;
   } catch (error) {
     console.log(`[FAILED TO REQ getPrepare : ${error}]`);
   }
@@ -31,11 +31,11 @@ export const getTxt2Chat = async (message, currentSystem, currentLang) => {
         isPlay: "0",
         lang: currentLang,
       },
-      responseType: 'stream',
-      adapter: 'fetch'
+      responseType: "stream",
+      adapter: "fetch",
     });
-    if(status !== 200) throw new Error(status)
-    
+    if (status !== 200) throw new Error(status);
+
     return data;
   } catch (error) {
     console.log(`[FAILED TO REQ getTxt2Chat : ${error}]`);
@@ -46,13 +46,14 @@ export const getTxt2Chat = async (message, currentSystem, currentLang) => {
 export const postStt = async (formData, currentLang) => {
   try {
     const { data, status } = await gpuApi.post("/v1/stt", formData, {
+      stackLog: true,
       params: {
         lang: currentLang,
         isPlay: "0",
       },
     });
-    if(status !== 200) throw new Error(status)
-    
+    if (status !== 200) throw new Error(status);
+
     return data.data;
   } catch (error) {
     console.log(`[FAILED TO REQ postStt : ${error}]`);
@@ -61,25 +62,24 @@ export const postStt = async (formData, currentLang) => {
 // NOTE: 텍스트를 이미지로 생성 AI
 export const postTxt2Img = async (prompt, model) => {
   try {
-    const { data , status } = await gpuApi.post("/txt2img", null, {
+    const { data, status } = await gpuApi.post("/txt2img", null, {
       params: {
         prompt,
         model,
         seed: 0,
         lang: "ko",
       },
-      responseType: 'blob'
+      responseType: "blob",
     });
-    if(status !== 200) throw new Error(status)
-    
-    return URL.createObjectURL(data)
+    if (status !== 200) throw new Error(status);
+
+    return URL.createObjectURL(data);
   } catch (error) {
     console.log(`[FAILED TO REQ postTxt2Img : ${error}]`);
   }
 };
 // NOTE: 이미지를 읽고 대화형 AI 응답
 export const postImg2Chat = async (file, systemPrompt, lang = "ko") => {
-  
   const formData = new FormData();
   formData.append("file", file);
   formData.append("prompt", "상황에 맞게 짧고 친절하게 인사해줘.");
@@ -89,12 +89,12 @@ export const postImg2Chat = async (file, systemPrompt, lang = "ko") => {
 
   try {
     const { data, status } = await gpuApi.post("/v1/img2chat", formData, {
-      responseType: 'stream',
-      adapter: 'fetch'
+      responseType: "stream",
+      adapter: "fetch",
     });
-    if(status !== 200) throw new Error(status);
-    
-    return data
+    if (status !== 200) throw new Error(status);
+
+    return data;
   } catch (error) {
     console.log(`[FAILED TO REQ postImg2Chat : ${error}]`);
   }
