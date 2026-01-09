@@ -7,9 +7,9 @@ import { ArrowBigLeft, AlertCircle, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
-import FlagGame from "@/components/FlagGame";
-import HeadGame from "@/components/HeadGame";
-import GrabGame from "@/components/GrabGame";
+import FlagGame from "@/components/exercise/FlagGame";
+import HeadGame from "@/components/exercise/HeadGame";
+import GrabGame from "@/components/exercise/GrabGame";
 import { fireInfoConfetti } from "@/components/magicui/connfetti";
 import ModeSelectView from "@/components/ModelSelectView";
 
@@ -43,9 +43,9 @@ const DETECTORS = {
 };
 
 const GAME_INFO = {
-  FLAG: { title: "깃발 들기", value: "flag" },
-  HEAD: { title: "손바닥 피하기", value: "head" },
-  GRAB: { title: "사과 잡기", value: "grab" },
+  FLAG: { title: "깃발 들기", value: "flag", idx: 0 },
+  HEAD: { title: "손바닥 피하기", value: "head", idx: 1 },
+  GRAB: { title: "사과 잡기", value: "grab", idx: 2 },
 };
 
 export default function ExercisePage() {
@@ -233,10 +233,10 @@ export default function ExercisePage() {
   }, [onResults]);
 
   const onLeavePresentGame = () => {
-    setGameMode(null)
+    setGameMode(null);
     setIsFinish(true);
     resetGame();
-  }
+  };
   useEffect(() => {
     const videoEl = videoRef.current;
     if (!videoEl || !gameMode || !isStart) return;
@@ -276,6 +276,7 @@ export default function ExercisePage() {
         });
         await camera.start();
       } catch (error) {
+        console.log(`[Camera is not alive : ${error}]`);
         if (isAlive) setCameraError(true);
       }
     };
@@ -287,12 +288,12 @@ export default function ExercisePage() {
     };
   }, [gameMode, isStart]);
 
-  const getFeedbackMsg = () =>{
+  const getFeedbackMsg = () => {
     const passCnt = totalScores.filter((s) => s.isPass).length;
-    if(passCnt >= 8) return '정말 최고에요!';
-    if(passCnt >= 4) return '아주 잘하셨어요!';
-    return '움직임이 보약! 조금 더 해볼까요?'
-  }
+    if (passCnt >= 8) return "정말 최고에요!";
+    if (passCnt >= 4) return "아주 잘하셨어요!";
+    return "움직임이 보약! 조금 더 해볼까요?";
+  };
   useEffect(() => {
     if (isStart && !cameraError) music.play().catch(() => {});
     else music.pause();
@@ -433,30 +434,28 @@ export default function ExercisePage() {
         onClose={() => setIsFinish(false)}
         title="훈련 결과"
       >
-         <div className="text-center flex flex-col items-center gap-2">
-            <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
-              {getFeedbackMsg()}
-            </h2>
-            <div className="flex flex-row items-center gap-6 text-center">
-              <div>
-                <p className="text-gray-400 font-bold text-2xl">성공 횟수</p>
-                <p className="text-6xl font-black text-green-600">
-                  {totalScores.filter((s) => s.isPass).length}회
-                </p>
-              </div>
-              <div>
-                <p className="text-gray-400 font-bold text-2xl">소요 시간</p>
-                <p className="text-6xl font-black text-blue-600">
-                  {finalTime}초
-                </p>
-              </div>
+        <div className="text-center flex flex-col items-center gap-2">
+          <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
+            {getFeedbackMsg()}
+          </h2>
+          <div className="flex flex-row items-center gap-6 text-center">
+            <div>
+              <p className="text-gray-400 font-bold text-2xl">성공 횟수</p>
+              <p className="text-6xl font-black text-green-600">
+                {totalScores.filter((s) => s.isPass).length}회
+              </p>
             </div>
-            <button
-              onClick={onLeavePresentGame}
-              className="w-full py-6 bg-[#2D3A5A] text-white text-4xl font-black rounded-3xl hover:bg-slate-800 transition-all shadow-xl"
-            >
-              다른 활동 하러가기
-            </button>
+            <div>
+              <p className="text-gray-400 font-bold text-2xl">소요 시간</p>
+              <p className="text-6xl font-black text-blue-600">{finalTime}초</p>
+            </div>
+          </div>
+          <button
+            onClick={onLeavePresentGame}
+            className="w-full py-6 bg-[#2D3A5A] text-white text-4xl font-black rounded-3xl hover:bg-slate-800 transition-all shadow-xl"
+          >
+            다른 활동 하러가기
+          </button>
         </div>
       </Dialog>
     </div>

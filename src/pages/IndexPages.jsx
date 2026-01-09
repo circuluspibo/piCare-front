@@ -159,7 +159,7 @@ export default function Main() {
       const currentSystem = PERSONA_SYSTEMS[personaId];
 
       const response = await postImg2Chat(file, currentSystem);
-  
+
       const reader = response.getReader();
       const decoder = new TextDecoder();
       let fullText = "";

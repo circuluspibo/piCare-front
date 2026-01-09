@@ -6,8 +6,8 @@ import React, {
   useRef,
 } from "react";
 import { cn } from "@/lib/utils";
-import Dialog from "./Dialog";
-import { fireInfoConfetti } from "./magicui/connfetti";
+import Dialog from "@/components/Dialog";
+import { fireInfoConfetti } from "@/components/magicui/connfetti";
 
 const COLORS = [
   // 1. 따뜻한 계열 (서로 다른 3종)
@@ -191,11 +191,7 @@ export default function ColorTraining({ onComplete }) {
           </h2>
         </div>
       </aside>
-      <Dialog
-        isOpen={isFinish}
-        onClose={onComplete}
-        title="훈련 종료"
-      >
+      <Dialog isOpen={isFinish} onClose={onComplete} title="훈련 종료">
         <div className="text-center flex flex-col items-center gap-2">
           <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
             {getFeedbackMsg()}

@@ -11,7 +11,7 @@ export default function ModeSelectView({
         <h2 className="text-6xl font-black text-[#2D3A5A]">{title}</h2>
       </div>
 
-      <div className="grid grid-cols-3 gap-8 w-full max-w-6xl px-6">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-8 w-full max-w-6xl px-6">
         {Object.entries(gameInfo).map(([key, info]) => (
           <button
             key={key}
@@ -19,9 +19,9 @@ export default function ModeSelectView({
             className={cn(
               "group relative flex flex-col items-center justify-center p-4 rounded-3xl transition-all duration-300 shadow-xl hover:shadow-2xl active:scale-95 border-4",
               // 키값에 따른 동적 컬러 할당 (key가 달라도 대응 가능하도록 확장)
-              key === "FLAG" || key === "COLOR"
+              info.idx === 0
                 ? "bg-amber-50 border-amber-200 hover:bg-amber-500"
-                : key === "HEAD" || key === "NUMBER"
+                : info.idx === 1
                 ? "bg-sky-50 border-sky-200 hover:bg-sky-500"
                 : "bg-lime-50 border-lime-200 hover:bg-lime-500"
             )}
@@ -35,9 +35,9 @@ export default function ModeSelectView({
             <span
               className={cn(
                 "text-5xl font-black transition-colors duration-300 break-keep leading-snug",
-                key === "FLAG" || key === "COLOR"
+                info.idx === 0
                   ? "text-amber-700 group-hover:text-white"
-                  : key === "HEAD" || key === "NUMBER"
+                  : info.idx === 1
                   ? "text-sky-700 group-hover:text-white"
                   : "text-lime-700 group-hover:text-white"
               )}

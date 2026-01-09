@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Music, PlayCircle, CheckCircle2, XCircle } from "lucide-react"; // XCircle 추가
 import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
-import { fireInfoConfetti } from "./magicui/connfetti";
+import { fireInfoConfetti } from "@/components/magicui/connfetti";
 
 const TOTAL_ROUNDS = 5;
 const PIANO_KEYS = [

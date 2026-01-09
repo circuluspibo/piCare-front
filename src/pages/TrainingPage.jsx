@@ -2,23 +2,26 @@ import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowBigLeft } from "lucide-react";
 
-import ColorTraining from "@/components/ColorTraining";
-import NumberTraining from "@/components/NumberTraining";
-import PianoTraining from "@/components/PianoTraining";
+import ColorTraining from "@/components/training/ColorTraining";
+import NumberTraining from "@/components/training/NumberTraining";
+import PianoTraining from "@/components/training/PianoTraining";
 import ModeSelectView from "@/components/ModelSelectView";
 
 const TRAINING_MODES = {
   COLOR: {
     title: "색상 찾기",
-    value: "color", // /images/color_train.png 가 필요합니다.
+    value: "color",
+    idx: 0,
   },
   NUMBER: {
     title: "숫자 훈련",
-    value: "number", // /images/number_train.png 가 필요합니다.
+    value: "number",
+    idx: 1,
   },
   PIANO: {
     title: "소리 훈련",
-    value: "piano", // /images/piano_train.png 가 필요합니다.
+    value: "piano",
+    idx: 2,
   },
 };
 

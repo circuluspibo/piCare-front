@@ -1,3 +1,12 @@
 {
-  "singleQuote": false
+  "singleQuote": false,
+  "prettier.printWidth": 100,
+  "prettier.singleQuote": true,
+  "prettier.trailingComma": "all",
+  "prettier.tabWidth": 2,
+  "prettier.useTabs": false,
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "workbench.colorTheme": "GitHub Dark Dimmed",
+  "json.format.enable": false,
+  "editor.formatOnSave": true
 }
