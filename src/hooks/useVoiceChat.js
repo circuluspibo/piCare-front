@@ -5,7 +5,7 @@ import { GlobalContext } from "@/contexts/GlobalContext";
 import { PERSONA_SYSTEMS } from "@/utils/PersonaSystem";
 import { getTxt2Chat, postStt } from "@/api/gpuService";
 import { getTts } from "@/api/cpuService";
-import { postLogger } from "@/api/loggerService";
+// import { postLogger } from "@/api/loggerService"; NOTE: 추후 추가
 
 export default function useVoiceChat({ enableTTS }) {
   const mediaRecorderRef = useRef(null);
@@ -28,23 +28,23 @@ export default function useVoiceChat({ enableTTS }) {
       ? crypto.randomUUID()
       : `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
-  // 로거 호출 함수
-  const sendToLogger = useCallback(
-    async (convId, userPrompt, aiResponse = "") => {
-      try {
-        await postLogger({
-          conversation_id: convId,
-          user_prompt: userPrompt,
-          ai_response: aiResponse,
-          personaId: personaId,
-        });
-        console.log("[Logger] 데이터 저장 성공");
-      } catch (err) {
-        console.error("[Logger] 데이터 저장 실패:", err);
-      }
-    },
-    [personaId]
-  );
+  // NOTE: 추후 추가 로거 호출 함수
+  // const sendToLogger = useCallback(
+  //   async (convId, userPrompt, aiResponse = "") => {
+  //     try {
+  //       await postLogger({
+  //         conversation_id: convId,
+  //         user_prompt: userPrompt,
+  //         ai_response: aiResponse,
+  //         personaId: personaId,
+  //       });
+  //       console.log("[Logger] 데이터 저장 성공");
+  //     } catch (err) {
+  //       console.error("[Logger] 데이터 저장 실패:", err);
+  //     }
+  //   },
+  //   [personaId]
+  // );
   // 메시지 추가 헬퍼 함수
   const addMessage = useCallback((role, text) => {
     setMessages((prev) => [
@@ -145,7 +145,8 @@ export default function useVoiceChat({ enableTTS }) {
             );
 
             if (convId) {
-              sendToLogger(convId, message, koreanResponse);
+              // NOTE: 추후 추가
+              // sendToLogger(convId, message, koreanResponse);
             }
             addMessage("ai", koreanResponse);
             setFullResponse("");
@@ -171,7 +172,7 @@ export default function useVoiceChat({ enableTTS }) {
         console.error(`TEXT MESSAGE ERROR : `, error);
       }
     },
-    [currentSystem, currentLang, addToTtsQueue, addMessage, sendToLogger]
+    [currentSystem, currentLang, addToTtsQueue, addMessage]
   );
 
   // 5. 음성 녹음 및 STT 전송
@@ -204,8 +205,8 @@ export default function useVoiceChat({ enableTTS }) {
             if (enableTTS) {
               await sendMessage(cleanedText, currentConvId);
             } else {
-              // [케이스 B] STT만 실행되는 경우: 즉시 로깅 (ai_response는 빈 값)
-              sendToLogger(currentConvId, cleanedText, "");
+              // NOTE: 추후 추가
+              // sendToLogger(currentConvId, cleanedText, "");
             }
           }
         } catch (error) {
