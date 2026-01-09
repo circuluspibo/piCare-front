@@ -98,3 +98,24 @@ export const postImg2Chat = async (file, systemPrompt, lang = "ko") => {
     console.log(`[FAILED TO REQ postImg2Chat : ${error}]`);
   }
 };
+
+export const postFace2Img = async(file, prompt, ) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const params = {
+    prompt,
+    model: 'real',
+    seed: 0,
+    lang: 'ko'
+  }
+
+  try {
+    const { data, status} = await gpuApi.post('face2img', formData, {
+      params: params
+    })
+    if(status !== 200) throw new Erro(status)
+    return data;
+  } catch (error) {
+    console.log(`[FAILED TO REQ postFace2Img] : ${error}`)
+  }
+ }
