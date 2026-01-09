@@ -1,9 +1,8 @@
 import axios from "axios";
-import { setInterceptors } from "./instance";
 
 const GPU_BASE_URL = import.meta.env.VITE_GPU_BASE_URL;
 
-const gpuApi = setInterceptors(axios.create({ baseURL: GPU_BASE_URL }));
+const gpuApi = axios.create({ baseURL: GPU_BASE_URL });
 
 // API
 // NOTE: GPU 모델 변경 API
