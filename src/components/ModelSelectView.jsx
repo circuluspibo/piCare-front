@@ -11,14 +11,14 @@ export default function ModeSelectView({
         <h2 className="text-6xl font-black text-[#2D3A5A]">{title}</h2>
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-8 w-full max-w-6xl px-6">
+      <div className="flex flex-wrap justify-center items-center w-full min-h-[320px] px-6 gap-8">
         {Object.entries(gameInfo).map(([key, info]) => (
           <button
             key={key}
             onClick={() => onSelect(key)}
             className={cn(
-              "group relative flex flex-col items-center justify-center p-4 rounded-3xl transition-all duration-300 shadow-xl hover:shadow-2xl active:scale-95 border-4",
-              // 키값에 따른 동적 컬러 할당 (key가 달라도 대응 가능하도록 확장)
+              // 고정 너비와 유동 너비의 조화 (최소 280px, 최대 420px)
+              "flex-1 min-w-[280px] max-w-[420px] min-h-[340px] group relative flex flex-col items-center justify-center px-6 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl active:scale-95 border-4",
               info.idx === 0
                 ? "bg-amber-50 border-amber-200 hover:bg-amber-500"
                 : info.idx === 1
@@ -26,15 +26,14 @@ export default function ModeSelectView({
                 : "bg-lime-50 border-lime-200 hover:bg-lime-500"
             )}
           >
-            {/* 전달받은 info.value를 사용하여 이미지 로드 */}
             <img
-              className="object-fit mb-2 max-w-40 h-40"
+              className="w-48 h-48 object-contain mb-4" // 이미지 크기 및 비율 최적화
               alt={info.title}
               src={`/images/${info.value}.png`}
             />
             <span
               className={cn(
-                "text-5xl font-black transition-colors duration-300 break-keep leading-snug",
+                "text-5xl font-black transition-colors duration-300 break-keep leading-tight",
                 info.idx === 0
                   ? "text-amber-700 group-hover:text-white"
                   : info.idx === 1

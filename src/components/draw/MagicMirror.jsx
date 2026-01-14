@@ -74,6 +74,7 @@ export default function MagicMirror() {
       const file = new File([blob], "mirror.jpg", { type: "image/jpeg" });
       const systemPrompt = `(Solo:1.5), 1 man, (neutral facial bone structure:1.4), 30s version of this man, clear skin texture, natural lighting, high quality, photorealistic, sharp focus`;
       const res = await postFace2Img(file, systemPrompt);
+
       stopCamera();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -147,7 +148,7 @@ export default function MagicMirror() {
   }, []);
 
   return (
-    <div className="flex items-center justify-center w-full h-full max-h-[479px] overflow-hidden gap-6 p-2">
+    <div className="flex items-center justify-center w-full h-full overflow-hidden gap-6 p-2">
       <div
         className="relative flex-shrink-0 w-8/12 h-full cursor-pointer transition-transform duration-500 hover:scale-[1.01]"
         onClick={handleMirrorClick}
@@ -238,7 +239,7 @@ export default function MagicMirror() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center text-center animate-in zoom-in-95 duration-500 gap-6 w-full">
+          <div className="flex flex-col items-center justify-between text-center animate-in zoom-in-95 duration-500 gap-6 w-full h-full">
             <div>
               <h2 className="text-5xl font-extrabold text-[#2D3A5A] break-keep leading-snug">
                 {isResultMode && !isProcessing
