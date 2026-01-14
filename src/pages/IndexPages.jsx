@@ -216,6 +216,7 @@ export default function Main() {
                 <img
                   src="http://127.0.0.1:59531/video_feed"
                   alt="Video Feed"
+                  style={{ transform: "scaleX(-1)" }}
                   className="w-full h-full object-cover"
                 />
               </div>

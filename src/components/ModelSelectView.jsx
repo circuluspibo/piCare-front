@@ -28,7 +28,7 @@ export default function ModeSelectView({
           >
             {/* 전달받은 info.value를 사용하여 이미지 로드 */}
             <img
-              className="object-fit mb-2 max-w-40"
+              className="object-fit mb-2 max-w-40 h-40"
               alt={info.title}
               src={`/images/${info.value}.png`}
             />

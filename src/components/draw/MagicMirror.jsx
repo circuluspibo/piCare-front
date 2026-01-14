@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Sparkles, Camera, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { postFace2Img } from "@/api/gpuService";
+import { getHeartbeat, getStartCollection } from "@/api/npuService";
 
 export default function MagicMirror() {
   const videoRef = useRef(null);
@@ -62,18 +63,21 @@ export default function MagicMirror() {
     const ctx = canvas.getContext("2d");
 
     try {
+      // await getStartCollection();
+      // const hbResp = await getHeartbeat();
+      // const hbResult = await JSON.parse(JSON.stringify(hbResp));
+      // const hbData = hbResult.data;
+      // console.log("hbData = ", hbData);
       const blob = await new Promise((resolve) =>
         canvas.toBlob(resolve, "image/jpeg")
       );
       const file = new File([blob], "mirror.jpg", { type: "image/jpeg" });
-      const prompt = "젊어진 모습을 보여줘";
-      const res = await postFace2Img(file, prompt);
-
+      const systemPrompt = `(Solo:1.5), 1 man, (neutral facial bone structure:1.4), 30s version of this man, clear skin texture, natural lighting, high quality, photorealistic, sharp focus`;
+      const res = await postFace2Img(file, systemPrompt);
       stopCamera();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 테스트용 이미지 로드
       const img = new Image();
       img.src = res;
       img.onload = () => {
@@ -194,11 +198,21 @@ export default function MagicMirror() {
             )}
 
             {isProcessing && (
-              <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center z-10">
-                <div className="animate-spin rounded-full h-24 w-24 border-t-8 border-b-8 border-white mb-4"></div>
-                <p className="text-white text-4xl font-bold">
-                  마법을 부리는 중...
-                </p>
+              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-40 backdrop-blur-sm">
+                {/* 1. 스캔 라인 효과 */}
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-slate-400 to-transparent shadow-[0_0_15px_#fbbf24] animate-scan" />
+
+                {/* 3. 단계별 텍스트 (순차적 표시 느낌) */}
+                <div className="text-center space-y-4">
+                  <p className="text-white text-5xl font-black tracking-tighter animate-bounce">
+                    젊음의 마법을 부리는 중...
+                  </p>
+                  <div className="flex justify-center gap-2">
+                    <span className="w-3 h-3 bg-slate-400 rounded-full animate-[bounce_1s_infinite_100ms]" />
+                    <span className="w-3 h-3 bg-slate-400 rounded-full animate-[bounce_1s_infinite_200ms]" />
+                    <span className="w-3 h-3 bg-slate-400 rounded-full animate-[bounce_1s_infinite_300ms]" />
+                  </div>
+                </div>
               </div>
             )}
             <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/20 via-transparent to-black/10" />
@@ -213,8 +227,8 @@ export default function MagicMirror() {
               <Sparkles className="size-16 text-amber-600" />
             </div>
             <div>
-              <h2 className="text-6xl font-black text-[#5d3a1a] mb-4">
-                청춘 거울
+              <h2 className="text-4xl font-black text-[#5d3a1a] mb-4 break-keep">
+                젊어지는 거울
               </h2>
               <p className="text-3xl text-stone-600 font-bold break-keep leading-relaxed">
                 왼쪽의 거울을 누르면
@@ -226,11 +240,13 @@ export default function MagicMirror() {
         ) : (
           <div className="flex flex-col items-center text-center animate-in zoom-in-95 duration-500 gap-6 w-full">
             <div>
-              <h2 className="text-5xl font-extrabold text-[#2D3A5A] break-keep leading-tight">
+              <h2 className="text-5xl font-extrabold text-[#2D3A5A] break-keep leading-snug">
                 {isResultMode && !isProcessing
                   ? "와우! 정말 멋져요!"
                   : count !== null
                   ? "움직이지 마세요!"
+                  : isProcessing
+                  ? "젊어지는 중"
                   : "가장 예쁜\n미소를 지어보세요"}
               </h2>
             </div>

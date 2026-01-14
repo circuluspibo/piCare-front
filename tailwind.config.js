@@ -7,6 +7,10 @@ export default {
   theme: {
     extend: {
       keyframes: {
+        scan: {
+          "0%": { top: "0%" },
+          "100%": { top: "100%" },
+        },
         focus: {
           "0%": {
             transform: "scale(1)",
@@ -39,6 +43,7 @@ export default {
         focus: "focus 1s ease-in-out infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        scan: "scan 2s linear infinite",
       },
       borderRadius: {
         lg: "var(--radius)",
