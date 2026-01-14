@@ -17,7 +17,7 @@ import IndexLayout from "@/Layouts/IndexLayout";
 import NotFound from "@/pages/NotFound";
 import Main from "@/pages/IndexPages";
 import ExercisePage from "@/pages/ExercisePage";
-import DrawPage from "@/pages/DrawPage";
+import AiPage from "@/pages/AiPage";
 
 // Components
 import { Loading } from "@/components/Loading";
@@ -31,7 +31,7 @@ const router = createBrowserRouter(
       {/** 메인 페이지 */}
       <Route path="/" element={<Main />} />
       <Route path="/exercise" element={<ExercisePage />} />
-      <Route path="/draw" element={<DrawPage />} />
+      <Route path="/ai" element={<AiPage />} />
       <Route path="/training" element={<TrainingPage />} />
     </Route>
   )

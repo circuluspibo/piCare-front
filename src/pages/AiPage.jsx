@@ -2,8 +2,8 @@ import React, { useCallback, useState } from "react";
 import { ArrowBigLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ModeSelectView from "@/components/ModelSelectView";
-import DrawByVoice from "@/components/draw/DrawByVoice";
-import MagicMirror from "@/components/draw/MagicMirror";
+import DrawByVoice from "@/components/ai/DrawByVoice";
+import MagicMirror from "@/components/ai/MagicMirror";
 
 const DRAWING_MODES = {
   DRAW: {
@@ -42,7 +42,7 @@ export default function DrawPage() {
             }}
           />
           <h1 className="text-4xl tracking-tight font-black">
-            {drawMode ? DRAWING_MODES[drawMode].title : "인지 훈련 선택"}
+            {drawMode ? DRAWING_MODES[drawMode].title : "AI 생성 선택"}
           </h1>
         </div>
       </header>

@@ -12,9 +12,9 @@ export const buttonLabels = [
     color: "lime",
   },
   {
-    label: "그림",
-    value: "draw",
-    icon: "Image",
+    label: "AI",
+    value: "ai",
+    icon: "Bot",
     color: "violet",
   },
   {

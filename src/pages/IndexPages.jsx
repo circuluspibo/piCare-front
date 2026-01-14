@@ -34,8 +34,8 @@ export default function Main() {
       case "excercise": {
         return navigation("/exercise");
       }
-      case "draw": {
-        return navigation("/draw");
+      case "ai": {
+        return navigation("/ai");
       }
       case "training": {
         return navigation("/training");
@@ -74,16 +74,15 @@ export default function Main() {
   const autoTimerRef = useRef(null);
   const lastActionTimeRef = useRef(0);
 
-  const isTemp = true;
   const runAutoCaptureProcess = useCallback(async () => {
-    if (isTemp) return;
     try {
       const hbResp = await getHeartbeat();
-      const hbResult = await hbResp.json();
+      const hbResult = await hbResp.json();Q
       const hbData = hbResult.data;
 
       const now = Date.now();
-      if (hbData.cnt_live > 0 && now - lastActionTimeRef.current > 30000) {
+      // 임시적으로 60초에 한번씩 체크
+      if (hbData.cnt_live > 0 && now - lastActionTimeRef.current > (1000 * 60)) {
         lastActionTimeRef.current = now;
 
         const video = document.querySelector("video");
@@ -127,56 +126,7 @@ export default function Main() {
     } catch (error) {
       console.error("Auto Mode 에러:", error);
     }
-  }, [sendMessage, personaId, isTemp]);
-
-  // NOTE: TEST이후 삭제
-  const [isTesting, setIsTesting] = useState(false);
-  const runTestCapture = useCallback(async () => {
-    if (isTesting) return;
-    setIsTesting(true);
-
-    try {
-      const video = document.querySelector("video");
-      const canvas = document.createElement("canvas");
-      canvas.width = 640;
-      canvas.height = 480;
-      const ctx = canvas.getContext("2d");
-
-      if (video && video.videoWidth > 0) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      } else {
-        ctx.fillStyle = "blue";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "white";
-        ctx.font = "30px Arial";
-        ctx.fillText("VIDEO TEST SOURCE", 150, 240);
-      }
-
-      const blob = await new Promise((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg")
-      );
-      const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-      const currentSystem = PERSONA_SYSTEMS[personaId];
-
-      const response = await postImg2Chat(file, currentSystem);
-
-      const reader = response.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        fullText += chunk;
-      }
-      sendMessage(fullText);
-    } catch (error) {
-      console.error("Test Mode Error:", error);
-    } finally {
-      setIsTesting(false);
-    }
-  }, [sendMessage, personaId, isTesting]);
+  }, [sendMessage, personaId]);
 
   useEffect(() => {
     if (isAutoMode) {
@@ -248,18 +198,6 @@ export default function Main() {
 
         <div className="w-2/12 flex flex-col h-full p-3 gap-4">
           <div className="flex flex-row w-full justify-between">
-            <div className="flex items-center">
-              <button
-                onClick={runTestCapture}
-                disabled={isTesting}
-                className={cn(
-                  "w-6 h-6 rounded-full transition-all duration-300 shadow-sm",
-                  isTesting
-                    ? "bg-yellow-400 animate-pulse scale-110"
-                    : "bg-gray-400"
-                )}
-              />
-            </div>
             <div className="flex items-center gap-3">
               <span
                 className={cn(
@@ -275,7 +213,7 @@ export default function Main() {
                   setIsAutoMode(checked);
                   if (checked) lastActionTimeRef.current = 0;
                 }}
-                className="scale-125 data-[state=checked]:bg-blue-500"
+                className="data-[state=checked]:bg-blue-500 w-[px] h-[25px]"
               />
             </div>
           </div>

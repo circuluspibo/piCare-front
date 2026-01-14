@@ -63,16 +63,19 @@ export default function MagicMirror() {
     const ctx = canvas.getContext("2d");
 
     try {
-      // await getStartCollection();
-      // const hbResp = await getHeartbeat();
-      // const hbResult = await JSON.parse(JSON.stringify(hbResp));
-      // const hbData = hbResult.data;
-      // console.log("hbData = ", hbData);
+      await getStartCollection();
+      const hbResp = await getHeartbeat();
+      const hbResult = await JSON.parse(JSON.stringify(hbResp));
+      console.log('hbResult = ', hbResult)
+      const { human } = hbResult.data;
+    
+      console.log('human = ', human)
       const blob = await new Promise((resolve) =>
         canvas.toBlob(resolve, "image/jpeg")
       );
       const file = new File([blob], "mirror.jpg", { type: "image/jpeg" });
-      const systemPrompt = `(Solo:1.5), 1 man, (neutral facial bone structure:1.4), 30s version of this man, clear skin texture, natural lighting, high quality, photorealistic, sharp focus`;
+      const gender = human.gender === 'M' ? 'man' : 'woman'
+      const systemPrompt = `(Solo:1.5), ${human.age} ${gender}, (neutral facial bone structure:1.4), 10 year younger version of this ${gender}, clear skin texture, natural lighting, high quality, photorealistic, sharp focus`;
       const res = await postFace2Img(file, systemPrompt);
 
       stopCamera();
