@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Sparkles, Camera, RotateCcw } from "lucide-react"; // 리셋 아이콘 추가
+import { Sparkles, Camera, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { postFace2Img } from "@/api/gpuService";
 
@@ -10,9 +10,12 @@ export default function MagicMirror() {
 
   const [isActive, setIsActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isResultMode, setIsResultMode] = useState(false); // 1. 결과 모드 상태 추가
+  const [isResultMode, setIsResultMode] = useState(false);
 
-  // 카메라 중지
+  // 추가된 UI 상태
+  const [count, setCount] = useState(null); // 카운트다운 숫자
+  const [isShutter, setIsShutter] = useState(false); // 셔터 효과
+
   const stopCamera = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
@@ -23,15 +26,12 @@ export default function MagicMirror() {
     }
   };
 
-  // 카메라 시작
   const startCamera = async () => {
     try {
       stopCamera();
-      setIsResultMode(false); // 시작 시 결과 모드 해제
-
+      setIsResultMode(false);
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       streamRef.current = stream;
-
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setIsActive(true);
@@ -42,53 +42,81 @@ export default function MagicMirror() {
     }
   };
 
-  // 3. 리셋 기능: 처음 상태로 되돌리기
   const handleReset = () => {
     setIsResultMode(false);
-    setIsActive(true);
-    // 캔버스를 비우지 않아도 renderFrame 루프가 다시 그려주기 시작합니다.
+    startCamera();
   };
 
-  const handleMagicMirror = async () => {
-    if(!canvasRef.current || isProcessing) return;
+  // 실제 캡처 및 생성 로직 (카운트다운 종료 후 실행)
+  const processCapture = async () => {
+    if (!canvasRef.current) return;
+
+    // 1. 셔터 효과(플래시) 발생
+    setIsShutter(true);
+    setTimeout(() => setIsShutter(false), 150);
 
     setIsProcessing(true);
-    // 1. API 호출 시작과 동시에 결과 모드 활성화 (renderFrame 루프 중단 효과)
-    setIsResultMode(true); 
-    
+    setIsResultMode(true);
+
     const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
     try {
       const blob = await new Promise((resolve) =>
         canvas.toBlob(resolve, "image/jpeg")
       );
       const file = new File([blob], "mirror.jpg", { type: "image/jpeg" });
-      
-      const prompt = '젊어진 모습을 보여줘';
+      const prompt = "젊어진 모습을 보여줘";
       const res = await postFace2Img(file, prompt);
-      
-      // 2. 해당 캔버스에 호출 결과 그리기
+
+      stopCamera();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 테스트용 이미지 로드
       const img = new Image();
       img.src = res;
       img.onload = () => {
-        const ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // 결과 이미지는 반전 없이 정방향으로 그림
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       };
     } catch (error) {
-      console.log(`[Failed to capture video : ${error}]`);
-      setIsResultMode(false); // 에러 시 다시 카메라 화면으로
+      console.log(`[Error : ${error}]`);
+      setIsResultMode(false);
+      startCamera();
     } finally {
       setIsProcessing(false);
     }
   };
 
+  // 버튼 클릭 시 카운트다운 핸들러
+  const handleMagicMirror = () => {
+    if (isProcessing || count !== null) return;
+
+    setCount(3); // 3초 카운트다운 시작
+    const timer = setInterval(() => {
+      setCount((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          processCapture(); // 0초가 되면 캡처 실행
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleMirrorClick = () => {
+    if (!isActive) {
+      startCamera();
+    } else {
+      stopCamera();
+      setIsActive(false);
+    }
+  };
   useEffect(() => {
     let videoId;
     const renderFrame = () => {
-      // 1. 결과 모드(isResultMode)일 때는 캔버스 업데이트를 중단함
       if (isResultMode) return;
-
       const video = videoRef.current;
       const canvas = canvasRef.current;
       if (video && canvas && video.readyState >= 2) {
@@ -106,26 +134,19 @@ export default function MagicMirror() {
       videoId = requestAnimationFrame(renderFrame);
     };
 
-    if (isActive && !isResultMode) {
-      renderFrame();
-    }
-
-    return () => {
-      if (videoId) cancelAnimationFrame(videoId);
-    };
+    if (isActive && !isResultMode) renderFrame();
+    return () => cancelAnimationFrame(videoId);
   }, [isActive, isResultMode]);
 
   useEffect(() => {
-    return () => {
-      stopCamera();
-    };
+    return () => stopCamera();
   }, []);
 
   return (
     <div className="flex items-center justify-center w-full h-full max-h-[479px] overflow-hidden gap-6 p-2">
       <div
         className="relative flex-shrink-0 w-8/12 h-full cursor-pointer transition-transform duration-500 hover:scale-[1.01]"
-        onClick={() => !isActive && startCamera()}
+        onClick={handleMirrorClick}
       >
         <div className="absolute inset-0 bg-[#5d3a1a] rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.4)] border-[12px] border-[#8b5a2b] p-3">
           <div className="relative w-full h-full overflow-hidden rounded-2xl bg-slate-200">
@@ -136,6 +157,31 @@ export default function MagicMirror() {
                 isActive ? "opacity-100" : "opacity-0"
               }`}
             />
+
+            {/* 1. 점선 가이드라인 (카메라 활성 시에만 표시) */}
+            {isActive && !isResultMode && !count && !isProcessing && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <div className="w-56 h-72 border-4 border-dashed border-white/60 rounded-[100px] mb-8 shadow-[0_0_20px_rgba(0,0,0,0.2)]" />
+                <p className="bg-black/40 text-white px-6 py-2 rounded-full text-2xl font-bold backdrop-blur-sm">
+                  점선 안에 얼굴을 맞춰주세요
+                </p>
+              </div>
+            )}
+
+            {/* 2. 카운트다운 숫지 표시 */}
+            {count !== null && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/10 z-20">
+                <span className="text-[150px] font-black text-white drop-shadow-2xl animate-ping">
+                  {count}
+                </span>
+              </div>
+            )}
+
+            {/* 3. 셔터 효과 (플래시) */}
+            {isShutter && (
+              <div className="absolute inset-0 bg-white z-50 animate-in fade-in duration-75" />
+            )}
+
             {!isActive && (
               <div className="absolute inset-0 bg-gradient-to-tr from-blue-100 via-white to-blue-50 flex flex-col items-center justify-center p-4 text-center">
                 <Camera className="size-32 text-blue-400 mb-6 animate-bounce" />
@@ -146,11 +192,13 @@ export default function MagicMirror() {
                 </p>
               </div>
             )}
-            {/* 처리 중 로딩 오버레이 */}
+
             {isProcessing && (
               <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center z-10">
                 <div className="animate-spin rounded-full h-24 w-24 border-t-8 border-b-8 border-white mb-4"></div>
-                <p className="text-white text-4xl font-bold">마법을 부리는 중...</p>
+                <p className="text-white text-4xl font-bold">
+                  마법을 부리는 중...
+                </p>
               </div>
             )}
             <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/20 via-transparent to-black/10" />
@@ -165,9 +213,12 @@ export default function MagicMirror() {
               <Sparkles className="size-16 text-amber-600" />
             </div>
             <div>
-              <h2 className="text-6xl font-black text-[#5d3a1a] mb-4">청춘 거울</h2>
+              <h2 className="text-6xl font-black text-[#5d3a1a] mb-4">
+                청춘 거울
+              </h2>
               <p className="text-3xl text-stone-600 font-bold break-keep leading-relaxed">
-                왼쪽의 거울을 누르면<br />
+                왼쪽의 거울을 누르면
+                <br />
                 <span className="text-amber-700">마법</span>이 시작됩니다.
               </p>
             </div>
@@ -176,30 +227,32 @@ export default function MagicMirror() {
           <div className="flex flex-col items-center text-center animate-in zoom-in-95 duration-500 gap-6 w-full">
             <div>
               <h2 className="text-5xl font-extrabold text-[#2D3A5A] break-keep leading-tight">
-                {isResultMode && !isProcessing ? "와우! 정말 멋져요!" : "가장 예쁜\n미소를 지어보세요"}
+                {isResultMode && !isProcessing
+                  ? "와우! 정말 멋져요!"
+                  : count !== null
+                  ? "움직이지 마세요!"
+                  : "가장 예쁜\n미소를 지어보세요"}
               </h2>
             </div>
 
-            {/* 버튼 그룹 */}
             <div className="flex flex-col w-full gap-4">
-              <button
-                onClick={handleMagicMirror}
-                disabled={isProcessing || isResultMode}
-                className={cn(
-                  "w-full py-10 rounded-3xl text-5xl font-black transition-all active:translate-y-2 active:shadow-none",
-                  isProcessing || isResultMode
-                    ? "bg-gray-400 text-white cursor-not-allowed"
-                    : "bg-gradient-to-b from-orange-400 to-red-500 text-white border-b-8 border-red-700"
-                )}
-              >
-                {isProcessing ? "변신 중..." : "젊어지기"}
-              </button>
+              {!isResultMode && count === null && (
+                <button
+                  onClick={handleMagicMirror}
+                  disabled={isProcessing || count !== null}
+                  className={cn(
+                    "w-full py-10 rounded-2xl text-5xl font-black transition-all active:translate-y-2 active:shadow-none",
+                    "bg-amber-500 text-white border-b-8 border-amber-800"
+                  )}
+                >
+                  젊어지기
+                </button>
+              )}
 
-              {/* 3. 리셋 버튼 추가 */}
               {isResultMode && !isProcessing && (
                 <button
                   onClick={handleReset}
-                  className="w-full py-8 rounded-3xl text-4xl font-black bg-stone-500 text-white border-b-8 border-stone-700 transition-all active:translate-y-1 active:shadow-none flex items-center justify-center gap-4"
+                  className="w-full py-10 rounded-2xl text-5xl bg-indigo-600 text-white border-b-8 border-indigo-900 transition-all active:translate-y-1 active:shadow-none flex items-center justify-center gap-4"
                 >
                   <RotateCcw className="size-10" />
                   다시 찍기
