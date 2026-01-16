@@ -7,7 +7,7 @@ export const buttonLabels = [
   },
   {
     label: "신체",
-    value: "excercise",
+    value: "exercise",
     icon: "Dumbbell",
     color: "lime",
   },

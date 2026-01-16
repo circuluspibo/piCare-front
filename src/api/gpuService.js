@@ -120,3 +120,22 @@ export const postFace2Img = async (file, prompt) => {
     console.log(`[FAILED TO REQ postFace2Img] : ${error}`);
   }
 };
+
+export const postVoice2Wav = async (file, gender) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const params = {
+    gender,
+    responseType: "blob",
+  };
+
+  try {
+    const { data, status } = await gpuApi.post("voicd2wav", formData, {
+      params: params,
+    });
+    if (status !== 200) throw new Error(status);
+    return URL.createObjectURL(data);
+  } catch (error) {
+    console.log(`[FAILED TO REQ voice2wav] : ${error}`);
+  }
+};

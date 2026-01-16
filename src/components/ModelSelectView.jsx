@@ -27,7 +27,7 @@ export default function ModeSelectView({
             )}
           >
             <img
-              className="object-fit mb-2 max-w-40 h-40" // 이미지 크기 및 비율 최적화
+              className="object-fit mb-2 max-w-36 h-36" // 이미지 크기 및 비율 최적화
               alt={info.title}
               src={`/images/${info.value}.png`}
             />

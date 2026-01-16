@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import ModeSelectView from "@/components/ModelSelectView";
 import DrawByVoice from "@/components/ai/DrawByVoice";
 import MagicMirror from "@/components/ai/MagicMirror";
+import VoiceReplication from "@/components/ai/VoiceReplication";
 
 const DRAWING_MODES = {
   DRAW: {
@@ -15,6 +16,11 @@ const DRAWING_MODES = {
     title: "젊어지는 거울",
     value: "mirror",
     idx: 1,
+  },
+  VOICE: {
+    title: "AI 음성 재현",
+    value: "voice",
+    idx: 2,
   },
 };
 
@@ -52,6 +58,7 @@ export default function DrawPage() {
           <div className="w-full h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
             {drawMode === "DRAW" && <DrawByVoice />}
             {drawMode === "MIRROR" && <MagicMirror />}
+            {drawMode === "VOICE" && <VoiceReplication />}
           </div>
         ) : (
           <ModeSelectView
