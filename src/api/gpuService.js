@@ -81,16 +81,13 @@ export const postTxt2Img = async (prompt, model) => {
 export const postImg2Chat = async (file, systemPrompt, lang = "ko") => {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("prompt", "상황에 맞게 짧고 친절하게 인사해줘.");
+  formData.append("prompt", "recognize this image as OCR, response only json like this, { 'result' : 'value'}");
   formData.append("system", systemPrompt);
   formData.append("lang", lang);
   formData.append("isPlay", "0");
 
   try {
-    const { data, status } = await gpuApi.post("/v1/img2chat", formData, {
-      responseType: "stream",
-      adapter: "fetch",
-    });
+    const { data, status } = await gpuApi.post("/v1/img2chat", formData);
     if (status !== 200) throw new Error(status);
 
     return data;
