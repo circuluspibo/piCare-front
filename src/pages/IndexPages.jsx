@@ -325,12 +325,12 @@ export default function Main() {
           <div
             className={cn(
               "flex-[0.8] flex flex-col items-center justify-center p-4 rounded-3xl shadow-inner border border-white/50",
-              `bg-${weatherStatus.color}`,
+              `bg-${weatherStatus.color}-200`,
             )}
           >
             <IconRenderer
               icon={weatherStatus.icon}
-              className={cn("w-24 h-24 mb-2", `text-${weatherStatus.color}`)}
+              className={cn("w-24 h-24 mb-2", `text-${weatherStatus.color}-600`)}
             />
             <span
               className={cn(
@@ -397,10 +397,10 @@ export default function Main() {
         </div>
 
         <div className="my-4 bg-gray-50 p-3 rounded-2xl border border-gray-100">
-          <p className="text-gray-600 text-lg font-bold text-center leading-tight">
+          <p className="text-lg font-bold text-center leading-tight">
             <IconRenderer
               icon={weatherStatus.icon}
-              className="w-8 h-8 inline-block mr-2 mb-1 opacity-50"
+              className={cn("w-8 h-8 inline-block mr-2 mb-1 opacity-50", `text-${weatherStatus.color}-600`)}
             />
             {weatherStatus.desc}
           </p>
