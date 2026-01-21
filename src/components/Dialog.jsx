@@ -18,17 +18,9 @@ export default function Dialog({
   title,
   children,
   actions,
-  titleStyle = "text-3xl font-bold mb-4",
+  titleStyle = "text-5xl font-bold mb-4 text-[#2D3A5A]",
 }) {
   if (!isOpen) return null;
-
-  // Dialog 외부를 클릭했을 때 닫히는 동작 방지 (필요시 추가)
-  // const handleBackdropClick = (e) => {
-  //   if (e.target === e.currentTarget) {
-  //     onClose();
-  //   }
-  // };
-
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
@@ -39,10 +31,9 @@ export default function Dialog({
         {title && <h3 className={titleStyle}>{title}</h3>}
 
         {/* 본문 내용 (Children) */}
-        <div className="text-gray-700 text-left">{children}</div>
+        <div>{children}</div>
 
         {/* 액션 버튼 (Actions) */}
-
         <div className="flex justify-center space-x-4">
           {actions !== undefined &&
             actions.map((action, index) => (

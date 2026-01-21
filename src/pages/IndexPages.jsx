@@ -84,7 +84,7 @@ export default function Main() {
         }
 
         const blob = await new Promise((resolve) =>
-          canvas.toBlob(resolve, "image/jpeg")
+          canvas.toBlob(resolve, "image/jpeg"),
         );
         const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
 
@@ -192,7 +192,7 @@ export default function Main() {
             onClick={() => setIsWeatherDialogOpen(true)}
             className={cn(
               "flex flex-col items-center justify-center p-2 rounded-2xl cursor-pointer transition-all",
-              `bg-${weatherStatus.color}-200`
+              `bg-${weatherStatus.color}-200`,
             )}
           >
             <div className="flex items-center gap-2">
@@ -204,7 +204,7 @@ export default function Main() {
               <span
                 className={cn(
                   "text-3xl font-black tracking-tighter",
-                  `text-${weatherStatus.color}-800`
+                  `text-${weatherStatus.color}-800`,
                 )}
               >
                 {temperature}°
@@ -213,7 +213,7 @@ export default function Main() {
             <span
               className={cn(
                 "text-sm font-black mt-1 uppercase",
-                `text-${weatherStatus.color}-800`
+                `text-${weatherStatus.color}-800`,
               )}
             >
               {weatherStatus.label}
@@ -225,7 +225,7 @@ export default function Main() {
             <span
               className={cn(
                 "text-lg font-black",
-                isAutoMode ? "text-blue-600" : "text-gray-400"
+                isAutoMode ? "text-blue-600" : "text-gray-400",
               )}
             >
               AI 모드
@@ -244,7 +244,7 @@ export default function Main() {
               }
               className={cn(
                 "flex flex-1 flex-col justify-center text-xl font-black rounded-2xl border-b-[8px] active:border-b-0 active:translate-y-1 shadow-sm transition-all",
-                `bg-${v.color}-200 text-${v.color}-800 border-${v.color}-300 hover:bg-${v.color}-300`
+                `bg-${v.color}-200 text-${v.color}-800 border-${v.color}-300 hover:bg-${v.color}-300`,
               )}
             >
               <IconRenderer icon={v.icon} style={{ width: 60, height: 60 }} />
@@ -273,7 +273,7 @@ export default function Main() {
           <div
             className={cn(
               "flex-[0.8] flex flex-col items-center justify-center p-4 rounded-3xl shadow-inner border border-white/50",
-              weatherStatus.color
+              weatherStatus.color,
             )}
           >
             <IconRenderer
@@ -283,7 +283,7 @@ export default function Main() {
             <span
               className={cn(
                 "text-3xl font-black break-keep text-center",
-                weatherStatus.color
+                weatherStatus.color,
               )}
             >
               {weatherStatus.label}
@@ -335,10 +335,10 @@ export default function Main() {
                 {air === "VG"
                   ? "매우 좋음"
                   : air === "G"
-                  ? "좋음"
-                  : air === "N"
-                  ? "보통"
-                  : "나쁨"}
+                    ? "좋음"
+                    : air === "N"
+                      ? "보통"
+                      : "나쁨"}
               </span>
             </div>
           </div>

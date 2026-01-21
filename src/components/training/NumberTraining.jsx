@@ -40,7 +40,7 @@ export default function NumberTraining({ onComplete }) {
       fail: new Audio("/sound/fail.mp3"),
       complete: new Audio("/sound/complete.mp3"),
     }),
-    []
+    [],
   );
 
   const startNextRound = useCallback(() => {
@@ -83,7 +83,7 @@ export default function NumberTraining({ onComplete }) {
 
             if (nextScores.length >= TOTAL_ROUNDS) {
               setTotalElapsedTime(
-                ((Date.now() - totalStartRef.current) / 1000).toFixed(0)
+                ((Date.now() - totalStartRef.current) / 1000).toFixed(0),
               );
               setTimeout(() => {
                 setIsFinish(true);
@@ -111,7 +111,7 @@ export default function NumberTraining({ onComplete }) {
       audio,
       wrongIdx,
       correctIdx,
-    ]
+    ],
   );
 
   const getFeedbackMsg = () => {
@@ -153,7 +153,7 @@ export default function NumberTraining({ onComplete }) {
                 // 오답 상태 (Red)
                 wrongIdx === i &&
                   "bg-red-500 border-red-700 text-white animate-shake",
-                isProcessing && "opacity-50"
+                isProcessing && "opacity-50",
               )}
             >
               {num}
@@ -166,21 +166,21 @@ export default function NumberTraining({ onComplete }) {
       <aside className="flex-[3] h-full flex flex-col gap-2">
         {/* 라운드 진행도 카드 */}
         <div className="bg-white p-2 rounded-xl shadow-inner border grid grid-cols-5 gap-1">
-            {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "w-full aspect-square rounded-full flex items-center justify-center text-2xl transition-all",
-                  i === scores.length
-                    ? "bg-blue-500 text-white animate-pulse"
-                    : scores[i]?.isPass
+          {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (
+            <div
+              key={i}
+              className={cn(
+                "w-full aspect-square rounded-full flex items-center justify-center text-2xl transition-all",
+                i === scores.length
+                  ? "bg-blue-500 text-white animate-pulse"
+                  : scores[i]?.isPass
                     ? "bg-green-500 text-white"
-                    : "bg-gray-100 text-gray-300"
-                )}
-              >
-                {i + 1}
-              </div>
-            ))}
+                    : "bg-gray-100 text-gray-300",
+              )}
+            >
+              {i + 1}
+            </div>
+          ))}
         </div>
 
         {/* 현재 타겟 숫자 안내 카드 (가장 시각적으로 강조됨) */}
@@ -196,7 +196,7 @@ export default function NumberTraining({ onComplete }) {
           <div
             className={cn(
               "w-full py-4 px-2 rounded-xl text-center",
-              gameData.isUp ? "bg-orange-50" : "bg-purple-50"
+              gameData.isUp ? "bg-orange-50" : "bg-purple-50",
             )}
           >
             <p className="text-2xl break-keep leading-snug">
@@ -217,12 +217,8 @@ export default function NumberTraining({ onComplete }) {
       </aside>
 
       {/* 결과 다이얼로그 (일관된 스타일) */}
-      <Dialog
-        isOpen={isFinish}
-        onClose={onComplete}
-        title="훈련 결과"
-      >
-        <div className="text-center flex flex-col items-center gap-2">
+      <Dialog isOpen={isFinish} onClose={onComplete} title="훈련 결과">
+        <div className="text-center flex flex-col items-center gap-3">
           <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
             {getFeedbackMsg()}
           </h2>
@@ -244,7 +240,7 @@ export default function NumberTraining({ onComplete }) {
 
           <button
             onClick={onComplete}
-            className="w-full mt-4 py-4 bg-[#2D3A5A] text-white text-5xl font-black rounded-2xl"
+            className="w-[80%] py-4 bg-[#2D3A5A] text-white text-4xl font-black rounded-2xl hover:bg-slate-800 transition-all shadow-xl"
           >
             확인
           </button>

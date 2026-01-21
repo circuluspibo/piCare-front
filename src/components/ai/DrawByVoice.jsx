@@ -125,69 +125,71 @@ export default function VoiceDrawingCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }, []);
   return (
-    <div className="flex w-full h-full space-x-6">
-      <div className="w-3/4 relative group" ref={parentRef}>
-        <div className="w-full h-full p-4 bg-[#dcc6a1] rounded-sm shadow-xl border-[10px] border-[#8b5a2b] relative overflow-hidden">
-          <canvas
-            ref={canvasRef}
-            className="w-full h-full bg-white cursor-crosshair touch-none relative z-10"
-            onMouseDown={startDraw}
-            onMouseMove={draw}
-            onMouseUp={() => setIsDrawing(false)}
-            onTouchStart={startDraw}
-            onTouchMove={draw}
-            onTouchEnd={() => setIsDrawing(false)}
-          />
-        </div>
-      </div>
-      <div className="w-1/4 flex flex-col space-y-4">
-        {/* 스타일 스위치 */}
-        <div className="bg-white/50 p-2 rounded-3xl shadow-sm border-2 border-stone-200 grid gap-2">
-          <p className="text-center text-xl text-stone-400 font-bold">
-            화풍 선택
-          </p>
-          <button
-            onClick={() => setSketchModel("real")}
-            className={cn(
-              "h-20 text-3xl rounded-2xl transition-all border-b-8 active:border-b-0 active:translate-y-1",
-              sketchModel === "real"
-                ? "bg-violet-200 border-violet-300 text-violet-900"
-                : "bg-gray-100 border-gray-300 text-gray-400"
-            )}
-          >
-            사진처럼
-          </button>
-          <button
-            onClick={() => setSketchModel("anim")}
-            className={cn(
-              "h-20 text-3xl font-black rounded-2xl transition-all border-b-8 active:border-b-0 active:translate-y-1",
-              sketchModel === "anim"
-                ? "bg-lime-200 border-lime-300 text-lime-900"
-                : "bg-gray-100 border-gray-300 text-gray-400"
-            )}
-          >
-            그림처럼
-          </button>
-        </div>
-
-        {/* 액션 버튼 */}
-        <div className="flex flex-col flex-1 gap-3">
-          <button
-            onClick={clearCanvas}
-            className="flex-1 flex items-center justify-center bg-rose-50 border-2 border-rose-100 text-rose-600 rounded-xl shadow-sm hover:bg-rose-100 transition-colors"
-          >
-            <span className="text-3xl font-black">도화지 교체</span>
-          </button>
-
-          <div className="flex-[1.5] relative">
-            <MicToggleButton
-              onStart={handleStartRecording}
-              onStop={handleStopAndGenerate}
-              isListening={isRecording}
-              className="w-full h-full flex flex-col items-center justify-center"
-              iconSize="size-20"
-              micText="text-[38px]"
+    <>
+      <div className="flex w-full h-full space-x-6">
+        <div className="w-3/4 relative group" ref={parentRef}>
+          <div className="w-full h-full p-4 bg-[#dcc6a1] rounded-sm shadow-xl border-[10px] border-[#8b5a2b] relative overflow-hidden">
+            <canvas
+              ref={canvasRef}
+              className="w-full h-full bg-white cursor-crosshair touch-none relative z-10"
+              onMouseDown={startDraw}
+              onMouseMove={draw}
+              onMouseUp={() => setIsDrawing(false)}
+              onTouchStart={startDraw}
+              onTouchMove={draw}
+              onTouchEnd={() => setIsDrawing(false)}
             />
+          </div>
+        </div>
+        <div className="w-1/4 flex flex-col space-y-4">
+          {/* 스타일 스위치 */}
+          <div className="bg-white/50 p-2 rounded-3xl shadow-sm border-2 border-stone-200 grid gap-2">
+            <p className="text-center text-xl text-stone-400 font-bold">
+              화풍 선택
+            </p>
+            <button
+              onClick={() => setSketchModel("real")}
+              className={cn(
+                "h-20 text-3xl rounded-2xl transition-all border-b-8 active:border-b-0 active:translate-y-1",
+                sketchModel === "real"
+                  ? "bg-violet-200 border-violet-300 text-violet-900"
+                  : "bg-gray-100 border-gray-300 text-gray-400",
+              )}
+            >
+              사진처럼
+            </button>
+            <button
+              onClick={() => setSketchModel("anim")}
+              className={cn(
+                "h-20 text-3xl font-black rounded-2xl transition-all border-b-8 active:border-b-0 active:translate-y-1",
+                sketchModel === "anim"
+                  ? "bg-lime-200 border-lime-300 text-lime-900"
+                  : "bg-gray-100 border-gray-300 text-gray-400",
+              )}
+            >
+              그림처럼
+            </button>
+          </div>
+
+          {/* 액션 버튼 */}
+          <div className="flex flex-col flex-1 gap-3">
+            <button
+              onClick={clearCanvas}
+              className="flex-1 flex items-center justify-center bg-rose-50 border-2 border-rose-100 text-rose-600 rounded-xl shadow-sm hover:bg-rose-100 transition-colors"
+            >
+              <span className="text-3xl font-black">도화지 교체</span>
+            </button>
+
+            <div className="flex-[1.5] relative">
+              <MicToggleButton
+                onStart={handleStartRecording}
+                onStop={handleStopAndGenerate}
+                isListening={isRecording}
+                className="w-full h-full flex flex-col items-center justify-center"
+                iconSize="size-20"
+                micText="text-[38px]"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -196,11 +198,27 @@ export default function VoiceDrawingCanvas() {
         onClose={() => setLoading(false)}
         title="이미지 생성 중"
       >
-        <div className="text-center p-10 flex flex-col items-center gap-4">
-          <ThreeDot variant="bounce" color="#3174cc" size="large" />
-          <p className="text-2xl font-bold">{loadingText}</p>
+        <div className="text-center flex flex-col items-center gap-6">
+          <div className="space-y-4">
+            <div className="flex justify-center">
+              <ThreeDot
+                variant="bounce"
+                color="oklch(54.6% 0.245 262.881)"
+                size="large"
+              />
+            </div>
+
+            <h2 className="text-5xl font-black text-[#2D3A5A] leading-snug break-keep">
+              AI 화가가 <br />
+              <span className="text-blue-600 underline decoration-wavy">
+                "{sketchPrompt || "바다"}"
+              </span>
+              를 <br />
+              열심히 그리고 있어요!
+            </h2>
+          </div>
         </div>
       </Dialog>
-    </div>
+    </>
   );
 }

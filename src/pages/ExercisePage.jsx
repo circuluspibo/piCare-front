@@ -128,7 +128,7 @@ export default function ExercisePage() {
         return updated;
       });
     },
-    [target, passAudio, failAudio, cameraError]
+    [target, passAudio, failAudio, cameraError],
   );
 
   const startNextTrial = useCallback(() => {
@@ -173,7 +173,7 @@ export default function ExercisePage() {
         });
       }, 1000);
     },
-    [resetGame, startNextTrial, cameraError]
+    [resetGame, startNextTrial, cameraError],
   );
 
   const onResults = useCallback(
@@ -224,7 +224,7 @@ export default function ExercisePage() {
       const detectedSide = DETECTORS[gameMode](marks);
       if (detectedSide) calc(detectedSide);
     },
-    [isStart, isFinish, gameMode, calc, cameraError]
+    [isStart, isFinish, gameMode, calc, cameraError],
   );
 
   const onResultsRef = useRef(onResults);
@@ -344,7 +344,7 @@ export default function ExercisePage() {
               "px-10 py-3 rounded-full text-3xl",
               isPoseVisible && !cameraError
                 ? "bg-green-500 text-white"
-                : "bg-red-500 text-white animate-pulse"
+                : "bg-red-500 text-white animate-pulse",
             )}
           >
             {isPoseVisible && !cameraError ? "인식 중" : "인식 불가"}
@@ -356,7 +356,7 @@ export default function ExercisePage() {
       <main className="flex flex-grow overflow-hidden relative">
         {gameMode ? (
           /* 게임 진행 화면 */
-          <div className="flex w-full h-full space-x-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex w-full h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="w-2/3 flex items-center gap-2 relative p-2">
               {!isPoseVisible && isStart && !cameraError && (
                 <div className="absolute inset-0 z-10 bg-black/70 flex items-center justify-center rounded-2xl text-white text-7xl font-black text-center break-keep">
@@ -388,10 +388,10 @@ export default function ExercisePage() {
                       i === currentCount
                         ? "bg-blue-500 text-white animate-pulse"
                         : totalScores[i]?.isPass
-                        ? "bg-green-500 text-white"
-                        : totalScores[i]
-                        ? "bg-red-500 text-white"
-                        : "bg-gray-100 text-gray-300"
+                          ? "bg-green-500 text-white"
+                          : totalScores[i]
+                            ? "bg-red-400 text-white"
+                            : "bg-gray-100 text-gray-300",
                     )}
                   >
                     {i + 1}
@@ -415,14 +415,15 @@ export default function ExercisePage() {
 
       {/* 공통 다이얼로그 */}
       <Dialog isOpen={cameraError} onClose={() => {}} title="카메라 연결 오류">
-        <div className="flex flex-col items-center p-8 space-y-4">
+        <div className="flex flex-col items-center gap-6">
           <AlertCircle className="size-24 text-red-500" />
-          <p className="text-3xl font-bold">
-            카메라 연결 상태를 확인해 주세요.
+          <p className="text-3xl font-bold break-keep leading-snug text-[#2D3A5A]">
+            카메라 연결 상태를
+            <br /> 확인해 주세요.
           </p>
           <button
             onClick={() => navigation("/")}
-            className="mt-4 px-8 py-3 bg-blue-600 text-white rounded-xl text-2xl font-bold"
+            className="w-[80%] py-4 bg-[#2D3A5A] text-white text-5xl font-black rounded-2xl hover:bg-slate-800 transition-all shadow-xl"
           >
             처음으로
           </button>
@@ -434,7 +435,7 @@ export default function ExercisePage() {
         onClose={() => setIsFinish(false)}
         title="훈련 결과"
       >
-        <div className="text-center flex flex-col items-center gap-2">
+        <div className="text-center flex flex-col items-center gap-3">
           <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
             {getFeedbackMsg()}
           </h2>
@@ -452,7 +453,7 @@ export default function ExercisePage() {
           </div>
           <button
             onClick={onLeavePresentGame}
-            className="w-full py-6 bg-[#2D3A5A] text-white text-4xl font-black rounded-3xl hover:bg-slate-800 transition-all shadow-xl"
+            className="w-[80%] py-4 bg-[#2D3A5A] text-white text-4xl font-black rounded-2xl hover:bg-slate-800 transition-all shadow-xl"
           >
             다른 활동 하러가기
           </button>

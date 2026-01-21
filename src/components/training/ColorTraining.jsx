@@ -61,7 +61,7 @@ export default function ColorTraining({ onComplete }) {
       fail: new Audio("/sound/fail.mp3"),
       complete: new Audio("/sound/complete.mp3"),
     }),
-    []
+    [],
   );
 
   // 라운드 전환 로직 (종료 판단 제외)
@@ -96,7 +96,7 @@ export default function ColorTraining({ onComplete }) {
       if (nextScores.length >= TOTAL_ROUNDS) {
         // 10회 완료 시 즉시 종료 처리
         const duration = ((Date.now() - totalStartRef.current) / 1000).toFixed(
-          0
+          0,
         );
         setTotalElapsedTime(duration);
 
@@ -110,7 +110,7 @@ export default function ColorTraining({ onComplete }) {
         setTimeout(startNextRound, 800);
       }
     },
-    [gameData.target, isFinish, isProcessing, scores, startNextRound, audio]
+    [gameData.target, isFinish, isProcessing, scores, startNextRound, audio],
   ); // scores 의존성 추가
 
   const getFeedbackMsg = () => {
@@ -148,7 +148,7 @@ export default function ColorTraining({ onComplete }) {
                 "active:scale-95",
                 wrongIdx === i &&
                   "animate-shake border-red-500 ring-[10px] ring-red-50",
-                isProcessing && "pointer-events-none opacity-80"
+                isProcessing && "pointer-events-none opacity-80",
               )}
             />
           ))}
@@ -166,10 +166,10 @@ export default function ColorTraining({ onComplete }) {
                 i === scores.length
                   ? "bg-blue-500 text-white animate-pulse"
                   : scores[i]?.isPass
-                  ? "bg-green-500 text-white"
-                  : scores[i]
-                  ? "bg-red-400 text-white"
-                  : "bg-gray-100 text-gray-300"
+                    ? "bg-green-500 text-white"
+                    : scores[i]
+                      ? "bg-red-400 text-white"
+                      : "bg-gray-100 text-gray-300",
               )}
             >
               {i + 1}
@@ -192,7 +192,7 @@ export default function ColorTraining({ onComplete }) {
         </div>
       </aside>
       <Dialog isOpen={isFinish} onClose={onComplete} title="훈련 종료">
-        <div className="text-center flex flex-col items-center gap-2">
+        <div className="text-center flex flex-col items-center gap-3">
           <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
             {getFeedbackMsg()}
           </h2>
@@ -212,7 +212,7 @@ export default function ColorTraining({ onComplete }) {
           </div>
           <button
             onClick={onComplete}
-            className="w-full mt-4 py-4 bg-[#2D3A5A] text-white text-5xl font-black rounded-2xl"
+            className="w-[80%] py-4 bg-[#2D3A5A] text-white text-4xl font-black rounded-2xl hover:bg-slate-800 transition-all shadow-xl"
           >
             확인
           </button>

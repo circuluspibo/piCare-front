@@ -69,7 +69,7 @@ export default function PianoTraining({ onComplete }) {
   const startNewRound = useCallback(async () => {
     const newSequence = Array.from(
       { length: 3 },
-      () => Math.floor(Math.random() * 8) + 1
+      () => Math.floor(Math.random() * 8) + 1,
     );
     setTargetSequence(newSequence);
     setIsEvaluating(false);
@@ -120,7 +120,7 @@ export default function PianoTraining({ onComplete }) {
 
           if (nextScores.length >= TOTAL_ROUNDS) {
             setTotalElapsedTime(
-              ((Date.now() - totalStartRef.current) / 1000).toFixed(0)
+              ((Date.now() - totalStartRef.current) / 1000).toFixed(0),
             );
             setTimeout(() => {
               setIsFinish(true);
@@ -141,7 +141,7 @@ export default function PianoTraining({ onComplete }) {
       soundsRef,
       scores,
       startNewRound,
-    ]
+    ],
   );
 
   const handleReplay = useCallback(() => {
@@ -198,7 +198,7 @@ export default function PianoTraining({ onComplete }) {
                 "hover:bg-slate-50",
                 activeKey === key.id && "translate-y-2 shadow-none bg-blue-50",
                 (isPlayingTarget || isEvaluating) &&
-                  "cursor-default active:translate-y-0 shadow-[0_10px_0_0_#e2e8f0]"
+                  "cursor-default active:translate-y-0 shadow-[0_10px_0_0_#e2e8f0]",
               )}
             >
               <span
@@ -206,7 +206,7 @@ export default function PianoTraining({ onComplete }) {
                   "text-4xl font-black mb-4",
                   activeKey === key.id
                     ? "text-blue-600 scale-125"
-                    : "text-slate-400"
+                    : "text-slate-400",
                 )}
               >
                 {key.label}
@@ -227,7 +227,7 @@ export default function PianoTraining({ onComplete }) {
                   ? userSequence[i].isCorrect
                     ? "bg-green-500 border-green-200 text-white shadow-lg shadow-green-200" // 정답: 초록
                     : "bg-red-500 border-red-200 text-white shadow-lg shadow-red-200" // 오답: 빨간
-                  : "bg-slate-50 border-slate-100"
+                  : "bg-slate-50 border-slate-100",
               )}
             >
               {userSequence[i] ? (
@@ -243,8 +243,8 @@ export default function PianoTraining({ onComplete }) {
             {isPlayingTarget
               ? "소리를 잘 들어보세요..."
               : isEvaluating
-              ? "결과를 확인합니다!"
-              : "기억한 건반을 누르세요!"}
+                ? "결과를 확인합니다!"
+                : "기억한 건반을 누르세요!"}
           </p>
         </div>
       </section>
@@ -260,10 +260,10 @@ export default function PianoTraining({ onComplete }) {
                 i === scores.length
                   ? "bg-blue-500 text-white animate-pulse"
                   : scores[i]?.isPass
-                  ? "bg-green-500 text-white"
-                  : scores[i]
-                  ? "bg-red-400 text-white"
-                  : "bg-gray-100 text-gray-300"
+                    ? "bg-green-500 text-white"
+                    : scores[i]
+                      ? "bg-red-400 text-white"
+                      : "bg-gray-100 text-gray-300",
               )}
             >
               {i + 1}
@@ -277,7 +277,7 @@ export default function PianoTraining({ onComplete }) {
               "size-28 rounded-xl flex items-center justify-center transition-all duration-500",
               isPlayingTarget
                 ? "bg-blue-100 text-blue-600 scale-110"
-                : "bg-slate-100 text-slate-400"
+                : "bg-slate-100 text-slate-400",
             )}
           >
             <Music
@@ -302,7 +302,7 @@ export default function PianoTraining({ onComplete }) {
       </aside>
 
       <Dialog isOpen={isFinish} onClose={onComplete} title="훈련 결과">
-        <div className="text-center flex flex-col items-center gap-2">
+        <div className="text-center flex flex-col items-center gap-3">
           <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
             {getFeedbackMsg()}
           </h2>
@@ -322,7 +322,7 @@ export default function PianoTraining({ onComplete }) {
           </div>
           <button
             onClick={onComplete}
-            className="w-full mt-4 py-4 bg-[#2D3A5A] text-white text-5xl font-black rounded-2xl"
+            className="w-[80%] py-4 bg-[#2D3A5A] text-white text-5xl font-black rounded-2xl hover:bg-slate-800 transition-all shadow-xl"
           >
             확인
           </button>
