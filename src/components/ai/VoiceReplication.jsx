@@ -4,6 +4,7 @@ import Dialog from "@/components/Dialog";
 import { IconRenderer } from "@/components/ui/IconRenderer";
 import { cn } from "@/lib/utils";
 import { ThreeDot } from "react-loading-indicators";
+import { postVoice2Wav } from "@/api/gpuService";
 
 const USER_SCRIPT_LIST = [
   "사랑하는 우리 가족들아, 오늘도 건강하고 웃음 가득한 하루 보내렴. 언제나 너희를 응원하고 아주 많이 사랑한다.",
@@ -24,8 +25,12 @@ export default function VoiceReplication() {
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const timerRef = useRef(null);
 
+  // 녹음 데이터 보관
+  const mediaRecorderRef = useRef(null);
+  const audioChunkRef = useRef([]);
+
   const [currentScript, setCurrentScript] = useState(
-    () => USER_SCRIPT_LIST[Math.floor(Math.random() * USER_SCRIPT_LIST.length)]
+    () => USER_SCRIPT_LIST[Math.floor(Math.random() * USER_SCRIPT_LIST.length)],
   );
 
   // --- 오디오 재생 함수 ---
@@ -60,28 +65,65 @@ export default function VoiceReplication() {
   }, [isRecording, currentScript]);
   // --------------------------------
 
-  const postVoice2Wav = async () => {
+  const sendVoiceFile = async (file) => {
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      setResultAudio(
-        "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-      );
+      const response = await postVoice2Wav(file, "man");
+      // console.log("response = ", response);
+
+      setResultAudio(response);
     } catch (error) {
-      console.error("API Error:", error);
+      console.error(`[Failed to sendVoice file - sendVoiceFile] E: ${error}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStart = () => {
-    setIsFlipped(true);
-    setIsRecording(true);
+  const handleStart = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunkRef.current = []; // 데이터 초기화
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunkRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorderRef.current.start();
+      setIsFlipped(true);
+      setIsRecording(true);
+    } catch (error) {
+      console.log(`[Failed to start record - handleStart] E: ${error}`);
+    }
   };
 
   const handleStop = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.onstop = () => {
+        // Blob 생성
+        const audioBlob = new Blob(audioChunkRef.current, {
+          type: "audio/wav",
+        });
+
+        // 전처리
+        const audioFile = new File([audioBlob], "voice_record.wav", {
+          lastModified: Date.now(),
+          type: "audio/wav",
+        });
+
+        sendVoiceFile(audioFile);
+
+        // 마이크 종료
+        mediaRecorderRef.current?.stream
+          .getTracks()
+          .forEach((track) => track.stop());
+      };
+    }
+
+    mediaRecorderRef.current.stop();
     setIsRecording(false);
-    postVoice2Wav();
   };
 
   const handleReset = () => {
@@ -99,7 +141,7 @@ export default function VoiceReplication() {
         <div
           className={cn(
             "relative w-full h-full duration-1000 [transform-style:preserve-3d] transition-transform shadow-xl rounded-2xl",
-            isFlipped ? "[transform:rotateY(180deg)]" : ""
+            isFlipped ? "[transform:rotateY(180deg)]" : "",
           )}
         >
           {/* 앞면: 안내 대기 화면 */}
@@ -126,7 +168,7 @@ export default function VoiceReplication() {
           <div
             className={cn(
               "absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-2xl flex flex-col items-center justify-center p-12 overflow-hidden",
-              `${!resultAudio ? "bg-[#fdfcf0]" : "bg-white"}`
+              `${!resultAudio ? "bg-[#fdfcf0]" : "bg-white"}`,
             )}
           >
             <div
@@ -166,7 +208,7 @@ export default function VoiceReplication() {
                           "transition-colors duration-300",
                           index < highlightIndex
                             ? "text-slate-900"
-                            : "text-slate-300"
+                            : "text-slate-300",
                         )}
                       >
                         {char}
@@ -193,7 +235,7 @@ export default function VoiceReplication() {
                     "w-full max-w-sm h-28 flex items-center justify-center gap-4 text-5xl font-black rounded-2xl transition-all shadow-xl",
                     isPlaying
                       ? "bg-slate-200 text-slate-400 border-b-0 translate-y-2 cursor-not-allowed"
-                      : "bg-orange-500 text-white border-b-[10px] border-orange-700 hover:bg-orange-600 active:border-b-0 active:translate-y-2"
+                      : "bg-orange-500 text-white border-b-[10px] border-orange-700 hover:bg-orange-600 active:border-b-0 active:translate-y-2",
                   )}
                 >
                   <IconRenderer
@@ -214,7 +256,7 @@ export default function VoiceReplication() {
           <div
             className={cn(
               "w-8 h-8 rounded-full",
-              isRecording ? "bg-red-500 animate-pulse" : "bg-slate-300"
+              isRecording ? "bg-red-500 animate-pulse" : "bg-slate-300",
             )}
           />
           <span className="text-3xl font-black text-slate-700 uppercase tracking-tighter">

@@ -1,85 +1,119 @@
 export const getWeatherStatus = (tempRaw, humRaw, air) => {
-  const temp = parseFloat(tempRaw);
-  const hum = parseFloat(humRaw);
+  const temp = parseFloat(tempRaw).toFixed(1);
+  const hum = parseFloat(humRaw).toFixed(1);
 
+  // 0. 데이터 유효성 검사
   if (isNaN(temp) || isNaN(hum)) {
     return {
       label: "데이터 오류",
       icon: "AlertCircle",
-      color: "slate", // 무채색 slate로 변경
+      color: "slate",
       desc: "날씨 정보를 읽어올 수 없습니다.",
     };
   }
 
-  // 1. 공기 질 (나쁨/매우 나쁨)
-  if (air === "VB" || air === "B") {
+  // 1. 공기 질 우선순위 (매우 나쁨/나쁨)
+  if (air === "VB") {
     return {
-      label: "미세먼지",
+      label: "최악의 공기",
+      icon: "Skull",
+      color: "zinc",
+      desc: "공기가 매우 해롭습니다! 반드시 마스크를 착용하세요.",
+    };
+  }
+  if (air === "B") {
+    return {
+      label: "공기 나쁨",
       icon: "CloudFog",
-      color: "slate", // 탁한 느낌의 slate로 변경
-      desc: "공기가 탁해요. 가급적 실내에 머무세요.",
+      color: "gray",
+      desc: "미세먼지가 많아 공기가 탁합니다. 환기를 자제하세요.",
     };
   }
 
-  // 2. 극한 기온 상황
-  if (temp >= 33) {
+  // 2. 기온 극한 상황 (폭염/한파)
+  if (temp >= 35) {
     return {
-      label: "폭염 경보",
+      label: "극한 폭염",
+      icon: "SunExtreme", // Lucide 아이콘 명칭 확인 필요 (Sun 도 가능)
+      color: "red",
+      desc: "살인적인 더위입니다. 야외 활동을 즉시 중단하세요.",
+    };
+  }
+  if (temp >= 30) {
+    return {
+      label: "무더위",
       icon: "Flame",
-      color: "rose", // 강렬한 빨간색 계열 rose로 변경
-      desc: "매우 뜨거운 날씨예요. 수분을 충분히 섭취하세요.",
+      color: "rose",
+      desc: "땀이 많이 나는 무더운 날씨입니다. 물을 자주 마셔요.",
     };
   }
   if (temp <= -10) {
     return {
-      label: "강력 한파",
+      label: "극심한 한파",
       icon: "ThermometerSnowflake",
-      color: "violet", // 깊고 차가운 violet으로 변경
-      desc: "매우 위험한 추위예요. 외출을 자제하세요.",
+      color: "purple",
+      desc: "전국이 꽁꽁 얼어붙은 한파입니다. 보온에 유의하세요.",
     };
   }
-  if (temp < 0) {
+  if (temp <= 0) {
     return {
-      label: "영하 추위",
+      label: "영하권 추위",
       icon: "Snowflake",
-      color: "indigo", // 차가운 indigo로 변경
-      desc: "기온이 영하예요. 빙판길 조심하세요!",
+      color: "blue",
+      desc: "기온이 영하로 떨어졌습니다. 따뜻하게 입고 나가세요.",
     };
   }
 
-  // 3. 습도 관련 특수 상황
-  if (temp >= 25 && hum >= 75) {
+  // 3. 습도 및 불쾌지수 조합
+  if (temp >= 24 && hum >= 80) {
     return {
-      label: "덥고 습함",
-      icon: "Waves",
-      color: "orange", // 불쾌지수가 느껴지는 orange로 유지
-      desc: "후덥지근한 날씨예요. 불쾌지수가 높을 수 있어요.",
+      label: "찜통 더위",
+      icon: "Droplets",
+      color: "orange",
+      desc: "습도가 높아 매우 후덥지근합니다. 불쾌지수 주의!",
     };
   }
-  if (hum <= 20) {
+  if (temp < 15 && hum <= 25) {
     return {
-      label: "매우 건조",
+      label: "쌀쌀하고 건조",
       icon: "Wind",
-      color: "cyan", // 건조하고 쨍한 느낌의 cyan으로 변경
-      desc: "공기가 매우 건조해요. 수분 크림을 발라주세요.",
+      color: "cyan",
+      desc: "바람이 차고 건조합니다. 산불과 피부 건조에 주의하세요.",
     };
   }
 
-  // 4. 쾌적 상태
-  if (temp >= 17 && temp <= 28 && (air === "VG" || air === "G" || air === "N")) {
+  // 4. 봄/가을 및 환절기 세분화
+  if (temp >= 18 && temp <= 25) {
+    if (hum >= 40 && hum <= 60 && (air === "VG" || air === "G")) {
+      return {
+        label: "최고의 날씨",
+        icon: "Sparkles",
+        color: "emerald",
+        desc: "더할 나위 없이 완벽한 날씨입니다. 산책은 어떠신가요?",
+      };
+    }
     return {
-      label: "쾌적함",
-      icon: "Sparkles",
-      color: "teal", // 싱그러운 teal로 변경
-      desc: "활동하기 딱 좋은 날씨예요. 즐거운 하루 되세요!",
+      label: "포근함",
+      icon: "Sun",
+      color: "teal",
+      desc: "활동하기 적당하고 포근한 날씨가 이어집니다.",
     };
   }
 
-  // 5. 기본 상태
+  if (temp >= 5 && temp < 18) {
+    return {
+      label: "선선한 날씨",
+      icon: "Leaf",
+      color: "lime",
+      desc: "약간 쌀쌀할 수 있으니 가벼운 겉옷을 챙기세요.",
+    };
+  }
+
+  // 5. 기본 상태 (상기 조건에 해당하지 않는 평범한 날씨)
   return {
     label: "평온함",
-    icon: "Sun",
-    color: "amber", // 따뜻하고 무난한 amber로 변경
-    desc: "크게 덥거나 춥지 않은 무난한 날씨입니다.",
+    icon: "CloudSun",
+    color: "amber",
+    desc: "크게 덥거나 춥지 않은 평온한 하루입니다.",
   };
 };
