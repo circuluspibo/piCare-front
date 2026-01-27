@@ -81,7 +81,10 @@ export const postTxt2Img = async (prompt, model) => {
 export const postImg2Chat = async (file, systemPrompt, lang = "ko") => {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("prompt", "recognize this image as OCR, response only json like this, { 'result' : 'value'}");
+  formData.append(
+    "prompt",
+    "recognize this image as OCR, response only json like this, { 'result' : 'value'}",
+  );
   formData.append("system", systemPrompt);
   formData.append("lang", lang);
   formData.append("isPlay", "0");
@@ -127,7 +130,7 @@ export const postVoice2Wav = async (file, gender) => {
   };
 
   try {
-    const { data, status } = await gpuApi.post("voicd2wav", formData, {
+    const { data, status } = await gpuApi.post("voice2wav", formData, {
       params: params,
     });
     if (status !== 200) throw new Error(status);
