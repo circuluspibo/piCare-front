@@ -124,9 +124,12 @@ export const postFace2Img = async (file, prompt) => {
 export const postVoice2Wav = async (file, gender) => {
   const formData = new FormData();
   formData.append("file", file);
-  
+
   try {
-    const { data, status } = await gpuApi.post("voice2wav", formData, { params: { gender }, responseType: 'blob' });
+    const { data, status } = await gpuApi.post("voice2wav", formData, {
+      params: { gender },
+      responseType: "blob",
+    });
     if (status !== 200) throw new Error(status);
     return URL.createObjectURL(data);
   } catch (error) {

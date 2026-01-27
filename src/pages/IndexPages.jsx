@@ -21,9 +21,9 @@ import { Switch } from "@/components/ui/switch";
 import { getHeartbeat, getStartCollection } from "@/api/npuService";
 import { postImg2Chat } from "@/api/gpuService";
 import { getWeatherStatus } from "@/utils/weatherUtils";
-import Dialog from "@/components/Dialog"; // 직접 만든 Dialog 컴포넌트 임포트
+import Dialog from "@/components/Dialog";
 
-const SCAN_INTERVAL = 1000 * 30;
+const SCAN_INTERVAL = 1000 * 80;
 
 export default function Main() {
   const { updatePersona, personaId } = useContext(GlobalContext);
@@ -34,7 +34,6 @@ export default function Main() {
   const hasStartedCollection = useRef(false);
   const [showVideoFeed, setShowVideoFeed] = useState(false);
 
-  // 날씨 전용 상태
   const [isWeatherDialogOpen, setIsWeatherDialogOpen] = useState(false);
   const [humidity, setHumidity] = useState(0);
   const [temperature, setTemperature] = useState(0);
@@ -52,107 +51,84 @@ export default function Main() {
     return getWeatherStatus(temperature, humidity, air);
   }, [temperature, humidity, air]);
 
-  // AUTO 제어
   const [isAutoMode, setIsAutoMode] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // 처리 중 방지 플래그
   const autoTimerRef = useRef(null);
-  const lastStateRef = useRef({ cnt_live: 0, emotion: '', position: '' });
+  const lastStateRef = useRef({ cnt_live: 0 });
 
-  const runAutoCaptureProcess = useCallback(async () => {
-  try {
-    console.log('runAutoCaptureProcess 실행');
-    
-    // 1. 센서 데이터 가져오기
-    const hbResp = await getHeartbeat();
-    const { data } = await JSON.parse(JSON.stringify(hbResp)); 
-    console.log('data', data)
-    const { env, cnt_live, human} = data;
-
-    setHumidity(env.humidity);
-    setTemperature(env.temp);
-    setAir(env.air);
-
-    const prev = lastStateRef.current;
-    
-    // 1. 사람이 새로 나타났는가? (0명 -> 1명 이상)
-    const isNewPerson = prev.cnt_live === 0 && cnt_live > 0;
-    
-    // 2. 사람이 있는 상태에서 감정이 변했는가?
-    const isEmotionChanged = cnt_live > 0 && human?.emotion && prev.emotion !== human.emotion;
-
-    // 3. 사람이 이동했는가? (위치가 바뀌었는가)
-    const isPositionChanged = cnt_live > 0 && human?.position && prev.position !== human.position;
-
-    // 현재 상태를 기록 (다음 호출과 비교하기 위해)
-    lastStateRef.current = {
-      cnt_live: cnt_live,
-      emotion: human?.emotion || '',
-      position: human?.position || ''
+  // 1. heartbeat 상시 동작 (30초 간격)
+  useEffect(() => {
+    const fetchHeartbeat = async () => {
+      try {
+        const hbResp = await getHeartbeat();
+        const { data } = hbResp;
+        const humidity = data.env.humidity
+          ? parseFloat(data.env).toFixed(1)
+          : 0;
+        const temp = data.env.temp ? parseFloat(data.env.temp).toFixed(1) : 0;
+        setHumidity(humidity);
+        setTemperature(temp);
+        setAir(data.env.air);
+        lastStateRef.current.cnt_live = data.cnt_live; // 인원수 업데이트
+      } catch (error) {
+        console.error("Heartbeat 에러:", error);
+      }
     };
 
-    if (!isNewPerson && !isEmotionChanged && !isPositionChanged) {
-      console.log("변화 없음: 분석 스킵");
-      return;
-    }
+    fetchHeartbeat();
+    const timer = setInterval(fetchHeartbeat, 1000 * 30);
+    return () => clearInterval(timer);
+  }, []);
 
-    // 2. 이미지 피드 엘리먼트 찾기 (alt 속성으로 정확히 지정)
-    const sourceElement = document.querySelector("img[alt='Hidden Capture Source']");
+  // 2. AI 모드
+  const runAutoCaptureProcess = useCallback(async () => {
+    // 말하고 있거나(isProcessing) 사람이 없으면 스킵
+    if (isProcessing || lastStateRef.current.cnt_live === 0) return;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = 640;
-    canvas.height = 480;
-    const ctx = canvas.getContext("2d");
+    try {
+      setIsProcessing(true);
+      const sourceElement = document.querySelector(
+        "img[alt='Hidden Capture Source']",
+      );
 
-    // 3. 캡처 로직 (이미지가 있고, 실제 픽셀 데이터가 로드되었는지 확인)
-    if (sourceElement && sourceElement.naturalWidth > 0) {
-      // 좌우 반전 처리 (화면 표시와 동일하게)
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
-      
-      // 캔버스에 이미지 그리기
-      ctx.drawImage(sourceElement, 0, 0, canvas.width, canvas.height);
-      
-      // 상태 초기화
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      console.log("실제 화면 캡처 성공");
-    } else {
-      // 이미지가 화면에 없거나(showVideoFeed가 false인 경우 등) 로딩 실패 시
-      console.warn("이미지 피드를 찾을 수 없어 파란색 배경으로 대체합니다.");
-      ctx.fillStyle = "blue";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
+      const canvas = document.createElement("canvas");
+      canvas.width = 640;
+      canvas.height = 480;
+      const ctx = canvas.getContext("2d");
 
-    // 4. Blob 생성 및 파일화
-    const blob = await new Promise((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.9)
-    );
-    const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+      if (sourceElement && sourceElement.naturalWidth > 0) {
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(sourceElement, 0, 0, canvas.width, canvas.height);
 
-    // 5. 서버 전송 및 응답 처리
-    const response = await postImg2Chat(file, PERSONA_SYSTEMS[personaId]);
-    
-    // 가공된 데이터(객체/문자열) 대응 로직
-    const rawText = typeof response === 'string' ? response : JSON.stringify(response);
-    
-    // 6. JSON 파싱 및 결과 추출
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      let jsonString = jsonMatch[0].replace(/'/g, '"'); // 작은따옴표 보정
-      const parsedData = JSON.parse(jsonString);
-      if (parsedData.result) {
-        sendMessage(parsedData.result);
+        const blob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/jpeg", 0.9),
+        );
+        const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+
+        const response = await postImg2Chat(file, PERSONA_SYSTEMS[personaId]);
+        const rawText =
+          typeof response === "string" ? response : JSON.stringify(response);
+
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          let jsonString = jsonMatch[0].replace(/'/g, '"');
+          const parsedData = JSON.parse(jsonString);
+          if (parsedData.result) sendMessage(parsedData.result);
+        } else {
+          sendMessage(rawText.trim());
+        }
       }
-    } else {
-      sendMessage(rawText.trim());
+    } catch (error) {
+      console.error("Auto Mode 에러:", error);
+    } finally {
+      setIsProcessing(false);
     }
+  }, [sendMessage, personaId, isProcessing]);
 
-  } catch (error) {
-    console.error("Auto Mode 에러:", error);
-  }
-}, [sendMessage, personaId]);
-
+  // 3. AI 모드 스위치에 따른 타이머 제어
   useEffect(() => {
     if (isAutoMode) {
-      console.log('isAutomode')
       autoTimerRef.current = setInterval(runAutoCaptureProcess, SCAN_INTERVAL);
     } else {
       if (autoTimerRef.current) clearInterval(autoTimerRef.current);
@@ -180,8 +156,7 @@ export default function Main() {
 
   return (
     <>
-    {/* 배경 캡처를 위한 숨겨진 피드 소스 (항상 DOM에 존재해야 함) */}
-      <div style={{ display: 'none' }}>
+      <div style={{ display: "none" }}>
         <img
           src="http://127.0.0.1:59531/video_feed"
           alt="Hidden Capture Source"
@@ -250,8 +225,7 @@ export default function Main() {
             <div className={cn("flex items-center gap-2")}>
               <IconRenderer
                 icon={weatherStatus.icon}
-                style={{}}
-                className={cn("w-10 h-10",`text-${weatherStatus.color}-600`)}
+                className={cn("w-10 h-10", `text-${weatherStatus.color}-600`)}
               />
               <span
                 className={cn(
@@ -309,8 +283,7 @@ export default function Main() {
       <Dialog
         isOpen={isWeatherDialogOpen}
         onClose={() => setIsWeatherDialogOpen(false)}
-        title="실시간 날씨 정보"
-        // 540px 높이를 고려하여 상단 여백 최소화
+        title="실내 날씨 정보"
         titleStyle="text-2xl font-black text-center text-gray-800 mb-3"
         actions={[
           {
@@ -330,7 +303,10 @@ export default function Main() {
           >
             <IconRenderer
               icon={weatherStatus.icon}
-              className={cn("w-24 h-24 mb-2", `text-${weatherStatus.color}-600`)}
+              className={cn(
+                "w-24 h-24 mb-2",
+                `text-${weatherStatus.color}-600`,
+              )}
             />
             <span
               className={cn(
@@ -400,7 +376,10 @@ export default function Main() {
           <p className="text-lg font-bold text-center leading-tight">
             <IconRenderer
               icon={weatherStatus.icon}
-              className={cn("w-8 h-8 inline-block mr-2 mb-1 opacity-50", `text-${weatherStatus.color}-600`)}
+              className={cn(
+                "w-8 h-8 inline-block mr-2 mb-1 opacity-50",
+                `text-${weatherStatus.color}-600`,
+              )}
             />
             {weatherStatus.desc}
           </p>
