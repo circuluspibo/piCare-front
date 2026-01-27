@@ -6,7 +6,7 @@ import { ThreeDot } from "react-loading-indicators";
 import { getPrepare, postTxt2Img } from "@/api/gpuService";
 import useVoiceChat from "@/hooks/useVoiceChat";
 
-export default function VoiceDrawingCanvas() {
+export default function DrawByVoice() {
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const parentRef = useRef(null);

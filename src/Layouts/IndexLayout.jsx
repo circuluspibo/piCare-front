@@ -1,6 +1,8 @@
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { Outlet } from "react-router-dom";
 
 export default function IndexLayout() {
+  useAnalytics();
   return (
     <div className="w-screen h-screen flex items-center justify-center bg-red-500 overflow-hidden caret-transparent">
       <div

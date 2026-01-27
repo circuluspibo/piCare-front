@@ -256,14 +256,14 @@ export default function PianoTraining({ onComplete }) {
             <div
               key={i}
               className={cn(
-                "w-full aspect-square rounded-full flex items-center justify-center text-2xl transition-all",
+                "aspect-square rounded-full flex items-center justify-center text-2xl transition-all duration-300 border-b-4",
                 i === scores.length
-                  ? "bg-blue-500 text-white animate-pulse"
+                  ? "bg-blue-500 text-white animate-pulse border-blue-700"
                   : scores[i]?.isPass
-                    ? "bg-green-500 text-white"
+                    ? "bg-green-500 text-white border-green-700"
                     : scores[i]
-                      ? "bg-red-400 text-white"
-                      : "bg-gray-100 text-gray-300",
+                      ? "bg-red-400 text-white border-red-600"
+                      : "bg-slate-100 text-slate-300 border-slate-200",
               )}
             >
               {i + 1}
