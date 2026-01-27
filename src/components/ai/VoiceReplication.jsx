@@ -69,9 +69,9 @@ export default function VoiceReplication() {
     setLoading(true);
     try {
       const response = await postVoice2Wav(file, "man");
-      console.log("response = ", response);
+      // console.log("response = ", response);
 
-      setResultAudio("");
+      setResultAudio(response);
     } catch (error) {
       console.error(`[Failed to sendVoice file - sendVoiceFile] E: ${error}`);
     } finally {
