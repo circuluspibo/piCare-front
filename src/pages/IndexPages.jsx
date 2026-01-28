@@ -18,7 +18,11 @@ import { GlobalContext } from "@/contexts/GlobalContext";
 import { useVoiceChat } from "@/contexts/VoiceChatContext";
 import { PERSONA_SYSTEMS, PERSONA_INTRODUCE } from "@/utils/PersonaSystem";
 import { Switch } from "@/components/ui/switch";
-import { getHeartbeat, getStartCollection } from "@/api/npuService";
+import {
+  getHeartbeat,
+  getStartCollection,
+  getStopCollection,
+} from "@/api/npuService";
 import { postImg2Chat } from "@/api/gpuService";
 import { getWeatherStatus } from "@/utils/weatherUtils";
 import Dialog from "@/components/Dialog";
@@ -31,7 +35,6 @@ export default function Main() {
   const navigation = useNavigate();
   const [selectedPersona, setSelectedPersona] = useState(PERSONAS[0]);
 
-  const hasStartedCollection = useRef(false);
   const [showVideoFeed, setShowVideoFeed] = useState(false);
 
   const [isWeatherDialogOpen, setIsWeatherDialogOpen] = useState(false);
@@ -146,12 +149,18 @@ export default function Main() {
     playTtsSentence(PERSONA_INTRODUCE[p.id], p.voice);
   };
 
-  const mainImageClickHandler = async () => {
-    if (!hasStartedCollection.current) {
-      await getStartCollection().catch(console.error);
-      hasStartedCollection.current = true;
+  const toggleVideoFeed = async () => {
+    try {
+      if (!showVideoFeed) {
+        await getStartCollection();
+        setShowVideoFeed(true);
+      } else {
+        await getStopCollection();
+        setShowVideoFeed(false);
+      }
+    } catch (e) {
+      console.log(`[Failed to update video feed state] messsage: ${e}`);
     }
-    setShowVideoFeed(true);
   };
 
   return (
@@ -172,13 +181,10 @@ export default function Main() {
                 src={`/images/persona/${selectedPersona.id}.png`}
                 alt={selectedPersona.name}
                 className="w-full h-full object-cover rounded-3xl"
-                onClick={mainImageClickHandler}
+                onClick={toggleVideoFeed}
               />
             ) : (
-              <div
-                className="w-full h-full"
-                onClick={() => setShowVideoFeed(false)}
-              >
+              <div className="w-full h-full" onClick={toggleVideoFeed}>
                 <img
                   src="http://127.0.0.1:59531/video_feed"
                   alt="Video Feed"

@@ -14,18 +14,20 @@ export const getStartCollection = async () => {
 
     return data;
   } catch (error) {
-    console.log(`[FAILED TO REQ getStartCollection : ${error}]`);
+    console.log(`[FAILED TO REQ getStartCollection] message: ${error}`);
   }
 };
 // NOTE: 비디오 감지 AI
-// export const getVideoFeed = async () => {
-//   try {
-//     const res = await npuApi.get("/video_feed");
-//     return res.data;
-//   } catch (error) {
-//     console.log(`[FAILED TO REQ getVideoFeed : ${error}]`);
-//   }
-// };
+export const getStopCollection = async () => {
+  try {
+    const { data, status } = await npuApi.get("/stop_collection");
+    if (status !== 200) throw new Error(status);
+
+    return data;
+  } catch (error) {
+    console.log(`[FAILED TO REQ getStopCollection] message: ${error}`);
+  }
+};
 // NOTE: 상태 측정 AI
 export const getHeartbeat = async () => {
   try {
@@ -34,6 +36,6 @@ export const getHeartbeat = async () => {
 
     return data;
   } catch (error) {
-    console.log(`[FAILED TO REQ getHeartbeat : ${error}]`);
+    console.log(`[FAILED TO REQ getHeartbeat] message : ${error}`);
   }
 };
