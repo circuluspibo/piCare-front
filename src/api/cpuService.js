@@ -26,3 +26,22 @@ export const getTts = async (text, targetVoice, currentLang) => {
     console.error(`[FAILED TO REQEUEST TTS : ${error}]`);
   }
 };
+
+export const getTtsBlob = async (text, taregetVoice, currentLang = "ko") => {
+  try {
+    const { data, status } = await cpuApi.get("/v1/tts", {
+      params: {
+        text: text.trim(),
+        voice: taregetVoice,
+        lang: currentLang,
+        static: "0",
+        isPlay: "0",
+      },
+      responseType: "blob",
+    });
+    if (status !== 200) throw new Error(status);
+    return data;
+  } catch (error) {
+    console.error(`[FAILED TO REQ TTSBlob] message: ${error}`);
+  }
+};
