@@ -1,9 +1,11 @@
+// NOTE: 신체훈련 옵션
 export const EXERCISE_OPTIONS = {
   FLAG: { title: "깃발 들기", value: "flag", idx: 0 },
   HEAD: { title: "손바닥 피하기", value: "head", idx: 1 },
   GRAB: { title: "사과 잡기", value: "grab", idx: 2 },
 };
 
+// NOTE: AI 훈련 옵션
 export const AI_OPTIONS = {
   DRAW: {
     title: "말하는대로 그리기",
@@ -22,6 +24,7 @@ export const AI_OPTIONS = {
   },
 };
 
+// NOTE: 인지 훈련 옵션
 export const TRAINING_OPTIONS = {
   COLOR: {
     title: "색상 찾기",

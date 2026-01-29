@@ -1,6 +1,6 @@
 import "./index.css";
 
-import { StrictMode, Suspense } from "react";
+import { Suspense } from "react";
 import { createRoot } from "react-dom/client";
 
 // Router
@@ -70,11 +70,15 @@ const router = createBrowserRouter(
   ),
 );
 
+export const App = () => {
+  return <RouterProvider router={router} />;
+};
+
 createRoot(document.getElementById("root")).render(
   <Suspense fallback={<Loading />}>
     <GlobalContextProvider>
       <VoiceChatProvider>
-        <RouterProvider router={router} />
+        <App />
       </VoiceChatProvider>
     </GlobalContextProvider>
   </Suspense>,
