@@ -8,7 +8,7 @@ import { getTts } from "@/api/cpuService";
 import { useDialogAnalyze } from "./useAnalyze";
 
 export default function useVoiceChat({ enableTTS }) {
-  const { accumulateLog } = useDialogAnalyze();
+  const { sendLogToServer} = useDialogAnalyze();
 
   const mediaRecorderRef = useRef(null);
   const { currentLang, personaId, personaVoice } = useContext(GlobalContext);
@@ -95,15 +95,18 @@ export default function useVoiceChat({ enableTTS }) {
 
   // 4. LLM 스트리밍 응답 처리
   const sendMessage = useCallback(
-    async (message) => {
-      if (!message) return;
+    async (message, autoPrompt) => {
+  if (!message && !autoPrompt) return;
+
+    // 실제 서버에 보낼 텍스트 결정: autoPrompt가 있으면 우선 사용
+    const textToSearch = autoPrompt || message;
 
       setFullResponse("");
       let accumulatedResponse = "";
       let lastSentenceEnd = 0;
 
       try {
-        const res = await getTxt2Chat(message, currentSystem, currentLang);
+        const res = await getTxt2Chat(textToSearch, currentSystem, currentLang);
 
         const reader = res.getReader();
         const decoder = new TextDecoder();
@@ -122,8 +125,7 @@ export default function useVoiceChat({ enableTTS }) {
               /[^ㄱ-ㅎㅏ-ㅣ가-힣\s]/g,
               "",
             );
-
-            accumulateLog(message, koreanResponse);
+            sendLogToServer(message, koreanResponse);
             addMessage("ai", koreanResponse);
             setFullResponse("");
             break;
@@ -148,7 +150,7 @@ export default function useVoiceChat({ enableTTS }) {
         console.error(`TEXT MESSAGE ERROR : `, error);
       }
     },
-    [currentSystem, currentLang, addToTtsQueue, addMessage, accumulateLog],
+    [currentSystem, currentLang, addToTtsQueue, addMessage, sendLogToServer],
   );
 
   // 5. 음성 녹음 및 STT 전송

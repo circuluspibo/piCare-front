@@ -37,8 +37,9 @@ export default function VoiceReplication() {
 
   const { personaVoice } = useContext(GlobalContext);
   // --- 오디오 재생 함수 ---
-  const handlePlayAudio = () => {
+  const handlePlayAudio = (e) => {
     if (audioRef.current && !isPlaying) {
+      e.stopPropagation()
       setIsPlaying(true); // 버튼 비활성화 상태로 변경
       audioRef.current.play();
     }
@@ -118,7 +119,7 @@ export default function VoiceReplication() {
         const sourceFile = new File([sourceBlob], "source.wav", {
           type: "audio/wav",
         });
-        sendVoiceFile();
+        sendVoiceFile(sourceFile, targetFile);
 
         // 마이크 종료
         mediaRecorderRef.current?.stream
@@ -234,7 +235,7 @@ export default function VoiceReplication() {
                   className="hidden"
                 />
                 <Button
-                  onClick={handlePlayAudio}
+                  onClick={(e) => handlePlayAudio(e)}
                   disabled={isPlaying} // 재생 중일 때 버튼 비활성화
                   className={cn(
                     "w-full max-w-sm h-28 flex items-center justify-center gap-4 text-5xl font-black rounded-2xl transition-all shadow-xl",

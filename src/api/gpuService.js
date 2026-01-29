@@ -128,9 +128,6 @@ export const postVoice2Wav = async (source, target) => {
 
   try {
     const { data, status } = await gpuApi.post("voice2wav", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
       responseType: "blob",
     });
     if (status !== 200) throw new Error(status);

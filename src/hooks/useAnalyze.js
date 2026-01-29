@@ -82,39 +82,25 @@ export const useTouchAnalyze = () => {
 
 // NOTE: 대화 축적 함수
 export const useDialogAnalyze = () => {
-  const key = "chat_logs";
-
-  // 대화 전송 로직
-  const flushChat = async () => {
+  // 단순히 로그를 서버에 전송하는 함수
+  const sendLogToServer = async (q, a) => {
     try {
-      const saved = JSON.parse(localStorage.getItem(key) || "[]");
-      if (saved.length > 0) {
-        // 현재까지 쌓인 모든 대화를 한 번에 전송
-        const payload = {
-          hwId: "697b07b3251e185c8626a8ad",
-          type: "dialogAnalyze",
-          content: JSON.stringify(saved),
-        };
-        await postInteraction(payload);
-        localStorage.removeItem(key);
-      }
+      if (!a) return;
+
+      const isAuto = !q || q.trim() === '';
+      const type = isAuto ? 'autoDialogAnalyze' : 'dialogAnalyze';
+      const payload = {
+        hwId: "697b07b3251e185c8626a8ad",
+        type,
+        // 질문과 답변을 배열 형태로 담아 전송
+        content: JSON.stringify([{ q, a, t: Date.now() }]),
+      };
+
+      await postInteraction(payload);
     } catch (error) {
-      console.log("[FAILED] useDialogAnalyze MSG: ", error);
+      console.error("[FAILED] useDialogAnalyze MSG: ", error);
     }
   };
 
-  // 2. 페이지 이탈 감지
-  useEffect(() => {
-    return () => flushChat();
-  }, []);
-
-  // 3. 대화 축적
-  const accumulateLog = (q, a) => {
-    const saved = JSON.parse(localStorage.getItem(key) || "[]");
-    saved.push({ q, a, t: Date.now() });
-
-    localStorage.setItem(key, JSON.stringify(saved));
-  };
-
-  return { accumulateLog };
+  return { sendLogToServer };
 };
