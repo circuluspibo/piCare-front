@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import Dialog from "@/components/Dialog";
 import { IconRenderer } from "@/components/ui/IconRenderer";
 import { cn } from "@/lib/utils";
 import { ThreeDot } from "react-loading-indicators";
 import { postVoice2Wav } from "@/api/gpuService";
+import { getTts, getTtsBlob } from "@/api/cpuService";
+import { GlobalContext } from "@/contexts/GlobalContext";
 
 const USER_SCRIPT_LIST = [
   "사랑하는 우리 가족들아, 오늘도 건강하고 웃음 가득한 하루 보내렴. 언제나 너희를 응원하고 아주 많이 사랑한다.",
@@ -33,9 +35,11 @@ export default function VoiceReplication() {
     () => USER_SCRIPT_LIST[Math.floor(Math.random() * USER_SCRIPT_LIST.length)],
   );
 
+  const { personaVoice } = useContext(GlobalContext);
   // --- 오디오 재생 함수 ---
-  const handlePlayAudio = () => {
+  const handlePlayAudio = (e) => {
     if (audioRef.current && !isPlaying) {
+      e.stopPropagation()
       setIsPlaying(true); // 버튼 비활성화 상태로 변경
       audioRef.current.play();
     }
@@ -65,10 +69,10 @@ export default function VoiceReplication() {
   }, [isRecording, currentScript]);
   // --------------------------------
 
-  const sendVoiceFile = async (file) => {
+  const sendVoiceFile = async (sourceFile, targetFile) => {
     setLoading(true);
     try {
-      const response = await postVoice2Wav(file, "man");
+      const response = await postVoice2Wav(sourceFile, targetFile);
       // console.log("response = ", response);
 
       setResultAudio(response);
@@ -101,19 +105,21 @@ export default function VoiceReplication() {
 
   const handleStop = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.onstop = () => {
-        // Blob 생성
-        const audioBlob = new Blob(audioChunkRef.current, {
+      mediaRecorderRef.current.onstop = async () => {
+        // 파일 전처리
+        // makeTarget
+        const targetBlob = new Blob(audioChunkRef.current, {
+          type: "audio/wav",
+        });
+        const targetFile = new File([targetBlob], "target.wav", {
           type: "audio/wav",
         });
 
-        // 전처리
-        const audioFile = new File([audioBlob], "voice_record.wav", {
-          lastModified: Date.now(),
+        const sourceBlob = await getTtsBlob(currentScript, personaVoice);
+        const sourceFile = new File([sourceBlob], "source.wav", {
           type: "audio/wav",
         });
-
-        sendVoiceFile(audioFile);
+        sendVoiceFile(sourceFile, targetFile);
 
         // 마이크 종료
         mediaRecorderRef.current?.stream
@@ -229,7 +235,7 @@ export default function VoiceReplication() {
                   className="hidden"
                 />
                 <Button
-                  onClick={handlePlayAudio}
+                  onClick={(e) => handlePlayAudio(e)}
                   disabled={isPlaying} // 재생 중일 때 버튼 비활성화
                   className={cn(
                     "w-full max-w-sm h-28 flex items-center justify-center gap-4 text-5xl font-black rounded-2xl transition-all shadow-xl",

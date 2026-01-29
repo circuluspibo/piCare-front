@@ -5,9 +5,11 @@ import { GlobalContext } from "@/contexts/GlobalContext";
 import { PERSONA_SYSTEMS } from "@/utils/PersonaSystem";
 import { getTxt2Chat, postStt } from "@/api/gpuService";
 import { getTts } from "@/api/cpuService";
-// import { postLogger } from "@/api/loggerService"; NOTE: 추후 추가
+import { useDialogAnalyze } from "./useAnalyze";
 
 export default function useVoiceChat({ enableTTS }) {
+  const { sendLogToServer} = useDialogAnalyze();
+
   const mediaRecorderRef = useRef(null);
   const { currentLang, personaId, personaVoice } = useContext(GlobalContext);
 
@@ -22,29 +24,6 @@ export default function useVoiceChat({ enableTTS }) {
 
   const currentSystem = PERSONA_SYSTEMS[personaId];
 
-  // 고유 대화 ID 생성
-  const generateConvId = () => {
-    return typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID()
-      : `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  };
-  // NOTE: 추후 추가 로거 호출 함수
-  // const sendToLogger = useCallback(
-  //   async (convId, userPrompt, aiResponse = "") => {
-  //     try {
-  //       await postLogger({
-  //         conversation_id: convId,
-  //         user_prompt: userPrompt,
-  //         ai_response: aiResponse,
-  //         personaId: personaId,
-  //       });
-  //       console.log("[Logger] 데이터 저장 성공");
-  //     } catch (err) {
-  //       console.error("[Logger] 데이터 저장 실패:", err);
-  //     }
-  //   },
-  //   [personaId]
-  // );
   // 메시지 추가 헬퍼 함수
   const addMessage = useCallback((role, text) => {
     setMessages((prev) => [
@@ -84,7 +63,7 @@ export default function useVoiceChat({ enableTTS }) {
         });
       });
     },
-    [currentLang, personaVoice]
+    [currentLang, personaVoice],
   );
 
   // 2. TTS 큐 감시 및 실행 (이 부분이 "playTtsQueue" 역할을 수행)
@@ -111,20 +90,23 @@ export default function useVoiceChat({ enableTTS }) {
       if (!enableTTS || !text.trim()) return;
       setTtsQueue((prev) => [...prev, text.trim()]);
     },
-    [enableTTS]
+    [enableTTS],
   );
 
   // 4. LLM 스트리밍 응답 처리
   const sendMessage = useCallback(
-    async (message, convId) => {
-      if (!message) return;
+    async (message, autoPrompt) => {
+  if (!message && !autoPrompt) return;
+
+    // 실제 서버에 보낼 텍스트 결정: autoPrompt가 있으면 우선 사용
+    const textToSearch = autoPrompt || message;
 
       setFullResponse("");
       let accumulatedResponse = "";
       let lastSentenceEnd = 0;
 
       try {
-        const res = await getTxt2Chat(message, currentSystem, currentLang);
+        const res = await getTxt2Chat(textToSearch, currentSystem, currentLang);
 
         const reader = res.getReader();
         const decoder = new TextDecoder();
@@ -141,13 +123,9 @@ export default function useVoiceChat({ enableTTS }) {
 
             const koreanResponse = accumulatedResponse.replace(
               /[^ㄱ-ㅎㅏ-ㅣ가-힣\s]/g,
-              ""
+              "",
             );
-
-            if (convId) {
-              // NOTE: 추후 추가
-              // sendToLogger(convId, message, koreanResponse);
-            }
+            sendLogToServer(message, koreanResponse);
             addMessage("ai", koreanResponse);
             setFullResponse("");
             break;
@@ -172,7 +150,7 @@ export default function useVoiceChat({ enableTTS }) {
         console.error(`TEXT MESSAGE ERROR : `, error);
       }
     },
-    [currentSystem, currentLang, addToTtsQueue, addMessage]
+    [currentSystem, currentLang, addToTtsQueue, addMessage, sendLogToServer],
   );
 
   // 5. 음성 녹음 및 STT 전송
@@ -181,7 +159,6 @@ export default function useVoiceChat({ enableTTS }) {
     let chunks = [];
     try {
       setIsRecording(true);
-      const currentConvId = generateConvId();
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setGumStream(stream);
@@ -203,10 +180,7 @@ export default function useVoiceChat({ enableTTS }) {
           if (cleanedText) {
             addMessage("user", cleanedText);
             if (enableTTS) {
-              await sendMessage(cleanedText, currentConvId);
-            } else {
-              // NOTE: 추후 추가
-              // sendToLogger(currentConvId, cleanedText, "");
+              await sendMessage(cleanedText);
             }
           }
         } catch (error) {
