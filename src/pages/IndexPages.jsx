@@ -401,7 +401,7 @@ export default function Main() {
           </div>
         </div>
         <div className="my-4 bg-gray-50 p-3 rounded-2xl border border-gray-100">
-          <p className="text-lg font-bold text-center leading-tight">
+          <p className="text-lg font-bold text-center leading-tight break-keep">
             {weatherStatus.desc}
           </p>
         </div>
