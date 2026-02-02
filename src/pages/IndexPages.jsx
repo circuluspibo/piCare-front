@@ -30,7 +30,7 @@ const SCAN_INTERVAL = 1000 * 150;
 const HEARTBEAT_INTERVAL = 1000 * 90;
 
 export default function Main() {
-  const { updatePersona, personaId } = useContext(GlobalContext);
+  const { updatePersona, updateHumanInfo, personaId } = useContext(GlobalContext);
   const { setEnableTTS, sendMessage, playTtsSentence } = useVoiceChat();
   const navigation = useNavigate();
   const [selectedPersona, setSelectedPersona] = useState(PERSONAS[0]);
@@ -73,7 +73,10 @@ export default function Main() {
         await new Promise((resolve) => setTimeout(resolve, 3000));
         const hbResp = await getHeartbeat();
         const { data } = hbResp;
-
+        const { human } = data; 
+        console.log('human = ', human)
+        updateHumanInfo(human);
+        
         if (isMounted) {
           setHumidity(
             data.env.humidity ? parseFloat(data.env.humidity).toFixed(1) : 0,
@@ -251,7 +254,7 @@ export default function Main() {
 
         <div className="w-6/12 bg-white overflow-hidden">
           <div className="text-xl text-gray-600 h-full px-4">
-            <Prompt />
+            <Prompt />       
           </div>
         </div>
 

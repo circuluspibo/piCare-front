@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, { useState, useEffect, useRef, useContext, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import Dialog from "@/components/Dialog";
 import { IconRenderer } from "@/components/ui/IconRenderer";
@@ -35,7 +35,20 @@ export default function VoiceReplication() {
     () => USER_SCRIPT_LIST[Math.floor(Math.random() * USER_SCRIPT_LIST.length)],
   );
 
-  const { personaVoice } = useContext(GlobalContext);
+  const { humanInfo } = useContext(GlobalContext);
+  const targetVoice = useMemo(() => {
+    if(!humanInfo) return;
+
+    const { age, gender} = humanInfo;
+    if(age > 50) {
+      return gender === 'M' ? 42 : 65
+    } else if(age > 20) {
+      return gender === "M" ? 48 : 7
+    } else {
+      return gender === 'M' ? 25 : 22
+    }
+  }, [humanInfo])
+
   const handlePlayAudio = (e) => {
     if (audioRef.current && !isPlaying) {
       e.stopPropagation();
@@ -111,7 +124,7 @@ export default function VoiceReplication() {
           type: "audio/wav",
         });
 
-        const sourceBlob = await getTtsBlob(currentScript, personaVoice);
+        const sourceBlob = await getTtsBlob(currentScript, targetVoice);
         const sourceFile = new File([sourceBlob], "source.wav", {
           type: "audio/wav",
         });

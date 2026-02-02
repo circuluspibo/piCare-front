@@ -14,7 +14,9 @@ export const GlobalContext = createContext({
   personaId: "grandpa",
   personaVoice: 0,
   sId: "",
+  humanInfo: null,
   updatePersona: () => {},
+  updateHumanInfo: () => {},
 });
 
 // Provider 컴포넌트 생성 (오타 수정됨)
@@ -22,8 +24,8 @@ export const GlobalContextProvider = ({ children }) => {
   const [personaId, setPersonaId] = useState(DEFAULT.id);
   const [currentLang, setCurrentLang] = useState("ko");
   const [personaVoice, setPersonaVoice] = useState(DEFAULT.voice);
-
   const [sId, setSid] = useState(generateSid());
+  const [humanInfo, setHumanInfo] = useState(null)
   const timerRef = useRef(null);
 
   // 타이머를 리셋하고 5분 뒤에 sid를 새로 발급하는 함수
@@ -65,14 +67,18 @@ export const GlobalContextProvider = ({ children }) => {
     setPersonaId(persona.id);
     setPersonaVoice(persona.voice);
   }, []);
-
+  const updateHumanInfo = useCallback((payload) => {
+    setHumanInfo(payload)
+  })
   // Context를 통해 공유할 최종 값 객체
   const contextValue = {
     currentLang,
     personaId,
     personaVoice,
+    humanInfo,
     sId,
     updatePersona,
+    updateHumanInfo,
   };
 
   return (
