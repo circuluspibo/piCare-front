@@ -9,12 +9,23 @@ const IDLE_TIME = 5 * 60 * 1000; // 5분
 const generateSid = () =>
   `${new Date().toISOString().slice(2, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8)}`;
 // Context 생성
+
+const generateHuman = () => {
+  return {
+    age: 0,
+    gender: "",
+    emotion: "",
+    position: "",
+  };
+};
 export const GlobalContext = createContext({
   currentLang: "ko", // 기본값을 실제 사용하려는 초기값으로 설정하거나, 빈 값으로 설정합니다.
   personaId: "grandpa",
   personaVoice: 0,
   sId: "",
+  hunmanInfo: {},
   updatePersona: () => {},
+  updateHumanInfo: () => {},
 });
 
 // Provider 컴포넌트 생성 (오타 수정됨)
@@ -22,7 +33,7 @@ export const GlobalContextProvider = ({ children }) => {
   const [personaId, setPersonaId] = useState(DEFAULT.id);
   const [currentLang, setCurrentLang] = useState("ko");
   const [personaVoice, setPersonaVoice] = useState(DEFAULT.voice);
-
+  const [humanInfo, setHumanInfo] = useState(generateHuman());
   const [sId, setSid] = useState(generateSid());
   const timerRef = useRef(null);
 
@@ -66,13 +77,18 @@ export const GlobalContextProvider = ({ children }) => {
     setPersonaVoice(persona.voice);
   }, []);
 
+  const updateHumanInfo = useCallback((payload) => {
+    setHumanInfo(payload);
+  }, []);
   // Context를 통해 공유할 최종 값 객체
   const contextValue = {
     currentLang,
     personaId,
     personaVoice,
     sId,
+    humanInfo,
     updatePersona,
+    updateHumanInfo,
   };
 
   return (

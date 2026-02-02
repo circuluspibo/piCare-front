@@ -30,7 +30,8 @@ const SCAN_INTERVAL = 1000 * 150;
 const HEARTBEAT_INTERVAL = 1000 * 90;
 
 export default function Main() {
-  const { updatePersona, personaId } = useContext(GlobalContext);
+  const { updatePersona, personaId, updateHumanInfo, humanInfo } =
+    useContext(GlobalContext);
   const { setEnableTTS, sendMessage, playTtsSentence } = useVoiceChat();
   const navigation = useNavigate();
   const [selectedPersona, setSelectedPersona] = useState(PERSONAS[0]);
@@ -73,7 +74,9 @@ export default function Main() {
         await new Promise((resolve) => setTimeout(resolve, 3000));
         const hbResp = await getHeartbeat();
         const { data } = hbResp;
-
+        const { human } = data;
+        updateHumanInfo(human);
+        console.log("context = ", humanInfo);
         if (isMounted) {
           setHumidity(
             data.env.humidity ? parseFloat(data.env.humidity).toFixed(1) : 0,
@@ -99,7 +102,7 @@ export default function Main() {
       clearInterval(timer);
       requestStop("HB_POLLING");
     };
-  }, [compareAndLog, requestStart, requestStop]);
+  }, [compareAndLog, requestStart, requestStop, updateHumanInfo, humanInfo]);
 
   const toggleVideoFeed = async () => {
     if (!showVideoFeed) {
