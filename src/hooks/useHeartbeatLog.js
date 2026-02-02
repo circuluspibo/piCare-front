@@ -32,7 +32,7 @@ export const useHeartbeatLog = () => {
           content: JSON.stringify(essentialData),
         });
       } catch (err) {
-        console.error("Interaction Log Error:", err);
+        console.log("[FAILED] REQ useHeartbeatLog MSG: ", err);
       }
     }
     prevHeartbeatRef.current = curr;

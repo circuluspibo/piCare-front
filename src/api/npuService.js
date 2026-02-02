@@ -11,10 +11,10 @@ export const getStartCollection = async () => {
   try {
     const { data, status } = await npuApi.get("/start_collection");
     if (status !== 200) throw new Error(status);
-
+    console.log("[SUCCESS] REQ getStartCollection");
     return data;
   } catch (error) {
-    console.log(`[FAILED TO REQ getStartCollection] message: ${error}`);
+    console.log("[FAILED] REQ getStartCollection MSG: ", error);
   }
 };
 // NOTE: 비디오 감지 AI
@@ -22,10 +22,10 @@ export const getStopCollection = async () => {
   try {
     const { data, status } = await npuApi.get("/stop_collection");
     if (status !== 200) throw new Error(status);
-
+    console.log("[SUCCESS] REQ getStopCollection");
     return data;
   } catch (error) {
-    console.log(`[FAILED TO REQ getStopCollection] message: ${error}`);
+    console.log("[FAILED] REQ getStopCollection MSG: ", error);
   }
 };
 // NOTE: 상태 측정 AI
@@ -33,9 +33,9 @@ export const getHeartbeat = async () => {
   try {
     const { data, status } = await npuApi.get("/heartbeat");
     if (status !== 200) throw new Error(status);
-
+    console.log("[SUCCESS] REQ getHeartbeat");
     return data;
   } catch (error) {
-    console.log(`[FAILED TO REQ getHeartbeat] message : ${error}`);
+    console.log("[FAILED] REQ getHeartbeat MSG: ", error);
   }
 };

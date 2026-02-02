@@ -23,7 +23,7 @@ export const getTts = async (text, targetVoice, currentLang) => {
 
     return URL.createObjectURL(data);
   } catch (error) {
-    console.error(`[FAILED TO REQEUEST TTS : ${error}]`);
+    console.log("[FAILED] REQ getTts MSG : ", error);
   }
 };
 
@@ -42,6 +42,6 @@ export const getTtsBlob = async (text, taregetVoice, currentLang = "ko") => {
     if (status !== 200) throw new Error(status);
     return data;
   } catch (error) {
-    console.error(`[FAILED TO REQ TTSBlob] message: ${error}`);
+    console.log("[FAILED] REQ getTtsBlob MSG: ", error);
   }
 };

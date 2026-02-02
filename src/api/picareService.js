@@ -11,10 +11,10 @@ export const postFeature = async (payload) => {
   try {
     const { status } = await picareApi.post("/v1/feature_log", payload);
     if (status !== 200) throw new Error(status);
-    console.log("[SUCCESS] postFeature");
+    console.log("[SUCCESS] REQ postFeature");
     return;
   } catch (error) {
-    console.log("[FAILED] postFeature MSG: ", error);
+    console.log("[FAILED] REQ postFeature MSG: ", error);
   }
 };
 
@@ -23,9 +23,9 @@ export const postInteraction = async (payload) => {
   try {
     const { status } = await picareApi.post("/v1/interaction_log", payload);
     if (status !== 200) throw new Error(status);
-    console.log("[SUCCESS] postInteraction");
+    console.log("[SUCCESS] REQ postInteraction");
     return;
   } catch (error) {
-    console.log("[FAILED] postInteraction MSG: ", error);
+    console.log("[FAILED] REQ postInteraction MSG: ", error);
   }
 };

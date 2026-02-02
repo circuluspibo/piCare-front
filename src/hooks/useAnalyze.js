@@ -53,7 +53,7 @@ export const useTouchAnalyze = () => {
         await postInteraction(payload);
         totalSessionCount.current = 0;
       } catch (error) {
-        console.error("[FAILED] useTouchAnalyze MSG: ", error);
+        console.log("[FAILED] useTouchAnalyze MSG: ", error);
       }
     }
   };
@@ -61,7 +61,7 @@ export const useTouchAnalyze = () => {
   useEffect(() => {
     const handleTouch = () => {
       totalSessionCount.current++;
-      console.log("터치 카운트 증가:", totalSessionCount.current); // 카운트 올라가는지 확인용
+      // console.log("터치 카운트 증가:", totalSessionCount.current); // 카운트 올라가는지 확인용
     };
 
     const handleVisibility = () => {
@@ -87,8 +87,8 @@ export const useDialogAnalyze = () => {
     try {
       if (!a) return;
 
-      const isAuto = !q || q.trim() === '';
-      const type = isAuto ? 'autoDialogAnalyze' : 'dialogAnalyze';
+      const isAuto = !q || q.trim() === "";
+      const type = isAuto ? "autoDialogAnalyze" : "dialogAnalyze";
       const payload = {
         hwId: "697b07b3251e185c8626a8ad",
         type,
@@ -98,7 +98,7 @@ export const useDialogAnalyze = () => {
 
       await postInteraction(payload);
     } catch (error) {
-      console.error("[FAILED] useDialogAnalyze MSG: ", error);
+      console.log("[FAILED] useDialogAnalyze MSG: ", error);
     }
   };
 

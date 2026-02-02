@@ -38,7 +38,7 @@ export default function MagicMirror() {
         setIsActive(true);
       }
     } catch (error) {
-      console.log(`[Failed to access camera : ${error}]`);
+      console.log("[FAILED] access camera MSG : ", error);
       alert("카메라를 찾을 수 없거나 권한이 없습니다.");
     }
   };
@@ -66,15 +66,15 @@ export default function MagicMirror() {
       await getStartCollection();
       const hbResp = await getHeartbeat();
       const hbResult = await JSON.parse(JSON.stringify(hbResp));
-      console.log('hbResult = ', hbResult)
+      // console.log("hbResult = ", hbResult);
       const { human } = hbResult.data;
-    
-      console.log('human = ', human)
+
+      console.log("human = ", human);
       const blob = await new Promise((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg")
+        canvas.toBlob(resolve, "image/jpeg"),
       );
       const file = new File([blob], "mirror.jpg", { type: "image/jpeg" });
-      const gender = human.gender === 'M' ? 'man' : 'woman'
+      const gender = human.gender === "M" ? "man" : "woman";
       const systemPrompt = `(Solo:1.5), ${human.age} ${gender}, (neutral facial bone structure:1.4), 10 year younger version of this ${gender}, clear skin texture, natural lighting, high quality, photorealistic, sharp focus`;
       const res = await postFace2Img(file, systemPrompt);
 
@@ -88,7 +88,7 @@ export default function MagicMirror() {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       };
     } catch (error) {
-      console.log(`[Error : ${error}]`);
+      console.log("[FAILED] processCamera MSG : ", error);
       setIsResultMode(false);
       startCamera();
     } finally {
@@ -248,10 +248,10 @@ export default function MagicMirror() {
                 {isResultMode && !isProcessing
                   ? "와우! 정말 멋져요!"
                   : count !== null
-                  ? "움직이지 마세요!"
-                  : isProcessing
-                  ? "젊어지는 중"
-                  : "가장 예쁜\n미소를 지어보세요"}
+                    ? "움직이지 마세요!"
+                    : isProcessing
+                      ? "젊어지는 중"
+                      : "가장 예쁜\n미소를 지어보세요"}
               </h2>
             </div>
 
@@ -262,7 +262,7 @@ export default function MagicMirror() {
                   disabled={isProcessing || count !== null}
                   className={cn(
                     "w-full py-10 rounded-2xl text-5xl font-black transition-all active:translate-y-2 active:shadow-none",
-                    "bg-amber-500 text-white border-b-8 border-amber-800"
+                    "bg-amber-500 text-white border-b-8 border-amber-800",
                   )}
                 >
                   젊어지기

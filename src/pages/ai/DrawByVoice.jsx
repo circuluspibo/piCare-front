@@ -14,7 +14,6 @@ export default function DrawByVoice() {
   const [sketchPrompt, setSketchPrompt] = useState("");
   const [sketchModel, setSketchModel] = useState("real");
   const [loading, setLoading] = useState(false);
-  const [loadingText, setLoadingText] = useState("");
   const [isDrawing, setIsDrawing] = useState(false);
 
   const {
@@ -31,7 +30,7 @@ export default function DrawByVoice() {
     try {
       handleStopRecording(); // 수정: 훅의 중지 함수 호출
     } catch (error) {
-      console.log("Faild to Stop and Generate IMG", error);
+      console.log("[FAILED] Stop and Generate IMG MSG: ", error);
     }
   }, [handleStopRecording]);
   // 캔버스 초기화 및 AI 모델 준비
@@ -71,7 +70,7 @@ export default function DrawByVoice() {
   const handleGenerateImg = useCallback(async () => {
     if (!sketchPrompt) return;
     setLoading(true);
-    setLoadingText(`"${sketchPrompt}" 그리는 중...`);
+
     try {
       const res = await postTxt2Img(sketchPrompt, sketchModel);
       const img = new Image();
@@ -83,7 +82,7 @@ export default function DrawByVoice() {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // 간략화된 그리기 로직
       };
     } catch (error) {
-      console.error(error);
+      console.log("[FAIELD] handleGenerateImg MSG: ", error);
     } finally {
       resetVoiceChat();
       setSketchPrompt("");

@@ -14,10 +14,10 @@ export const getPrepare = async (mode) => {
       },
     });
     if (status !== 200) throw new Error(status);
-
+    console.log("[SUCCESS] REQ getPrepare");
     return data;
   } catch (error) {
-    console.log(`[FAILED TO REQ getPrepare : ${error}]`);
+    console.log("[FAILED] REQ getPrepare MSG: ", error);
   }
 };
 // NOTE: 대화형 AI
@@ -34,10 +34,10 @@ export const getTxt2Chat = async (message, currentSystem, currentLang) => {
       adapter: "fetch",
     });
     if (status !== 200) throw new Error(status);
-
+    console.log("[SUCCESS] REQ getTxt2Chat");
     return data;
   } catch (error) {
-    console.log(`[FAILED TO REQ getTxt2Chat : ${error}]`);
+    console.log("[FAILED] REQ getTxt2Chat MSG: ", error);
   }
 };
 
@@ -52,10 +52,10 @@ export const postStt = async (formData, currentLang) => {
       },
     });
     if (status !== 200) throw new Error(status);
-
+    console.log("[SUCCESS] REQ postStt");
     return data.data;
   } catch (error) {
-    console.log(`[FAILED TO REQ postStt : ${error}]`);
+    console.log("[FAILED] REQ postStt MSG: ", error);
   }
 };
 // NOTE: 텍스트를 이미지로 생성 AI
@@ -71,10 +71,10 @@ export const postTxt2Img = async (prompt, model) => {
       responseType: "blob",
     });
     if (status !== 200) throw new Error(status);
-
+    console.log("[SUCCESS] REQ postTxt2Img");
     return URL.createObjectURL(data);
   } catch (error) {
-    console.log(`[FAILED TO REQ postTxt2Img : ${error}]`);
+    console.log("[FAILED] REQ postTxt2Img MSG: ", error);
   }
 };
 // NOTE: 이미지를 읽고 대화형 AI 응답
@@ -92,10 +92,10 @@ export const postImg2Chat = async (file, systemPrompt, lang = "ko") => {
   try {
     const { data, status } = await gpuApi.post("/v1/img2chat", formData);
     if (status !== 200) throw new Error(status);
-
+    console.log("[SUCCESS] REQ postImg2Chat");
     return data;
   } catch (error) {
-    console.log(`[FAILED TO REQ postImg2Chat : ${error}]`);
+    console.log("[FAILED] REQ postImg2Chat MSG: ", error);
   }
 };
 
@@ -115,9 +115,10 @@ export const postFace2Img = async (file, prompt) => {
       params: params,
     });
     if (status !== 200) throw new Error(status);
+    console.log("[SUCCESS] REQ postFace2Img");
     return URL.createObjectURL(data);
   } catch (error) {
-    console.log(`[FAILED TO REQ postFace2Img] : ${error}`);
+    console.log("[FAILED] REQ postFace2Img MSG: ", error);
   }
 };
 
@@ -131,8 +132,9 @@ export const postVoice2Wav = async (source, target) => {
       responseType: "blob",
     });
     if (status !== 200) throw new Error(status);
+    console.log("[SUCCESS] REQ postVoice2Wav");
     return URL.createObjectURL(data);
   } catch (error) {
-    console.log(`[FAILED TO REQ voice2wav] message: ${error}`);
+    console.log("[FAILED] REQ voice2wav] MSG: ", error);
   }
 };

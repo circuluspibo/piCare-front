@@ -5,7 +5,7 @@ import { IconRenderer } from "@/components/ui/IconRenderer";
 import { cn } from "@/lib/utils";
 import { ThreeDot } from "react-loading-indicators";
 import { postVoice2Wav } from "@/api/gpuService";
-import { getTts, getTtsBlob } from "@/api/cpuService";
+import { getTtsBlob } from "@/api/cpuService";
 import { GlobalContext } from "@/contexts/GlobalContext";
 
 const USER_SCRIPT_LIST = [
@@ -36,16 +36,13 @@ export default function VoiceReplication() {
   );
 
   const { personaVoice } = useContext(GlobalContext);
-  // --- 오디오 재생 함수 ---
   const handlePlayAudio = (e) => {
     if (audioRef.current && !isPlaying) {
-      e.stopPropagation()
+      e.stopPropagation();
       setIsPlaying(true); // 버튼 비활성화 상태로 변경
       audioRef.current.play();
     }
   };
-
-  // --- 오디오가 끝났을 때 감지하는 로직 ---
   const handleAudioEnded = () => {
     setIsPlaying(false); // 버튼 다시 활성화
   };
@@ -67,7 +64,6 @@ export default function VoiceReplication() {
     }
     return () => clearInterval(timerRef.current);
   }, [isRecording, currentScript]);
-  // --------------------------------
 
   const sendVoiceFile = async (sourceFile, targetFile) => {
     setLoading(true);
@@ -77,7 +73,7 @@ export default function VoiceReplication() {
 
       setResultAudio(response);
     } catch (error) {
-      console.error(`[Failed to sendVoice file - sendVoiceFile] E: ${error}`);
+      console.log("[FAILED] sendVoiceFile MSG: ", error);
     } finally {
       setLoading(false);
     }
@@ -99,7 +95,7 @@ export default function VoiceReplication() {
       setIsFlipped(true);
       setIsRecording(true);
     } catch (error) {
-      console.log(`[Failed to start record - handleStart] E: ${error}`);
+      console.log("[FAILED] voiceReplcation MSG: ", error);
     }
   };
 

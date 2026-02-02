@@ -8,7 +8,7 @@ import { getTts } from "@/api/cpuService";
 import { useDialogAnalyze } from "./useAnalyze";
 
 export default function useVoiceChat({ enableTTS }) {
-  const { sendLogToServer} = useDialogAnalyze();
+  const { sendLogToServer } = useDialogAnalyze();
 
   const mediaRecorderRef = useRef(null);
   const { currentLang, personaId, personaVoice } = useContext(GlobalContext);
@@ -96,10 +96,10 @@ export default function useVoiceChat({ enableTTS }) {
   // 4. LLM 스트리밍 응답 처리
   const sendMessage = useCallback(
     async (message, autoPrompt) => {
-  if (!message && !autoPrompt) return;
+      if (!message && !autoPrompt) return;
 
-    // 실제 서버에 보낼 텍스트 결정: autoPrompt가 있으면 우선 사용
-    const textToSearch = autoPrompt || message;
+      // 실제 서버에 보낼 텍스트 결정: autoPrompt가 있으면 우선 사용
+      const textToSearch = autoPrompt || message;
 
       setFullResponse("");
       let accumulatedResponse = "";
@@ -147,7 +147,7 @@ export default function useVoiceChat({ enableTTS }) {
           }
         }
       } catch (error) {
-        console.error(`TEXT MESSAGE ERROR : `, error);
+        console.log("[FAILED] REQ sendMessage MSG: ", error);
       }
     },
     [currentSystem, currentLang, addToTtsQueue, addMessage, sendLogToServer],
@@ -184,14 +184,14 @@ export default function useVoiceChat({ enableTTS }) {
             }
           }
         } catch (error) {
-          console.error("STT Process error:", error);
+          console.log("[FAILED] REQ postStt MSG: ", error);
         }
       };
 
       mediaRecorderRef.current = recorder;
       recorder.start();
     } catch (error) {
-      console.error("Recording error:", error);
+      console.log("[FAILED] RecoldHandler ERROR MSG: ", error);
       setIsRecording(false);
     }
   };

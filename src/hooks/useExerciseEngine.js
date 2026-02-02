@@ -244,7 +244,7 @@ export function useExerciseEngine(gameMode) {
       } catch (e) {
         if (isAlive) {
           setState((prev) => ({ ...prev, cameraError: true }));
-          console.log(`[Failed to load Camera model] message : ${e}`);
+          console.log("[FAILED] load Camera model MSG :", e);
         }
       }
     };

@@ -10,7 +10,7 @@ export const useCollectionControl = () => {
   const requestStart = useCallback(async (requestId) => {
     if (activeRequests.current.has(requestId)) return true;
     activeRequests.current.add(requestId);
-    
+
     if (engineStateRef.current || isTransitioning.current) return true;
 
     isTransitioning.current = true;
@@ -18,10 +18,10 @@ export const useCollectionControl = () => {
       await getStartCollection();
       engineStateRef.current = true;
       setIsEngineRunning(true);
-      console.log(`[Engine] 🚀 Started by: ${requestId}`);
+      console.log(`[Engine] Started by: ${requestId}`);
       return true;
     } catch (error) {
-      console.error(`[Engine] Start Error (${requestId}):`, error);
+      console.log(`[Engine] ERROR: (${requestId}) MSG: `, error);
       activeRequests.current.delete(requestId);
       return false;
     } finally {
@@ -31,17 +31,20 @@ export const useCollectionControl = () => {
 
   const requestStop = useCallback(async (requestId) => {
     activeRequests.current.delete(requestId);
-    console.log(`[Engine] Released by: ${requestId}. Active: ${activeRequests.current.size}`);
-    
-    if (activeRequests.current.size === 0 && engineStateRef.current && !isTransitioning.current) {
+
+    if (
+      activeRequests.current.size === 0 &&
+      engineStateRef.current &&
+      !isTransitioning.current
+    ) {
       isTransitioning.current = true;
       try {
         await getStopCollection();
         engineStateRef.current = false;
         setIsEngineRunning(false);
-        console.log(`[Engine] 🛑 Stopped by: ${requestId}`);
+        console.log(`[Engine] Stopped by: ${requestId}`);
       } catch (error) {
-        console.error(`[Engine] Stop Error:`, error);
+        console.log(`[Engine] ERROR MSG: `, error);
       } finally {
         isTransitioning.current = false;
       }
