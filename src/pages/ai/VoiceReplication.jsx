@@ -37,17 +37,17 @@ export default function VoiceReplication() {
 
   const { humanInfo } = useContext(GlobalContext);
   const targetVoice = useMemo(() => {
-    if(!humanInfo) return;
+    if (!humanInfo) return;
 
-    const { age, gender} = humanInfo;
-    if(age > 50) {
-      return gender === 'M' ? 42 : 65
-    } else if(age > 20) {
-      return gender === "M" ? 48 : 7
+    const { age, gender } = humanInfo;
+    if (age > 50) {
+      return gender === "M" ? 42 : 65;
+    } else if (age > 20) {
+      return gender === "M" ? 48 : 7;
     } else {
-      return gender === 'M' ? 25 : 22
+      return gender === "M" ? 25 : 22;
     }
-  }, [humanInfo])
+  }, [humanInfo]);
 
   const handlePlayAudio = (e) => {
     if (audioRef.current && !isPlaying) {
@@ -155,7 +155,7 @@ export default function VoiceReplication() {
       <div className="w-8/12 p-2 [perspective:2000px]">
         <div
           className={cn(
-            "relative w-full h-full duration-1000 [transform-style:preserve-3d] transition-transform shadow-xl rounded-2xl",
+            "relative w-full h-full duration-1000 [transform-style:preserve-3d] transition-transform shadow-md rounded-2xl",
             isFlipped ? "[transform:rotateY(180deg)]" : "",
           )}
         >
@@ -167,7 +167,7 @@ export default function VoiceReplication() {
                 backgroundImage: `url('https://www.transparenttextures.com/patterns/natural-paper.png')`,
               }}
             />
-            <div className="bg-blue-50 p-8 rounded-full mb-6 border-2 border-blue-100 shadow-lg relative z-10">
+            <div className="bg-blue-50 p-8 rounded-full mb-6 border-2 border-blue-100 shadow-md relative z-10">
               <IconRenderer
                 icon="Mic"
                 style={{ width: 60, height: 60 }}
@@ -213,7 +213,7 @@ export default function VoiceReplication() {
                   ))}
                 </div>
 
-                <div className="bg-white border-2 border-amber-100 px-6 py-8 rounded-lg shadow-xl [transform:rotate(-1deg)]">
+                <div className="bg-white border-2 border-amber-100 px-6 py-8 rounded-lg shadow-md [transform:rotate(-1deg)]">
                   {/* 변경 적용된 가라오케 텍스트 렌더링 */}
                   <h2 className="text-4xl font-black text-center leading-snug break-keep tracking-tight font-serif">
                     {currentScript.split("").map((char, index) => (
@@ -247,7 +247,7 @@ export default function VoiceReplication() {
                   onClick={(e) => handlePlayAudio(e)}
                   disabled={isPlaying} // 재생 중일 때 버튼 비활성화
                   className={cn(
-                    "w-full max-w-sm h-28 flex items-center justify-center gap-4 text-5xl font-black rounded-2xl transition-all shadow-xl",
+                    "w-full max-w-sm h-28 flex items-center justify-center gap-4 text-5xl font-black rounded-2xl transition-all shadow-md",
                     isPlaying
                       ? "bg-slate-200 text-slate-400 border-b-0 translate-y-2 cursor-not-allowed"
                       : "bg-orange-500 text-white border-b-[10px] border-orange-700 hover:bg-orange-600 active:border-b-0 active:translate-y-2",
@@ -267,7 +267,7 @@ export default function VoiceReplication() {
 
       {/* [우측 섹션] 제어 버튼 */}
       <div className="w-4/12 flex flex-col h-full p-2 gap-4">
-        <div className="bg-white p-6 rounded-2xl shadow-lg flex items-center justify-center gap-4">
+        <div className="bg-white p-6 rounded-2xl shadow-md flex items-center justify-center gap-4">
           <div
             className={cn(
               "w-8 h-8 rounded-full",
@@ -283,7 +283,7 @@ export default function VoiceReplication() {
           {!isFlipped ? (
             <Button
               onClick={handleStart}
-              className="flex-1 flex flex-col gap-3 text-5xl font-black rounded-2xl bg-blue-600 text-white border-b-[12px] border-blue-800 hover:bg-blue-700 active:border-b-0 active:translate-y-3 transition-all shadow-xl"
+              className="flex-1 flex flex-col gap-3 text-5xl font-black rounded-2xl bg-blue-600 text-white border-b-[12px] border-blue-800 hover:bg-blue-700 active:border-b-0 active:translate-y-3 transition-all shadow-md"
             >
               <IconRenderer icon="Play" style={{ width: 60, height: 60 }} />
               대본 읽기
@@ -291,7 +291,7 @@ export default function VoiceReplication() {
           ) : isRecording ? (
             <Button
               onClick={handleStop}
-              className="flex-1 flex flex-col gap-3 text-5xl font-black rounded-2xl bg-red-500 text-white border-b-[12px] border-red-700 hover:bg-red-600 active:border-b-0 active:translate-y-3 transition-all shadow-xl"
+              className="flex-1 flex flex-col gap-3 text-5xl font-black rounded-2xl bg-red-500 text-white border-b-[12px] border-red-700 hover:bg-red-600 active:border-b-0 active:translate-y-3 transition-all shadow-md"
             >
               <IconRenderer icon="Square" style={{ width: 60, height: 60 }} />
               녹음 종료
@@ -299,7 +299,7 @@ export default function VoiceReplication() {
           ) : (
             <Button
               onClick={handleReset}
-              className="flex-1 flex flex-col gap-3 text-5xl font-black rounded-2xl bg-emerald-500 text-white border-b-8 border-emerald-800 hover:bg-emerald-600 shadow-xl"
+              className="flex-1 flex flex-col gap-3 text-5xl font-black rounded-2xl bg-emerald-500 text-white border-b-8 border-emerald-800 hover:bg-emerald-600 shadow-md"
             >
               <IconRenderer
                 icon="RotateCcw"

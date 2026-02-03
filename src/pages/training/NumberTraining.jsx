@@ -15,25 +15,18 @@ const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const createGameData = () => {
   const shuffled = [...NUMBERS].sort(() => Math.random() - 0.5);
   const isUp = Math.random() > 0.5;
-  return {
-    grid: shuffled,
-    isUp,
-    currentTarget: isUp ? 1 : 9,
-  };
+  return { grid: shuffled, isUp };
 };
 
 export default function NumberTraining({ onComplete }) {
   const [gameData, setGameData] = useState(() => createGameData());
+  const [userSequence, setUserSequence] = useState([]);
   const [scores, setScores] = useState([]);
   const [isFinish, setIsFinish] = useState(false);
-  const [wrongIdx, setWrongIdx] = useState(null);
-  const [correctIdx, setCorrectIdx] = useState(null); // 정답 효과용 추가
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
   const [totalElapsedTime, setTotalElapsedTime] = useState(0);
 
-  const startTimeRef = useRef(null);
   const totalStartRef = useRef(null);
-
   const audio = useMemo(
     () => ({
       pass: new Audio("/sound/pass.mp3"),
@@ -45,86 +38,57 @@ export default function NumberTraining({ onComplete }) {
 
   const startNextRound = useCallback(() => {
     setGameData(createGameData());
-    setWrongIdx(null);
-    setCorrectIdx(null);
-    setIsProcessing(false);
-    startTimeRef.current = Date.now();
+    setUserSequence([]);
+    setIsEvaluating(false);
   }, []);
 
-  const handleSelect = useCallback(
-    (value, idx) => {
-      if (isProcessing || isFinish || wrongIdx !== null || correctIdx !== null)
-        return;
+  const handleSelect = (idx) => {
+    if (isEvaluating || userSequence.includes(idx)) return;
+    const nextSeq = [...userSequence, idx];
+    setUserSequence(nextSeq);
 
-      const isCorrect = value === gameData.currentTarget;
+    if (nextSeq.length === 9) {
+      setIsEvaluating(true);
+      checkResult(nextSeq);
+    }
+  };
 
-      if (isCorrect) {
-        setCorrectIdx(idx); // 정답 하이라이트 시작
-        audio.pass.play().catch(() => {});
+  const checkResult = (finalSeq) => {
+    const resultNumbers = finalSeq.map((idx) => gameData.grid[idx]);
+    const correctSeq = gameData.isUp
+      ? [...NUMBERS].sort((a, b) => a - b)
+      : [...NUMBERS].sort((a, b) => b - a);
 
+    const isAllCorrect = resultNumbers.every((num, i) => num === correctSeq[i]);
+
+    setTimeout(() => {
+      if (isAllCorrect) audio.pass.play().catch(() => {});
+      else audio.fail.play().catch(() => {});
+
+      const nextScores = [...scores, { isPass: isAllCorrect }];
+      setScores(nextScores);
+
+      if (nextScores.length >= TOTAL_ROUNDS) {
+        setTotalElapsedTime(
+          ((Date.now() - totalStartRef.current) / 1000).toFixed(0),
+        );
         setTimeout(() => {
-          setCorrectIdx(null); // 하이라이트 종료
-          const nextTarget = gameData.isUp
-            ? gameData.currentTarget + 1
-            : gameData.currentTarget - 1;
-
-          if (
-            (gameData.isUp && nextTarget > 9) ||
-            (!gameData.isUp && nextTarget < 1)
-          ) {
-            setIsProcessing(true);
-            const roundSpendTime =
-              Date.now() - (startTimeRef.current || Date.now());
-            const nextScores = [
-              ...scores,
-              { isPass: true, time: roundSpendTime },
-            ];
-            setScores(nextScores);
-
-            if (nextScores.length >= TOTAL_ROUNDS) {
-              setTotalElapsedTime(
-                ((Date.now() - totalStartRef.current) / 1000).toFixed(0),
-              );
-              setTimeout(() => {
-                setIsFinish(true);
-                audio.complete.play().catch(() => {});
-              }, 500);
-            } else {
-              setTimeout(startNextRound, 500);
-            }
-          } else {
-            setGameData((prev) => ({ ...prev, currentTarget: nextTarget }));
-          }
-        }, 200); // 정답 색상을 보여줄 아주 짧은 대기시간
+          setIsFinish(true);
+          audio.complete.play().catch(() => {});
+        }, 800);
       } else {
-        audio.fail.play().catch(() => {});
-        setWrongIdx(idx);
-        setTimeout(() => setWrongIdx(null), 400);
+        setTimeout(startNextRound, 1200);
       }
-    },
-    [
-      gameData,
-      isFinish,
-      isProcessing,
-      scores,
-      startNextRound,
-      audio,
-      wrongIdx,
-      correctIdx,
-    ],
-  );
+    }, 600);
+  };
 
   const getFeedbackMsg = () => {
-    const passCnt = scores.length;
-    if (passCnt >= 8) return "정말 잘했어요!";
-    if (passCnt >= 4) return "집중력이 대단해요!";
-    return "천천히 다시 해봐요!";
+    const passCnt = scores.filter((s) => s.isPass).length;
+    return passCnt >= 3 ? "집중력이 대단하세요!" : "조금만 더 힘내볼까요?";
   };
+
   useEffect(() => {
-    if (totalStartRef.current === null) {
-      totalStartRef.current = Date.now();
-    }
-    startTimeRef.current = Date.now();
+    if (totalStartRef.current === null) totalStartRef.current = Date.now();
   }, []);
 
   useEffect(() => {
@@ -132,50 +96,66 @@ export default function NumberTraining({ onComplete }) {
   }, [isFinish]);
 
   return (
-    <div className="flex h-full w-full gap-6 bg-[#F8FAFC] font-extrabold text-[#2D3A5A] overflow-hidden">
-      {/* 1. 좌측: 메인 숫자 패드 영역 (70%) */}
-      <section className="flex-[7] h-full flex flex-col">
-        <div className="flex-1 bg-white p-4 rounded-xl shadow-inner border grid grid-cols-3 gap-6">
-          {gameData.grid.map((num, i) => (
-            <button
-              key={`${scores.length}-${num}`}
-              onClick={() => handleSelect(num, i)}
-              disabled={isProcessing}
-              className={cn(
-                "relative text-7xl font-black rounded-[32px] transition-all duration-100",
-                "border-b-[12px] active:border-b-0 active:translate-y-[12px]", // 물리적인 눌림 효과
-                "flex items-center justify-center",
-                // 기본 상태
-                "bg-gray-100 border-gray-300 text-gray-700 shadow-lg",
-                // 정답 상태 (Green)
-                correctIdx === i &&
-                  "bg-green-500 border-green-700 text-white scale-95",
-                // 오답 상태 (Red)
-                wrongIdx === i &&
-                  "bg-red-500 border-red-700 text-white animate-shake",
-                isProcessing && "opacity-50",
-              )}
-            >
-              {num}
-            </button>
-          ))}
+    <div className="flex w-full h-full gap-4 animate-in fade-in duration-500 font-extrabold p-3 bg-white">
+      {/* 1. 좌측: 쿨톤 계산기 본체 (Piano 스타일 통일) */}
+      <section className="flex-[2.8] flex flex-col items-stretch justify-center p-6 bg-slate-100 rounded-[40px] shadow-inner border-[8px] border-slate-200/50">
+        {/* 대형 전광판: 시니어를 위한 큰 글씨와 충분한 공간 */}
+        <div className="flex-[0.3] w-full bg-slate-800 mb-6 rounded-3xl shadow-2xl border-4 border-slate-700 flex items-center justify-center px-8 relative overflow-hidden">
+          {/* 배경 격자 패턴 (계산기 느낌) */}
+          <div className="absolute inset-0 opacity-10 pointer-events-none bg-[grid:20px_20px_white]" />
+          <span
+            className={cn(
+              "font-mono text-emerald-400 tracking-[0.75rem] transition-all duration-300",
+              userSequence.length > 7 ? "text-5xl" : "text-6xl",
+            )}
+          >
+            {userSequence.map((idx) => gameData.grid[idx]).join("")}
+            {userSequence.length < 9 && (
+              <span className="animate-pulse text-slate-500">_</span>
+            )}
+          </span>
+        </div>
+
+        {/* 숫자 버튼 그리드 */}
+        <div className="flex-1 grid grid-cols-3 gap-4">
+          {gameData.grid.map((num, i) => {
+            const isSelected = userSequence.includes(i);
+            return (
+              <button
+                key={i}
+                onClick={() => handleSelect(i)}
+                className={cn(
+                  "relative text-5xl font-black transition-all duration-100 flex items-center justify-center",
+                  "rounded-[28px] border-b-[10px] shadow-lg",
+                  isSelected
+                    ? "bg-slate-300 border-slate-400 translate-y-2 border-b-0 text-slate-100 shadow-none"
+                    : "bg-white border-slate-200 text-slate-700 active:translate-y-1 active:border-b-[4px]",
+                  isEvaluating && "pointer-events-none opacity-50",
+                )}
+              >
+                {num}
+              </button>
+            );
+          })}
         </div>
       </section>
 
-      {/* 2. 우측: 정보 및 가이드 영역 (30%) */}
-      <aside className="flex-[3] h-full flex flex-col gap-2">
-        {/* 라운드 진행도 카드 */}
-        <div className="bg-white p-2 rounded-xl shadow-inner border grid grid-cols-5 gap-1">
+      {/* 2. 우측: 정보 및 가이드 영역 (aside) */}
+      <aside className="flex-1 flex flex-col gap-2">
+        {/* 상단 라운드 진행도 */}
+        <div className="bg-slate-50 p-3 rounded-2xl shadow-sm grid grid-cols-5 gap-2 border border-slate-100">
           {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (
             <div
               key={i}
               className={cn(
-                "aspect-square rounded-full flex items-center justify-center text-2xl transition-all duration-300 border-b-4",
+                "aspect-square rounded-full flex items-center justify-center text-xl transition-all border-b-4",
                 i === scores.length
                   ? "bg-blue-500 text-white animate-pulse border-blue-700"
                   : scores[i]?.isPass
-                    ? "bg-red-400 text-white border-red-600"
-                    : "bg-slate-100 text-slate-300 border-slate-200",
+                    ? "bg-emerald-500 text-white border-emerald-700"
+                    : scores[i]
+                      ? "bg-rose-500 text-white border-rose-700"
+                      : "bg-white text-slate-300 border-slate-100",
               )}
             >
               {i + 1}
@@ -183,64 +163,82 @@ export default function NumberTraining({ onComplete }) {
           ))}
         </div>
 
-        {/* 현재 타겟 숫자 안내 카드 (가장 시각적으로 강조됨) */}
-        <div className="flex-1 bg-white rounded-xl shadow-md border flex flex-col items-center justify-center p-4 gap-4">
-          <div className="flex flex-col items-center">
-            <h3 className="text-3xl text-gray-400 mb-2">찾아야 할 숫자</h3>
-            <div className="relative">
-              <span className="text-7xl leading-none font-black text-blue-600 drop-shadow-md">
-                {gameData.currentTarget}
+        {/* 미션 안내 카드 (Color/Piano 레이아웃 통일) */}
+        <div className="flex-1 flex flex-col rounded-[40px] bg-slate-50 items-center justify-center gap-2 p-2 shadow-inner border border-slate-100">
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-2xl font-bold text-slate-400 uppercase tracking-tighter">
+              입력 가이드
+            </span>
+            <div
+              className={cn(
+                "w-36 h-36 rounded-full flex flex-col items-center justify-center shadow-xl border-[10px] border-white transition-colors duration-500",
+                gameData.isUp
+                  ? "bg-blue-500 text-white"
+                  : "bg-indigo-600 text-white",
+              )}
+            >
+              <span className="text-6xl mb-1">{gameData.isUp ? "↑" : "↓"}</span>
+              <span className="text-xl font-black">
+                {gameData.isUp ? "커지는 순" : "작아지는 순"}
               </span>
             </div>
           </div>
-          <div
-            className={cn(
-              "w-full py-4 px-2 rounded-xl text-center",
-              gameData.isUp ? "bg-orange-50" : "bg-purple-50",
-            )}
-          >
-            <p className="text-2xl break-keep leading-snug">
+
+          <div className="text-center">
+            <h2 className="text-3xl font-black text-slate-800 break-keep leading-tight">
               {gameData.isUp ? (
                 <>
-                  <strong>1</strong>부터 커지는 순서로
+                  <strong>1</strong>에서 <strong>9</strong>까지
+                  <br />
+                  <span className="text-blue-600 underline underline-offset-8">
+                    올라가는 순서
+                  </span>
                 </>
               ) : (
                 <>
-                  <strong>9</strong>부터 작아지는 순서로
+                  <strong>9</strong>에서 <strong>1</strong>까지
+                  <br />
+                  <span className="text-indigo-600 underline underline-offset-8">
+                    내려가는 순서
+                  </span>
                 </>
               )}
-              <br />
-              누르세요!
-            </p>
+            </h2>
+          </div>
+
+          <div className="bg-slate-900 text-white px-8 py-3 rounded-2xl shadow-lg mt-auto">
+            <span className="text-2xl font-black italic">
+              {userSequence.length} / 9
+            </span>
           </div>
         </div>
       </aside>
 
-      {/* 결과 다이얼로그 (일관된 스타일) */}
+      {/* 결과 다이얼로그 */}
       <Dialog isOpen={isFinish} onClose={onComplete} title="훈련 결과">
-        <div className="text-center flex flex-col items-center gap-3">
-          <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
+        <div className="text-center flex flex-col items-center gap-4">
+          <h2 className="text-5xl font-black mb-10 text-slate-900 leading-tight">
             {getFeedbackMsg()}
           </h2>
-
-          <div className="flex flex-row items-center gap-6 text-center">
-            <div>
-              <p className="text-gray-400 font-bold text-2xl">성공 횟수</p>
-              <p className="text-6xl font-black text-green-600">
-                {scores.length}회
+          <div className="flex w-full gap-4 mb-6">
+            <div className="flex-1 bg-emerald-50 p-8 rounded-[32px] border-2 border-emerald-100">
+              <p className="text-emerald-600 font-bold text-2xl mb-1">
+                성공 횟수
+              </p>
+              <p className="text-7xl font-black text-emerald-700">
+                {scores.filter((s) => s.isPass).length}회
               </p>
             </div>
-            <div>
-              <p className="text-gray-400 font-bold text-2xl">소요 시간</p>
-              <p className="text-6xl font-black text-blue-600">
+            <div className="flex-1 bg-blue-50 p-8 rounded-[32px] border-2 border-blue-100">
+              <p className="text-blue-600 font-bold text-2xl mb-1">소요 시간</p>
+              <p className="text-7xl font-black text-blue-700">
                 {totalElapsedTime}초
               </p>
             </div>
           </div>
-
           <button
             onClick={onComplete}
-            className="w-[80%] py-4 bg-[#2D3A5A] text-white text-4xl font-black rounded-2xl hover:bg-slate-800 transition-all shadow-xl"
+            className="w-full py-6 bg-slate-900 text-white text-5xl font-black rounded-3xl hover:bg-black shadow-xl"
           >
             확인
           </button>

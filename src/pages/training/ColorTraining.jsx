@@ -8,39 +8,29 @@ import React, {
 import { cn } from "@/lib/utils";
 import Dialog from "@/components/Dialog";
 import { fireInfoConfetti } from "@/components/magicui/connfetti";
+import { IconRenderer } from "@/components/ui/IconRenderer";
 
 const COLORS = [
-  // 1. 따뜻한 계열 (서로 다른 3종)
-  "#E57373", // [부드러운 레드] 토마토색
-  "#FFB74D", // [부드러운 오렌지] 귤색
-  "#FFF176", // [부드러운 노랑] 바나나색
-
-  // 2. 초록 계열 (서로 다른 3종)
-  "#81C784", // [부드러운 초록] 숲색
-  "#DCE775", // [부드러운 연두] 라임색
-  "#4DB6AC", // [부드러운 청록] 민트바다색
-
-  // 3. 파랑/보라 계열 (서로 다른 3종)
-  "#64B5F6", // [부드러운 파랑] 맑은 하늘색
-  "#7986CB", // [부드러운 남색] 제비꽃색
-  "#BA68C8", // [부드러운 보라] 라벤더색
-
-  // 4. 무채색/대비 계열 (서로 다른 3종)
-  "#A1887F", // [부드러운 갈색] 커피색
-  "#90A4AE", // [부드러운 회색] 바다회색
-  "#455A64", // [짙은 먹색] 깊은 밤색
+  "#D32F2F",
+  "#F57C00",
+  "#FBC02D",
+  "#388E3C",
+  "#1976D2",
+  "#7B1FA2",
+  "#C2185B",
+  "#00796B",
+  "#5D4037",
+  "#000000",
+  "#263238",
+  "#E64A19",
 ];
 
 const TOTAL_ROUNDS = 10;
 
 const createGameData = () => {
-  // 2. 색상 중복 방지 로직: 셔플 후 앞에서 9개 선택
   const shuffled = [...COLORS].sort(() => Math.random() - 0.5);
   const newGrid = shuffled.slice(0, 9);
-
-  // 9개 중 무작위로 하나를 타겟으로 지정 (중복 없음)
   const target = newGrid[Math.floor(Math.random() * 9)];
-
   return { grid: newGrid, target };
 };
 
@@ -64,7 +54,14 @@ export default function ColorTraining({ onComplete }) {
     [],
   );
 
-  // 라운드 전환 로직 (종료 판단 제외)
+  // [중요] 여기에서 메시지를 생성합니다.
+  const getFeedbackMsg = () => {
+    const passCnt = scores.filter((s) => s.isPass).length;
+    if (passCnt >= 8) return "꽃사슴 같은 눈썰미네요!";
+    if (passCnt >= 4) return "색깔을 정말 잘 구별하세요!";
+    return "차근차근 다시 해봐요!";
+  };
+
   const startNextRound = useCallback(() => {
     setGameData(createGameData());
     setWrongIdx(null);
@@ -75,7 +72,6 @@ export default function ColorTraining({ onComplete }) {
   const handleSelect = useCallback(
     (selectedColor, idx) => {
       if (isProcessing || isFinish) return;
-
       setIsProcessing(true);
       const isCorrect = selectedColor === gameData.target;
       const roundSpendTime = Date.now() - (startTimeRef.current || Date.now());
@@ -86,7 +82,6 @@ export default function ColorTraining({ onComplete }) {
         if (idx !== null) setWrongIdx(idx);
       }
 
-      // [핵심 수정] 새로운 스코어 배열을 직접 생성하여 즉시 판단
       const nextScores = [
         ...scores,
         { isPass: isCorrect, time: roundSpendTime },
@@ -94,125 +89,127 @@ export default function ColorTraining({ onComplete }) {
       setScores(nextScores);
 
       if (nextScores.length >= TOTAL_ROUNDS) {
-        // 10회 완료 시 즉시 종료 처리
         const duration = ((Date.now() - totalStartRef.current) / 1000).toFixed(
           0,
         );
         setTotalElapsedTime(duration);
-
-        // 약간의 지연 후 결과 팝업 (정답/오답 확인 시간)
         setTimeout(() => {
           setIsFinish(true);
           audio.complete.play().catch(() => {});
         }, 800);
       } else {
-        // 다음 라운드 이동
         setTimeout(startNextRound, 800);
       }
     },
     [gameData.target, isFinish, isProcessing, scores, startNextRound, audio],
-  ); // scores 의존성 추가
-
-  const getFeedbackMsg = () => {
-    const passCnt = scores.filter((s) => s.isPass).length;
-    if (passCnt >= 8) return "꽃사슴 같은 눈썰미네요!";
-    if (passCnt >= 4) return "색깔을 정말 잘 구별하세요!";
-    return "차근차근 다시 해봐요!";
-  };
+  );
 
   useEffect(() => {
     startTimeRef.current = Date.now();
-    if (totalStartRef.current === null) {
-      totalStartRef.current = Date.now();
-    }
+    if (totalStartRef.current === null) totalStartRef.current = Date.now();
   }, []);
 
   useEffect(() => {
-    if (isFinish) {
-      fireInfoConfetti();
-    }
+    if (isFinish) fireInfoConfetti();
   }, [isFinish]);
+
   return (
-    <div className="flex h-full gap-6 animate-in fade-in duration-500 font-extrabold">
-      {/* LEFT: Game Grid */}
-      <section className="w-2/3 h-full">
-        <div className="h-full bg-white rounded-3xl p-2 grid grid-cols-3 gap-2 border place-items-center">
-          {gameData.grid.map((color, i) => (
-            <button
-              key={`${scores.length}-${i}`}
-              onClick={() => handleSelect(color, i)}
-              style={{ backgroundColor: color }}
-              disabled={isProcessing}
-              className={cn(
-                "w-28 h-28 border-4 border-white shadow-lg rounded-3xl transition-all",
-                "active:scale-95",
-                wrongIdx === i &&
-                  "animate-shake border-red-500 ring-[10px] ring-red-50",
-                isProcessing && "pointer-events-none opacity-80",
-              )}
-            />
-          ))}
+    <div className="flex h-full gap-4 animate-in fade-in duration-500 font-extrabold p-2 bg-white">
+      {/* LEFT: 텍스처 팔레트 영역 */}
+      <section className="w-2/3 flex-1 flex items-center justify-center relative overflow-hidden">
+        <div className="relative w-full h-full bg-orange-100 rounded-[180px_250px_140px_300px] rotate-2 flex items-center justify-center">
+          <div className="absolute top-14 left-16 w-16 h-20 rotate-[30deg] bg-white rounded-full shadow-[inset_4px_4px_10px_rgba(0,0,0,0.1)]" />
+          <div className="relative w-full h-full">
+            {gameData.grid.map((color, i) => {
+              const angle = (i * (360 / 9) - 10) * (Math.PI / 180);
+              const rx = 195;
+              const ry = 135;
+              const x = Math.cos(angle) * rx;
+              const y = Math.sin(angle) * ry;
+
+              return (
+                <button
+                  key={`${scores.length}-${i}`}
+                  onClick={() => handleSelect(color, i)}
+                  style={{
+                    backgroundColor: color,
+                    left: `calc(50% + ${x}px - 45px)`,
+                    top: `calc(50% + ${y}px - 45px)`,
+                    borderRadius: `${60 + (i % 3) * 10}% ${40 + (i % 2) * 20}% ${50 + (i % 4) * 10}% ${55 + (i % 2) * 15}%`,
+                  }}
+                  disabled={isProcessing}
+                  className={cn(
+                    "absolute w-[90px] h-[90px] transition-all duration-300 border-none shadow-[4px_8px_15px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(0,0,0,0.2)]",
+                    "hover:scale-110 active:scale-95 before:absolute before:top-3 before:left-4 before:w-7 before:h-4 before:bg-white/30 before:rounded-full before:blur-[1px]",
+                    wrongIdx === i &&
+                      "animate-shake ring-[10px] ring-rose-200/50",
+                    isProcessing && "opacity-90 pointer-events-none",
+                  )}
+                />
+              );
+            })}
+          </div>
         </div>
       </section>
 
-      {/* RIGHT: Status & Target */}
-      <aside className="w-1/3 flex flex-col space-y-2">
-        <div className="bg-white p-2 rounded-xl shadow-inner border grid grid-cols-5 gap-1">
+      {/* RIGHT: 정보창 */}
+      <aside className="w-1/3 flex flex-col gap-4">
+        <div className="bg-slate-50 p-3 rounded-2xl shadow-sm grid grid-cols-5 gap-2">
           {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (
             <div
               key={i}
               className={cn(
-                "aspect-square rounded-full flex items-center justify-center text-2xl transition-all duration-300 border-b-4",
+                "aspect-square rounded-full flex items-center justify-center text-xl transition-all border-b-4",
                 i === scores.length
                   ? "bg-blue-500 text-white animate-pulse border-blue-700"
                   : scores[i]?.isPass
-                    ? "bg-green-500 text-white border-green-700"
+                    ? "bg-emerald-500 text-white border-emerald-700"
                     : scores[i]
-                      ? "bg-red-400 text-white border-red-600"
-                      : "bg-slate-100 text-slate-300 border-slate-200",
+                      ? "bg-rose-500 text-white border-rose-700"
+                      : "bg-white text-slate-300 border-slate-100",
               )}
             >
               {i + 1}
             </div>
           ))}
         </div>
-
-        <div className="flex-1 flex flex-col rounded-xl bg-white shadow-inner border items-center justify-center gap-2 p-4">
+        <div className="flex-1 flex flex-col rounded-2xl bg-slate-50 items-center justify-center gap-6 p-6 shadow-inner">
           <div
-            className="w-28 h-28 rounded-3xl border-8 border-slate-50 shadow-2xl"
-            style={{ backgroundColor: gameData.target }}
+            className="w-32 h-32 shadow-2xl"
+            style={{
+              backgroundColor: gameData.target,
+              borderRadius: "40% 60% 70% 30% / 40% 50% 60% 70%",
+            }}
           />
-          <h2 className="text-3xl font-black leading-relaxed text-slate-800 text-center">
-            <span className="text-blue-600 underline underline-offset-8">
-              같은 색
-            </span>
-            을<br />
-            찾아주세요
+          <h2 className="text-4xl font-black text-slate-800 text-center break-keep">
+            같은 <span className="text-blue-600">물감 색</span>을 찾아보세요
           </h2>
         </div>
       </aside>
+
+      {/* 결과 다이얼로그에서 getFeedbackMsg() 호출 */}
       <Dialog isOpen={isFinish} onClose={onComplete} title="훈련 종료">
-        <div className="text-center flex flex-col items-center gap-3">
-          <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
+        <div className="text-center flex flex-col items-center gap-4">
+          <h2 className="text-5xl font-black mb-8 text-slate-900 leading-tight">
             {getFeedbackMsg()}
           </h2>
-          <div className="flex flex-row items-center gap-6 text-center">
-            <div>
-              <p className="text-gray-400 font-bold text-2xl">성공 횟수</p>
-              <p className="text-6xl font-black text-green-600">
-                {scores.filter((s) => s.isPass).length}개
+          <div className="flex w-full gap-4 mb-6">
+            <div className="flex-1 bg-emerald-50 p-6 rounded-3xl">
+              <p className="text-emerald-600 font-bold text-xl mb-1">성공</p>
+              <p className="text-6xl font-black text-emerald-700">
+                {scores.filter((s) => s.isPass).length}
               </p>
             </div>
-            <div>
-              <p className="text-gray-400 font-bold text-2xl">소요 시간</p>
-              <p className="text-6xl font-black text-blue-600">
+            <div className="flex-1 bg-blue-50 p-6 rounded-3xl">
+              <p className="text-blue-600 font-bold text-xl mb-1">시간</p>
+              <p className="text-6xl font-black text-blue-700">
                 {totalElapsedTime}초
               </p>
             </div>
           </div>
           <button
             onClick={onComplete}
-            className="w-[80%] py-4 bg-[#2D3A5A] text-white text-4xl font-black rounded-2xl hover:bg-slate-800 transition-all shadow-xl"
+            className="w-full py-6 bg-slate-900 text-white text-4xl font-black rounded-3xl hover:bg-black shadow-xl"
           >
             확인
           </button>

@@ -179,7 +179,7 @@ export default function MagicMirror() {
             {/* 2. 카운트다운 숫지 표시 */}
             {count !== null && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/10 z-20">
-                <span className="text-[150px] font-black text-white drop-shadow-2xl animate-ping">
+                <span className="text-[150px] font-black text-white drop-shadow-md animate-ping">
                   {count}
                 </span>
               </div>
@@ -244,7 +244,7 @@ export default function MagicMirror() {
         ) : (
           <div className="flex flex-col items-center justify-between text-center animate-in zoom-in-95 duration-500 gap-6 w-full h-full">
             <div>
-              <h2 className="text-5xl font-extrabold text-[#2D3A5A] break-keep leading-snug">
+              <h2 className="text-5xl font-extrabold text-slate-900 break-keep leading-snug">
                 {isResultMode && !isProcessing
                   ? "와우! 정말 멋져요!"
                   : count !== null

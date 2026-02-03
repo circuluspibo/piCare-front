@@ -14,7 +14,8 @@ export const usePageAnalyze = () => {
 
     return async () => {
       const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
-      if (duration > 10) { // 10초 이상 체류 부터 저장
+      if (duration > 10) {
+        // 10초 이상 체류 부터 저장
         const payload = {
           hwId: "697b07b3251e185c8626a8ad",
           featureId: "pageAnalyze",
@@ -34,13 +35,13 @@ export const useTouchAnalyze = () => {
   const currentSIdRef = useRef(sId);
 
   const flush = useCallback(async (targetSId, count) => {
-    if (count <= 0) return;
+    if (count > 3) return; // 3회 미만은 저장생략.
 
     const payload = {
       hwId: "697b07b3251e185c8626a8ad",
       type: "touchAnalyze",
       content: `${count}`,
-      sId: targetSId 
+      sId: targetSId,
     };
 
     try {
@@ -60,7 +61,7 @@ export const useTouchAnalyze = () => {
         flush(prevSId, prevCount);
         totalSessionCount.current = 0; // 카운트 초기화
       }
-      currentSIdRef.current = sId; 
+      currentSIdRef.current = sId;
     }
   }, [sId, flush]);
 
@@ -78,14 +79,14 @@ export const useTouchAnalyze = () => {
     };
 
     window.addEventListener("touchstart", handleTouch, { passive: true });
-    window.addEventListener("mousedown", handleTouch); 
+    window.addEventListener("mousedown", handleTouch);
     window.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       window.removeEventListener("touchstart", handleTouch);
       window.removeEventListener("mousedown", handleTouch);
       window.removeEventListener("visibilitychange", handleVisibility);
-      
+
       flush(currentSIdRef.current, totalSessionCount.current);
     };
   }, [flush]);

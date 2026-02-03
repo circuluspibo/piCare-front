@@ -34,7 +34,7 @@ export default function ExerciseLayout() {
   }, [state.isFinish]);
 
   return (
-    <div className="flex flex-col h-full p-2 bg-gray-50 overflow-hidden relative font-extrabold text-[#2D3A5A]">
+    <div className="flex flex-col h-full p-2 bg-white overflow-hidden relative font-extrabold text-slate-900">
       {/* 카운트다운 Overlay */}
       {state.countdown !== null && (
         <div className="absolute inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center">
@@ -76,14 +76,13 @@ export default function ExerciseLayout() {
 
       {/* 메인 영역 */}
       <main className="flex flex-grow overflow-hidden relative gap-4 p-2">
-          <Outlet context={{ state, actions }} />
-
+        <Outlet context={{ state, actions }} />
 
         {/* 오른쪽: 엔진 상태 모니터링 (메뉴가 아닐 때만 노출) */}
         {!isMenu && (
           <aside className="flex w-1/3 flex-col gap-2 animate-in slide-in-from-right duration-500">
             {/* 점수판 */}
-            <div className="bg-white p-2 rounded-3xl shadow-xl border-slate-100 flex flex-col gap-2">
+            <div className="bg-white p-2 rounded-2xl shadow-xl flex flex-col gap-2">
               <div className="grid grid-cols-5 gap-3">
                 {Array.from({ length: 20 }).map((_, i) => (
                   <div
@@ -106,7 +105,7 @@ export default function ExerciseLayout() {
             </div>
 
             {/* 실시간 AI 카메라 */}
-            <div className="flex-1 relative bg-[#1A1A1A] rounded-3xl overflow-hidden border-4 border-white shadow-2xl group">
+            <div className="flex-1 relative bg-[#1A1A1A] rounded-2xl overflow-hidden group">
               <video ref={videoRef} autoPlay playsInline className="hidden" />
               <canvas
                 ref={canvasRef}
@@ -143,7 +142,7 @@ export default function ExerciseLayout() {
         title="활동 결과"
       >
         <div className="text-center flex flex-col items-center gap-8 p-6">
-          <h2 className="text-5xl font-black text-[#2D3A5A]" break-keep>
+          <h2 className="text-5xl font-black text-slate-900" break-keep>
             {state.totalScores.filter((s) => s.isPass).length >= 15
               ? "완벽해요!"
               : "참 잘하셨어요!"}

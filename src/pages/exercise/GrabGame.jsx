@@ -19,14 +19,14 @@ export default function GrabGame() {
   ];
 
   const getBgClass = (side) => {
-    if (lastResult.target === null) return "bg-white border-gray-100 shadow-sm";
+    if (lastResult.target === null) return "bg-white border-gray-100 shadow-md";
     const isTarget = side === lastResult.target;
     if (lastResult.isPass)
       return isTarget
-        ? "bg-green-100 border-green-500 shadow-2xl scale-[1.03]"
+        ? "bg-green-100 border-green-500 shadow-md scale-[1.03]"
         : "bg-white opacity-20";
     return !isTarget
-      ? "bg-red-100 border-red-500 shadow-2xl scale-[1.03]"
+      ? "bg-red-100 border-red-500 shadow-md scale-[1.03]"
       : "bg-white opacity-20";
   };
 

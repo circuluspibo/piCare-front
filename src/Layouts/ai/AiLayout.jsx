@@ -19,7 +19,7 @@ export default function AiLayout() {
   const modeKey = isMenu ? null : currentPath.toUpperCase();
 
   return (
-    <div className="flex flex-col w-full h-full p-4 bg-[#f8f5f0] overflow-hidden font-extrabold text-[#2D3A5A]">
+    <div className="flex flex-col w-full h-full p-4 bg-white overflow-hidden font-extrabold text-slate-900">
       <header className="flex flex-col items-start pb-4 border-b border-stone-200 mb-4">
         <div className="flex items-center text-4xl font-black cursor-pointer">
           <ArrowBigLeft

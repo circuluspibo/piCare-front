@@ -207,7 +207,7 @@ export default function DrawByVoice() {
               />
             </div>
 
-            <h2 className="text-5xl font-black text-[#2D3A5A] leading-snug break-keep">
+            <h2 className="text-5xl font-black text-slate-900 leading-snug break-keep">
               AI 화가가 <br />
               <span className="text-blue-600 underline decoration-wavy">
                 "{sketchPrompt || "바다"}"

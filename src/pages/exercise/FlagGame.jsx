@@ -10,20 +10,20 @@ export default function FlagGame() {
 
   const getBgClass = (side) => {
     // 아무 결과가 없을 때 (초기 상태)
-    if (lastResult.target === null) return "bg-white border-gray-100 shadow-sm";
+    if (lastResult.target === null) return "bg-white border-gray-100 shadow-md";
 
     const isTarget = side === lastResult.target;
 
     // 정답을 맞혔을 때
     if (lastResult.isPass) {
       return isTarget
-        ? "bg-green-100 border-green-500 shadow-2xl scale-[1.03] z-10"
+        ? "bg-green-100 border-green-500 shadow-md scale-[1.03] z-10"
         : "bg-white opacity-20 border-transparent";
     }
 
     // 틀렸을 때 (또는 타임아웃)
     return !isTarget
-      ? "bg-red-100 border-red-500 shadow-2xl scale-[1.03] z-10"
+      ? "bg-red-100 border-red-500 shadow-md scale-[1.03] z-10"
       : "bg-white opacity-20 border-transparent";
   };
 
