@@ -7,7 +7,7 @@ import { useState } from "react";
 
 // Soundwave 아이콘: iconSize를 인자로 받음
 const SoundWaveIcon = ({ iconSize }) => (
-  <div className="relative flex items-center justify-center mr-2">
+  <div className="relative flex items-center justify-center">
     <div className="absolute inset-0 rounded-full bg-white/50 animate-ping duration-1000"></div>
     <motion.div
       initial={{ scale: 1 }}
@@ -83,7 +83,7 @@ function MicToggleButton({
             className={cn("flex items-center justify-center", micText)}
           >
             {/* 대기 상태일 때 아이콘 크기 적용 */}
-            <Mic className={cn("mr-1", iconSize)} />
+            <Mic className={cn(iconSize)} />
             <p className="text-center font-black">말하기</p>
           </motion.div>
         )}

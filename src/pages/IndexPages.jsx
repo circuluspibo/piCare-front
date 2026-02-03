@@ -235,7 +235,7 @@ export default function Main() {
               </div>
             )}
           </div>
-          <div className="w-full flex-[1] p-3">
+          <div className="w-full flex-[1] pt-3 px-3">
             <PersonaContainer className="w-full">
               <div className="grid grid-cols-3 gap-4 w-full">
                 {PERSONAS.map((p) => (
@@ -252,7 +252,7 @@ export default function Main() {
           </div>
         </div>
 
-        <div className="w-6/12 bg-white overflow-hidden">
+        <div className="w-6/12 h-full bg-white overflow-hidden">
           <div className="text-xl text-gray-600 h-full px-4">
             <Prompt />       
           </div>

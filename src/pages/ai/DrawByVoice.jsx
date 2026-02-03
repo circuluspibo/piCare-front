@@ -134,7 +134,7 @@ export default function DrawByVoice() {
   const stopDrawing = () => setIsDrawing(false);
 
   return (
-    <div className="flex w-full h-full gap-4 overflow-hidden items-stretch p-2">
+    <div className="flex w-full h-full gap-4 overflow-hidden items-stretch">
       <div
         className="w-3/4 relative flex items-center justify-center"
         ref={parentRef}
@@ -194,14 +194,14 @@ export default function DrawByVoice() {
         </div>
 
         {/* SECTION: 주제 선택 화면 */}
-        <div className="flex-1 bg-white flex flex-col overflow-hidden rounded-xl shadow-sm border border-slate-100">
+        <div className="flex-[2.5] bg-white flex flex-col overflow-hidden rounded-xl shadow-sm border border-slate-100">
           <button
             onClick={() =>
               setSubjectIdx((p) => (p > 0 ? p - 1 : SUBJECTS.length - 1))
             }
-            className="h-14 flex items-center justify-center text-slate-300 hover:bg-slate-50 shrink-0"
+            className="h-14 flex items-center justify-center text-slate-500 hover:bg-slate-50 shrink-0"
           >
-            <ChevronUp size={48} strokeWidth={3} />
+            <ChevronUp size={44} strokeWidth={3} />
           </button>
           <div className="flex-1 flex flex-col items-center justify-center px-4 text-center">
             <div className="bg-blue-50 px-3 py-1 rounded-full mb-2">
@@ -217,14 +217,14 @@ export default function DrawByVoice() {
             onClick={() =>
               setSubjectIdx((p) => (p < SUBJECTS.length - 1 ? p + 1 : 0))
             }
-            className="h-14 flex items-center justify-center text-slate-300 hover:bg-slate-50 shrink-0"
+            className="h-14 flex items-center justify-center text-slate-500 hover:bg-slate-50 shrink-0"
           >
-            <ChevronDown size={48} strokeWidth={3} />
+            <ChevronDown size={44} strokeWidth={3} />
           </button>
         </div>
 
         {/* SECTION: 동작 버튼 */}
-        <div className="h-28 flex gap-2 shrink-0">
+        <div className="flex-1 flex gap-2 shrink-0">
           <div className="flex-1 flex justify-center">
             <MicToggleButton
               onStart={handleStartRecording}
