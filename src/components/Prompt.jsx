@@ -119,7 +119,7 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
       </div>
 
       {/* 2. 하단 컨트롤 영역 (마이크 버튼) */}
-      <div className="flex justify-center p-3 bg-white/50 backdrop-blur-sm rounded-b-xl">
+      <div className="flex justify-center pt-3 bg-white/50 backdrop-blur-sm rounded-b-xl">
         <MicToggleButton
           onStart={handleStartRecording}
           onStop={handleStopRecording}

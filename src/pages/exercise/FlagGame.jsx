@@ -28,17 +28,17 @@ export default function FlagGame() {
   };
 
   return (
-    <div className="w-full h-full flex gap-4 p-4">
+    <div className="w-full h-full flex gap-4">
       {["right", "left"].map((side) => (
         <div
           key={side}
           className={cn(
-            "w-1/2 h-full rounded-3xl border-[6px] flex flex-col items-center justify-center transition-all duration-300 overflow-hidden",
+            "w-1/2 h-full rounded-3xl border-[5px] flex flex-col items-center justify-center transition-all duration-300 overflow-hidden",
             getBgClass(side),
           )}
         >
           <img
-            className="w-[85%] object-contain drop-shadow-md"
+            className="w-[85%] object-contain aspect-sqare"
             src={`${BASE_IMAGE_PATH}/flag/${
               side !== target ? "shrug" : side === "left" ? "right" : "left"
             }.png`}

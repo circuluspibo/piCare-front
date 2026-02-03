@@ -31,7 +31,7 @@ export default function GrabGame() {
   };
 
   return (
-    <div className="w-full h-full flex gap-4 p-4">
+    <div className="w-full h-full flex gap-4">
       {["right", "left"].map((side) => (
         <div
           key={side}
@@ -41,7 +41,7 @@ export default function GrabGame() {
           )}
         >
           <img
-            className="w-3/4 object-contain"
+            className="w-[85%] object-contain aspect-sqare"
             src={`${BASE_IMAGE_PATH}/grab/${
               side === target ? "apple" : fruits[currentCount % fruits.length]
             }.png`}

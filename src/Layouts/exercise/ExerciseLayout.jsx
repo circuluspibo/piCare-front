@@ -75,18 +75,15 @@ export default function ExerciseLayout() {
       </header>
 
       {/* 메인 영역 */}
-      <main className="flex flex-grow overflow-hidden relative gap-4">
-        {/* 왼쪽: 자식 컴포넌트 (ModeSelectView 혹은 각 게임) */}
-        <section className="flex-[2] bg-white rounded-3xl shadow-xl border-4 border-slate-100 relative overflow-hidden flex items-center justify-center">
-          {/* 하위 Route 컴포넌트들에게 엔진 데이터 전달 */}
+      <main className="flex flex-grow overflow-hidden relative gap-4 p-2">
           <Outlet context={{ state, actions }} />
-        </section>
+
 
         {/* 오른쪽: 엔진 상태 모니터링 (메뉴가 아닐 때만 노출) */}
         {!isMenu && (
-          <aside className="flex flex-col gap-4 animate-in slide-in-from-right duration-500">
+          <aside className="flex w-1/3 flex-col gap-2 animate-in slide-in-from-right duration-500">
             {/* 점수판 */}
-            <div className="bg-white p-4 rounded-3xl shadow-xl border-4 border-slate-100 flex flex-col gap-2">
+            <div className="bg-white p-2 rounded-3xl shadow-xl border-slate-100 flex flex-col gap-2">
               <div className="grid grid-cols-5 gap-3">
                 {Array.from({ length: 20 }).map((_, i) => (
                   <div

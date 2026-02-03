@@ -235,7 +235,7 @@ export default function Main() {
               </div>
             )}
           </div>
-          <div className="w-full flex-[1] p-3">
+          <div className="w-full flex-[1] px-3 pt-3">
             <PersonaContainer className="w-full">
               <div className="grid grid-cols-3 gap-4 w-full">
                 {PERSONAS.map((p) => (
