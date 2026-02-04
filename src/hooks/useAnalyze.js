@@ -29,13 +29,16 @@ export const usePageAnalyze = () => {
 };
 
 // NOTE: 터치 횟수 감지
+const MIN_TOUCH_COUNT = 3;
 export const useTouchAnalyze = () => {
   const { sId } = useContext(GlobalContext);
   const totalSessionCount = useRef(0);
   const currentSIdRef = useRef(sId);
 
   const flush = useCallback(async (targetSId, count) => {
-    if (count > 3) return; // 3회 미만은 저장생략.
+    if (count <= 0 || count < MIN_TOUCH_COUNT) {
+      return;
+    }
 
     const payload = {
       hwId: "697b07b3251e185c8626a8ad",
@@ -57,7 +60,7 @@ export const useTouchAnalyze = () => {
       const prevSId = currentSIdRef.current;
       const prevCount = totalSessionCount.current;
 
-      if (prevCount > 0) {
+      if (prevCount >= MIN_TOUCH_COUNT) {
         flush(prevSId, prevCount);
         totalSessionCount.current = 0; // 카운트 초기화
       }
