@@ -1,14 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+
 import {
   getHeartbeat,
   getStartCollection,
   getStopCollection,
 } from "@/api/npuService";
+
 import { postImg2Chat } from "@/api/gpuService";
+
 import { PERSONA_SYSTEMS } from "@/utils/PersonaSystem";
 
-const AI_INTERVAL = 1000 * 120; // 120초
-const HB_INTERVAL = 1000 * 90; // 90초
+const AI_INTERVAL = 1000 * 120;
+
+const HB_INTERVAL = 1000 * 90;
 
 export function useMainLogic({
   personaId,
@@ -17,166 +21,205 @@ export function useMainLogic({
   sendMessage,
 }) {
   const [humidity, setHumidity] = useState(0);
+
   const [temperature, setTemperature] = useState(0);
+
   const [air, setAir] = useState("");
+
   const [isAutoMode, setIsAutoMode] = useState(false);
+
   const [showVideoFeed, setShowVideoFeed] = useState(false);
+
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // 엔진 점유를 관리할 State (이 값이 변할 때만 실제 엔진 명령 실행)
-  const [activeLocks, setActiveLocks] = useState(new Set());
-  const isEngineRunning = useRef(false);
   const videoRef = useRef(null);
 
-  // --- 1. 엔진 실제 제어 전담 useEffect ---
-  useEffect(() => {
-    const manageEngine = async () => {
-      const needsEngine = activeLocks.size > 0;
+  const activeLocks = useRef(new Set());
 
-      if (needsEngine && !isEngineRunning.current) {
-        try {
-          await getStartCollection();
-          isEngineRunning.current = true;
-          console.log(
-            `[Engine] START (Locks: ${Array.from(activeLocks).join(", ")})`,
-          );
-        } catch (e) {
-          console.error("Engine Start Fail", e);
-        }
-      } else if (!needsEngine && isEngineRunning.current) {
-        try {
-          await getStopCollection();
-          isEngineRunning.current = false;
-          console.log("[Engine] STOP (No Locks)");
-        } catch (e) {
-          console.error("Engine Stop Fail", e);
-        }
-      }
-    };
+  const isEngineRunning = useRef(false);
 
-    manageEngine();
-  }, [activeLocks]); // 오직 점유자 목록이 변할 때만 작동
+  const isTransitioning = useRef(false);
 
-  // --- 2. 점유자 추가/제거 함수 ---
-  const addLock = useCallback((id) => {
-    setActiveLocks((prev) => new Set(prev).add(id));
-  }, []);
+  // [엔진 제어 통합 함수] - 기존 로직 유지
 
-  const removeLock = useCallback((id) => {
-    setActiveLocks((prev) => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
-  }, []);
+  const controlEngine = useCallback(async (lockId, action) => {
+    if (action === "START") {
+      activeLocks.current.add(lockId);
 
-  // --- 3. 하트비트 폴링 로직 ---
-  useEffect(() => {
-    const fetchHB = async () => {
-      // 이미 비디오 등으로 엔진이 돌아가고 있으면 굳이 추가 락을 걸지 않음
-      const needsInternalLock =
-        !activeLocks.has("VIDEO_UI") && !activeLocks.has("AI_AUTO");
+      if (isEngineRunning.current || isTransitioning.current) return true;
 
-      if (needsInternalLock) addLock("HB_POLLING");
+      isTransitioning.current = true;
 
       try {
-        // 엔진 시작/안정화 대기
-        await new Promise((r) => setTimeout(r, 2000));
+        await getStartCollection();
+
+        isEngineRunning.current = true;
+
+        console.log(`[Engine] >>> START by ${lockId}`);
+
+        return true;
+      } catch (e) {
+        return false;
+      } finally {
+        isTransitioning.current = false;
+      }
+    } else {
+      activeLocks.current.delete(lockId);
+
+      if (
+        activeLocks.current.size === 0 &&
+        isEngineRunning.current &&
+        !isTransitioning.current
+      ) {
+        isTransitioning.current = true;
+
+        try {
+          await getStopCollection();
+
+          isEngineRunning.current = false;
+
+          console.log(`[Engine] <<< STOP by ${lockId}`);
+        } finally {
+          isTransitioning.current = false;
+        }
+      }
+    }
+  }, []);
+
+  // 1. 하트비트 (기존 루프 방지 로직 유지)
+
+  useEffect(() => {
+    const fetchHB = async () => {
+      const isFirstLock = activeLocks.current.size === 0;
+
+      if (isFirstLock) {
+        await controlEngine("HB", "START");
+
+        await new Promise((r) => setTimeout(r, 1500));
+      } else {
+        activeLocks.current.add("HB");
+      }
+
+      try {
         const { data } = await getHeartbeat();
 
-        updateHumanInfo(data.human);
         setHumidity(parseFloat(data.env.humidity || 0).toFixed(1));
+
         setTemperature(parseFloat(data.env.temp || 0).toFixed(1));
+
         setAir(data.env.air);
+
+        updateHumanInfo(data.human);
+
         compareAndLog(data);
-      } catch (e) {
-        console.error("HB Error", e);
       } finally {
-        if (needsInternalLock) removeLock("HB_POLLING");
+        await controlEngine("HB", "STOP");
       }
     };
 
     const timer = setInterval(fetchHB, HB_INTERVAL);
+
     fetchHB();
 
     return () => clearInterval(timer);
-  }, [addLock, removeLock, updateHumanInfo, compareAndLog, activeLocks]);
 
-  // --- 4. 비디오 UI 제어 ---
-  const toggleVideoFeed = useCallback(() => {
-    if (!showVideoFeed) {
-      addLock("VIDEO_UI");
-      setShowVideoFeed(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 2. 비디오 제어
+
+  const toggleVideoFeed = useCallback(async () => {
+    const nextState = !showVideoFeed;
+
+    if (nextState) {
+      const ok = await controlEngine("VIDEO", "START");
+
+      if (ok) setShowVideoFeed(true);
     } else {
       setShowVideoFeed(false);
-      removeLock("VIDEO_UI");
-    }
-  }, [showVideoFeed, addLock, removeLock]);
 
-  // --- 5. AI 자동 캡처 로직 ---
+      await controlEngine("VIDEO", "STOP");
+    }
+  }, [showVideoFeed, controlEngine]);
+
+  // 3. AI 자동 캡처 로직 (isProcessing 의존성 추가하여 중복 방지)
+
   const runAutoCapture = useCallback(async () => {
-    if (isProcessing || !isAutoMode) return;
+    // 이미 처리 중이면 중복 실행 방지
+
+    if (isProcessing) return;
+
+    await controlEngine("AI", "START");
 
     setIsProcessing(true);
-    addLock("AI_AUTO");
 
     try {
-      await new Promise((r) => setTimeout(r, 1000)); // 캡처 전 대기
       if (videoRef.current) {
         const canvas = document.createElement("canvas");
+
         canvas.width = 320;
         canvas.height = 240;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(videoRef.current, 0, 0, 320, 240);
+
+        canvas.getContext("2d").drawImage(videoRef.current, 0, 0, 320, 240);
 
         const blob = await new Promise((res) =>
           canvas.toBlob(res, "image/jpeg", 0.5),
         );
-        const file = new File([blob], "ai.jpg", { type: "image/jpeg" });
-        const response = await postImg2Chat(file, PERSONA_SYSTEMS[personaId]);
 
-        // 응답 텍스트 처리
+        const response = await postImg2Chat(
+          new File([blob], "ai.jpg"),
+          PERSONA_SYSTEMS[personaId],
+        );
+
         const rawText =
           typeof response === "string" ? response : JSON.stringify(response);
-        const match = rawText.match(/\{[\s\S]*\}/);
-        const result = match
-          ? JSON.parse(match[0].replace(/'/g, '"')).result
+
+        const result = rawText.match(/\{[\s\S]*\}/)
+          ? JSON.parse(rawText.match(/\{[\s\S]*\}/)[0].replace(/'/g, '"'))
+              .result
           : rawText;
 
         if (result) await sendMessage("", result);
       }
     } catch (e) {
-      console.error("AI Auto Capture Error", e);
+      console.error("AI Error:", e);
     } finally {
-      removeLock("AI_AUTO");
       setIsProcessing(false);
+
+      await controlEngine("AI", "STOP");
     }
-  }, [isAutoMode, isProcessing, personaId, sendMessage, addLock, removeLock]);
+  }, [personaId, sendMessage, controlEngine, isProcessing]);
+
+  // [수정된 부분] AI 모드 ON 시 즉시 실행 및 인터벌 설정
 
   useEffect(() => {
-    let timer;
-    if (isAutoMode) timer = setInterval(runAutoCapture, AI_INTERVAL);
-    return () => clearInterval(timer);
+    if (isAutoMode) {
+      // 즉시 실행
+
+      runAutoCapture();
+
+      // 이후 120초마다 실행
+
+      const timer = setInterval(runAutoCapture, AI_INTERVAL);
+
+      return () => clearInterval(timer);
+    }
   }, [isAutoMode, runAutoCapture]);
 
-  // --- 6. 카메라 장치 스트림 제어 ---
+  // 카메라 스트림 유지
+
   useEffect(() => {
-    let stream = null;
-    const startStream = async () => {
-      if (isAutoMode || showVideoFeed) {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoRef.current) videoRef.current.srcObject = stream;
-      }
-    };
+    if (isAutoMode || showVideoFeed) {
+      navigator.mediaDevices.getUserMedia({ video: true }).then((s) => {
+        if (videoRef.current) videoRef.current.srcObject = s;
+      });
+    } else {
+      if (videoRef.current?.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
 
-    startStream();
-
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach((t) => t.stop());
-        if (videoRef.current) videoRef.current.srcObject = null;
+        videoRef.current.srcObject = null;
       }
-    };
+    }
   }, [isAutoMode, showVideoFeed]);
 
   return {
@@ -185,6 +228,7 @@ export function useMainLogic({
     air,
     isAutoMode,
     setIsAutoMode,
+
     showVideoFeed,
     toggleVideoFeed,
     videoRef,
