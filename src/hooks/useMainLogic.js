@@ -40,6 +40,9 @@ export function useMainLogic({
 
   const isTransitioning = useRef(false);
 
+  const processingRef = useRef(false);
+
+  const loopActiveRef = useRef(false);
   // [엔진 제어 통합 함수] - 기존 로직 유지
 
   const controlEngine = useCallback(async (lockId, action) => {
@@ -144,91 +147,104 @@ export function useMainLogic({
 
   // 3. AI 자동 캡처 로직 (isProcessing 의존성 추가하여 중복 방지)
 
-  const processingRef = useRef(false);
 
+  // 3. AI 자동 캡처 (요구하신 대로 엔진 제어 없이 독립 실행)
   const runAutoCapture = useCallback(async () => {
-    // ref와 state 모두 체크하여 중복 진입 차단
-    if (processingRef.current || isProcessing) return;
-
+    if (processingRef.current) return;
     processingRef.current = true;
     setIsProcessing(true);
 
-    await controlEngine("AI", "START");
-
     try {
-      if (videoRef.current) {
-        const canvas = document.createElement("canvas");
-        canvas.width = 320;
-        canvas.height = 240;
-        canvas.getContext("2d").drawImage(videoRef.current, 0, 0, 320, 240);
+    const video = videoRef.current;
+    
+    // [수정 포인트 1] 비디오 상태 체크: 데이터가 준비되지 않았으면 중단
+    if (!video || video.paused || video.ended || video.readyState < 2) {
+      console.warn("비디오가 아직 준비되지 않았습니다.");
+      return;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = 320; canvas.height = 240;
+    canvas.getContext("2d").drawImage(videoRef.current, 0, 0, 320, 240);
+    const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg"));
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `capture_${new Date().getTime()}.jpg`;
+    link.click();
+    const response = await postImg2Chat(new File([blob], "ai.jpg"), PERSONA_SYSTEMS[personaId]);
 
-        const blob = await new Promise((res) =>
-          canvas.toBlob(res, "image/jpeg", 0.5),
-        );
-        const response = await postImg2Chat(
-          new File([blob], "ai.jpg"),
-          PERSONA_SYSTEMS[personaId],
-        );
+    const rawText = typeof response === "string" ? response : JSON.stringify(response);
+    const match = rawText.match(/\{[\s\S]*\}/);
+    const result = match ? JSON.parse(match[0].replace(/'/g, '"')).result : rawText;
 
-        // 응답 파싱 로직 (기존 유지)
-        const rawText =
-          typeof response === "string" ? response : JSON.stringify(response);
-        const match = rawText.match(/\{[\s\S]*\}/);
-        const result = match
-          ? JSON.parse(match[0].replace(/'/g, '"')).result
-          : rawText;
-
-        if (result) await sendMessage("", result);
-      }
+    // [포인트] sendMessage가 끝날 때까지 여기서 딱 대기합니다.
+    if (result) {
+      await sendMessage("", result);
+    }
+      
     } catch (e) {
       console.error("AI Error:", e);
     } finally {
-      await controlEngine("AI", "STOP");
-      // 종료 시점에만 상태 해제
       setIsProcessing(false);
       processingRef.current = false;
     }
-  }, [personaId, sendMessage, controlEngine]);
+  }, [personaId, sendMessage]);
 
-  // [수정 포인트 2] 의존성 루프를 끊은 타이머 로직
+  // 4. [수정] 무한 재호출을 방지하는 독립 루프
   useEffect(() => {
     let timerId = null;
 
-    const scheduleNext = () => {
-      if (!isAutoMode) return;
+    const startAiLoop = async () => {
+      // 이미 루프가 돌고 있다면 중복 실행 방지
+      if (loopActiveRef.current || !isAutoMode) return;
+      loopActiveRef.current = true;
 
-      // 재귀적으로 호출하여 "종료 후 120초"를 보장함
-      timerId = setTimeout(async () => {
+      while (isAutoMode && loopActiveRef.current) {
+        // 1. 작업을 수행 (sendMessage 끝날 때까지 여기서 await)
         await runAutoCapture();
-        scheduleNext(); // 처리가 끝나면 다음 실행 예약
-      }, AI_INTERVAL);
+
+        // 2. sendMessage가 끝난 "직후"부터 정확히 120초를 대기
+        console.log("대기 시작: 120초 동안 멈춤");
+        await new Promise(resolve => {
+          timerId = setTimeout(resolve, AI_INTERVAL);
+        });
+        
+        // 3. 120초가 지나면 while문 처음으로 돌아가서 다시 runAutoCapture 호출
+        if (!isAutoMode) break;
+      }
+      
+      loopActiveRef.current = false;
     };
 
     if (isAutoMode) {
-      runAutoCapture(); // 처음 켰을 때 즉시 실행
-      scheduleNext(); // 루프 시작
+      startAiLoop();
     }
 
     return () => {
+      loopActiveRef.current = false;
       if (timerId) clearTimeout(timerId);
     };
-  }, [isAutoMode, runAutoCapture]);
+    // 의존성 배열에 runAutoCapture를 빼거나, 최소화하여 재실행을 막습니다.
+  }, [isAutoMode]);
 
-  // 카메라 스트림 유지
-
-  useEffect(() => {
-    if (isAutoMode || showVideoFeed) {
-      navigator.mediaDevices.getUserMedia({ video: true }).then((s) => {
-        if (videoRef.current) videoRef.current.srcObject = s;
-      });
-    } else {
-      if (videoRef.current?.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-
-        videoRef.current.srcObject = null;
+useEffect(() => {
+  if (isAutoMode || showVideoFeed) {
+    navigator.mediaDevices.getUserMedia({ video: true }).then((s) => {
+      const video = videoRef.current;
+      if (video) {
+        video.srcObject = s;
+        // [추가] 메타데이터가 로드되면 재생을 시작하도록 보장
+        video.onloadedmetadata = () => {
+          video.play().catch(e => console.error("Video play failed:", e));
+        };
       }
+    });
+  } else {
+    if (videoRef.current?.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+      videoRef.current.srcObject = null;
     }
-  }, [isAutoMode, showVideoFeed]);
+  }
+}, [isAutoMode, showVideoFeed]);
 
   return {
     humidity,

@@ -141,13 +141,13 @@ export default function ExerciseLayout() {
         onClose={() => actions.setIsFinish(false)}
         title="활동 결과"
       >
-        <div className="text-center flex flex-col items-center gap-8 p-6">
+        <div className="text-center flex flex-col items-center gap-6">
           <h2 className="text-5xl font-black text-slate-900" break-keep>
             {state.totalScores.filter((s) => s.isPass).length >= 15
               ? "완벽해요!"
               : "참 잘하셨어요!"}
           </h2>
-          <div className="flex gap-12">
+          <div className="flex gap-6">
             <div className="text-center">
               <p className="text-2xl text-gray-400">성공</p>
               <p className="text-7xl text-green-600 font-black">
@@ -161,7 +161,7 @@ export default function ExerciseLayout() {
               </p>
             </div>
           </div>
-          <div className="w-full grid grid-cols-2 gap-4 mt-2">
+          <div className="w-full grid grid-cols-2 gap-4">
             <button
               onClick={() => actions.runCountdown()}
               className="bg-slate-100 text-3xl rounded-3xl"
