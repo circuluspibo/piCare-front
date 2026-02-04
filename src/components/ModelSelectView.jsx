@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 
-export default function ModeSelectView() {
+export default function ModelSelectView() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 

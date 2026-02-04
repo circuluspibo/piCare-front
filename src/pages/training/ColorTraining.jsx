@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import Dialog from "@/components/Dialog";
 import { fireInfoConfetti } from "@/components/magicui/connfetti";
 import { IconRenderer } from "@/components/ui/IconRenderer";
+import { useOutletContext } from "react-router-dom";
 
 const COLORS = [
   "#D32F2F",
@@ -34,7 +35,8 @@ const createGameData = () => {
   return { grid: newGrid, target };
 };
 
-export default function ColorTraining({ onComplete }) {
+export default function ColorTraining() {
+  const { onComplete } = useOutletContext();
   const [gameData, setGameData] = useState(() => createGameData());
   const [scores, setScores] = useState([]);
   const [isFinish, setIsFinish] = useState(false);

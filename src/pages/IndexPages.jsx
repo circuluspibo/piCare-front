@@ -7,7 +7,8 @@ import { PERSONAS } from "@/assets/data/personaData";
 import { PERSONA_INTRODUCE } from "@/utils/PersonaSystem";
 import { getWeatherStatus } from "@/utils/weatherUtils";
 import { useHeartbeatLog } from "@/hooks/useHeartbeatLog";
-import { useCollectionControl } from "@/hooks/useCollectionControl";
+
+// 1. 통합된 커스텀 훅 임포트
 import { useMainLogic } from "@/hooks/useMainLogic";
 
 import Prompt from "@/components/Prompt";
@@ -23,21 +24,29 @@ export default function Main() {
   const navigation = useNavigate();
 
   const { compareAndLog } = useHeartbeatLog();
-  const { requestStart, requestStop } = useCollectionControl();
 
-  // 커스텀 훅으로 모든 비즈니스 로직 호출
-  const { humidity, temperature, air, isAutoMode, setIsAutoMode, videoRef } =
-    useMainLogic({
-      personaId,
-      updateHumanInfo,
-      compareAndLog,
-      requestStart,
-      requestStop,
-      sendMessage,
-    });
+  /**
+   * [통합 로직 적용]
+   * useMainLogic과 useCollectionControl의 기능을 모두 포함합니다.
+   * 엔진(start/stop_collection) 점유 시스템을 통해 무한 호출 문제를 해결합니다.
+   */
+  const {
+    humidity,
+    temperature,
+    air,
+    isAutoMode,
+    setIsAutoMode,
+    showVideoFeed,
+    toggleVideoFeed,
+    videoRef,
+  } = useMainLogic({
+    personaId,
+    updateHumanInfo,
+    compareAndLog,
+    sendMessage,
+  });
 
   const [selectedPersona, setSelectedPersona] = useState(PERSONAS[0]);
-  const [showVideoFeed, setShowVideoFeed] = useState(false);
   const [isWeatherDialogOpen, setIsWeatherDialogOpen] = useState(false);
 
   const weatherStatus = useMemo(() => {
@@ -55,16 +64,6 @@ export default function Main() {
     setEnableTTS(true);
   }, [setEnableTTS]);
 
-  const toggleVideoFeed = async () => {
-    if (!showVideoFeed) {
-      const isOk = await requestStart("VIDEO_UI");
-      if (isOk) setShowVideoFeed(true);
-    } else {
-      requestStop("VIDEO_UI");
-      setShowVideoFeed(false);
-    }
-  };
-
   const personaHandler = (p) => {
     setSelectedPersona(p);
     updatePersona(p);
@@ -73,7 +72,7 @@ export default function Main() {
 
   return (
     <>
-      {/* 캡처용 숨겨진 비디오 */}
+      {/* 캡처용 숨겨진 비디오 (자동 모드 및 비디오 피드 공유) */}
       <video
         ref={videoRef}
         autoPlay
@@ -113,6 +112,7 @@ export default function Main() {
                   <PersonaThumbnail
                     key={p.id}
                     imageSrc={`/images/persona/${p.id}.png`}
+                    gender={p.gender}
                     isSelected={selectedPersona.id === p.id}
                     onClick={() => personaHandler(p)}
                   />

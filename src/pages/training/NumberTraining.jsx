@@ -8,6 +8,7 @@ import React, {
 import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
 import { fireInfoConfetti } from "@/components/magicui/connfetti";
+import { useOutletContext } from "react-router-dom";
 
 const TOTAL_ROUNDS = 5;
 const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -18,7 +19,8 @@ const createGameData = () => {
   return { grid: shuffled, isUp };
 };
 
-export default function NumberTraining({ onComplete }) {
+export default function NumberTraining() {
+  const { onComplete } = useOutletContext();
   const [gameData, setGameData] = useState(() => createGameData());
   const [userSequence, setUserSequence] = useState([]);
   const [scores, setScores] = useState([]);
@@ -216,29 +218,27 @@ export default function NumberTraining({ onComplete }) {
 
       {/* 결과 다이얼로그 */}
       <Dialog isOpen={isFinish} onClose={onComplete} title="훈련 결과">
-        <div className="text-center flex flex-col items-center gap-4">
-          <h2 className="text-5xl font-black mb-10 text-slate-900 leading-tight">
+        <div className="text-center flex flex-col items-center gap-2">
+          <h2 className="text-5xl font-black text-slate-900 leading-tight">
             {getFeedbackMsg()}
           </h2>
-          <div className="flex w-full gap-4 mb-6">
-            <div className="flex-1 bg-emerald-50 p-8 rounded-[32px] border-2 border-emerald-100">
-              <p className="text-emerald-600 font-bold text-2xl mb-1">
-                성공 횟수
-              </p>
-              <p className="text-7xl font-black text-emerald-700">
+          <div className="flex w-full gap-4 mb-4">
+            <div className="flex-1 bg-emerald-50 p-4 rounded-2xl border-2 border-emerald-100">
+              <p className="text-emerald-600 font-bold text-2xl">성공 횟수</p>
+              <p className="text-5xl font-black text-emerald-700">
                 {scores.filter((s) => s.isPass).length}회
               </p>
             </div>
-            <div className="flex-1 bg-blue-50 p-8 rounded-[32px] border-2 border-blue-100">
+            <div className="flex-1 bg-blue-50 p-4 rounded-2xl border-2 border-blue-100">
               <p className="text-blue-600 font-bold text-2xl mb-1">소요 시간</p>
-              <p className="text-7xl font-black text-blue-700">
+              <p className="text-5xl font-black text-blue-700">
                 {totalElapsedTime}초
               </p>
             </div>
           </div>
           <button
             onClick={onComplete}
-            className="w-full py-6 bg-slate-900 text-white text-5xl font-black rounded-3xl hover:bg-black shadow-xl"
+            className="w-full py-4 bg-slate-900 text-white text-5xl font-black rounded-3xl hover:bg-black shadow-xl"
           >
             확인
           </button>

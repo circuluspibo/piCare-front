@@ -3,6 +3,7 @@ import { Music, PlayCircle, CheckCircle2, XCircle } from "lucide-react"; // XCir
 import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
 import { fireInfoConfetti } from "@/components/magicui/connfetti";
+import { useOutletContext } from "react-router-dom";
 
 const TOTAL_ROUNDS = 5;
 const PIANO_KEYS = [
@@ -16,7 +17,8 @@ const PIANO_KEYS = [
   { id: "snd8", label: "도", color: "bg-white" },
 ];
 
-export default function PianoTraining({ onComplete }) {
+export default function PianoTraining() {
+  const { onComplete } = useOutletContext();
   const [targetSequence, setTargetSequence] = useState([]);
   const [userSequence, setUserSequence] = useState([]); // {val: 숫자, isCorrect: boolean} 형태
   const [scores, setScores] = useState([]);
