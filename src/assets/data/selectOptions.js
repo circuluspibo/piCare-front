@@ -8,7 +8,7 @@ export const EXERCISE_OPTIONS = {
 // NOTE: AI 훈련 옵션
 export const AI_OPTIONS = {
   DRAW: {
-    title: "말하는대로 그리기",
+    title: "말하는 캔버스",
     value: "draw",
     idx: 0,
   },
@@ -18,7 +18,7 @@ export const AI_OPTIONS = {
     idx: 1,
   },
   VOICE: {
-    title: "AI 음성 재현",
+    title: "따라하는 로봇",
     value: "voice",
     idx: 2,
   },

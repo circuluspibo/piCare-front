@@ -5,6 +5,8 @@ import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
 import { fireInfoConfetti } from "@/components/magicui/connfetti";
 import { useExerciseEngine } from "@/hooks/useExerciseEngine";
+import ScoreBoard from "@/components/ui/ScoreBoard";
+import ResultDialog from "@/components/ResultDialog";
 
 const GAME_INFO = {
   FLAG: { title: "깃발 들기 훈련" },
@@ -34,7 +36,7 @@ export default function ExerciseLayout() {
   }, [state.isFinish]);
 
   return (
-    <div className="flex flex-col h-full p-2 bg-gray-50 overflow-hidden relative font-extrabold text-[#2D3A5A]">
+    <div className="flex flex-col h-full p-2 bg-white overflow-hidden relative font-extrabold text-slate-900">
       {/* 카운트다운 Overlay */}
       {state.countdown !== null && (
         <div className="absolute inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center">
@@ -75,41 +77,16 @@ export default function ExerciseLayout() {
       </header>
 
       {/* 메인 영역 */}
-      <main className="flex flex-grow overflow-hidden relative gap-4">
-        {/* 왼쪽: 자식 컴포넌트 (ModeSelectView 혹은 각 게임) */}
-        <section className="flex-[2] bg-white rounded-3xl shadow-xl border-4 border-slate-100 relative overflow-hidden flex items-center justify-center">
-          {/* 하위 Route 컴포넌트들에게 엔진 데이터 전달 */}
-          <Outlet context={{ state, actions }} />
-        </section>
+      <main className="flex flex-grow overflow-hidden relative gap-4 p-2">
+        <Outlet context={{ state, actions }} />
 
         {/* 오른쪽: 엔진 상태 모니터링 (메뉴가 아닐 때만 노출) */}
         {!isMenu && (
-          <aside className="flex flex-col gap-4 animate-in slide-in-from-right duration-500">
+          <aside className="flex w-1/3 flex-col gap-2 animate-in slide-in-from-right duration-500">
             {/* 점수판 */}
-            <div className="bg-white p-4 rounded-3xl shadow-xl border-4 border-slate-100 flex flex-col gap-2">
-              <div className="grid grid-cols-5 gap-3">
-                {Array.from({ length: 20 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "aspect-square rounded-full flex items-center justify-center text-2xl transition-all duration-300 border-b-4",
-                      i === state.totalScores.length
-                        ? "bg-blue-500 text-white animate-pulse border-blue-700"
-                        : state.totalScores[i]?.isPass
-                          ? "bg-green-500 text-white border-green-700"
-                          : state.totalScores[i]
-                            ? "bg-red-400 text-white border-red-600"
-                            : "bg-slate-100 text-slate-300 border-slate-200",
-                    )}
-                  >
-                    {i + 1}
-                  </div>
-                ))}
-              </div>
-            </div>
-
+            <ScoreBoard total={20} scores={state.totalScores} />
             {/* 실시간 AI 카메라 */}
-            <div className="flex-1 relative bg-[#1A1A1A] rounded-3xl overflow-hidden border-4 border-white shadow-2xl group">
+            <div className="flex-1 relative bg-[#1A1A1A] rounded-2xl overflow-hidden group">
               <video ref={videoRef} autoPlay playsInline className="hidden" />
               <canvas
                 ref={canvasRef}
@@ -140,50 +117,24 @@ export default function ExerciseLayout() {
         </div>
       </Dialog>
 
-      <Dialog
+      <ResultDialog
         isOpen={state.isFinish}
         onClose={() => actions.setIsFinish(false)}
-        title="활동 결과"
-      >
-        <div className="text-center flex flex-col items-center gap-8 p-6">
-          <h2 className="text-5xl font-black text-[#2D3A5A]" break-keep>
-            {state.totalScores.filter((s) => s.isPass).length >= 15
-              ? "완벽해요!"
-              : "참 잘하셨어요!"}
-          </h2>
-          <div className="flex gap-12">
-            <div className="text-center">
-              <p className="text-2xl text-gray-400">성공</p>
-              <p className="text-7xl text-green-600 font-black">
-                {state.totalScores.filter((s) => s.isPass).length}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl text-gray-400">시간</p>
-              <p className="text-7xl text-blue-600 font-black">
-                {state.finalTime}초
-              </p>
-            </div>
-          </div>
-          <div className="w-full grid grid-cols-2 gap-4 mt-2">
-            <button
-              onClick={() => actions.runCountdown()}
-              className="bg-slate-100 text-3xl rounded-3xl"
-            >
-              다시하기
-            </button>
-            <button
-              onClick={() => {
-                actions.setIsFinish(false);
-                navigate("/exercise");
-              }}
-              className="py-6 bg-[#2D3A5A] text-white text-3xl rounded-3xl"
-            >
-              활동 선택
-            </button>
-          </div>
-        </div>
-      </Dialog>
+        feedbackMsg={
+          state.totalScores.filter((s) => s.isPass).length >= 15
+            ? "완벽해요!"
+            : "참 잘하셨어요!"
+        }
+        successCount={state.totalScores.filter((s) => s.isPass).length}
+        time={state.finalTime}
+        secondaryBtnText="다시하기"
+        onSecondaryClick={() => actions.runCountdown()}
+        confirmText="활동 선택"
+        onConfirm={() => {
+          actions.setIsFinish(false);
+          navigate("/exercise");
+        }}
+      />
     </div>
   );
 }

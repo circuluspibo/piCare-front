@@ -16,7 +16,7 @@ import { VoiceChatProvider } from "./contexts/VoiceChatContext";
 
 // Components & Layouts
 import { Loading } from "@/components/Loading";
-import ModeSelectView from "@/components/ModelSelectView";
+import ModelSelectView from "@/components/ModelSelectView";
 import IndexLayout from "@/Layouts/IndexLayout";
 import ExerciseLayout from "@/Layouts/exercise/ExerciseLayout"; // 이름 일관성 수정
 import TrainingLayout from "@/Layouts/training/TrainingLayout";
@@ -46,7 +46,7 @@ const router = createBrowserRouter(
 
       {/* 신체훈련 */}
       <Route path="exercise" element={<ExerciseLayout />}>
-        <Route index element={<ModeSelectView />} />
+        <Route index element={<ModelSelectView />} />
         <Route path="flag" element={<FlagGame />} />
         <Route path="head" element={<HeadGame />} />
         <Route path="grab" element={<GrabGame />} />
@@ -54,7 +54,7 @@ const router = createBrowserRouter(
 
       {/* AI훈련 */}
       <Route path="ai" element={<AiLayout />}>
-        <Route index element={<ModeSelectView />} />
+        <Route index element={<ModelSelectView />} />
         <Route path="draw" element={<DrawByVoice />} />
         <Route path="mirror" element={<MagicMirror />} />
         <Route path="voice" element={<VoiceReplication />} />
@@ -62,18 +62,18 @@ const router = createBrowserRouter(
 
       {/* 인지훈련 */}
       <Route path="training" element={<TrainingLayout />}>
-        <Route index element={<ModeSelectView />} />
+        <Route index element={<ModelSelectView />} />
         <Route path="color" element={<ColorTraining />} />
         <Route path="number" element={<NumberTraining />} />
         <Route path="piano" element={<PianoTraining />} />
       </Route>
-    </Route>
-  )
+    </Route>,
+  ),
 );
 
 /**
  * 2. Root 컴포넌트
- * Provider의 순서: Global -> VoiceChat 순으로 감싸야 
+ * Provider의 순서: Global -> VoiceChat 순으로 감싸야
  * VoiceChat 안에서 GlobalContext의 값을 안전하게 참조할 수 있습니다.
  */
 const App = () => {

@@ -156,70 +156,74 @@ export default function MagicMirror() {
         className="relative flex-shrink-0 w-8/12 h-full cursor-pointer transition-transform duration-500 hover:scale-[1.01]"
         onClick={handleMirrorClick}
       >
-        <div className="absolute inset-0 bg-[#5d3a1a] rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.4)] border-[12px] border-[#8b5a2b] p-3">
-          <div className="relative w-full h-full overflow-hidden rounded-2xl bg-slate-200">
-            <video ref={videoRef} autoPlay playsInline className="hidden" />
-            <canvas
-              ref={canvasRef}
-              className={`w-full h-full object-cover transition-opacity duration-1000 ${
-                isActive ? "opacity-100" : "opacity-0"
-              }`}
-            />
+        {/* 외부 영역: 깊이감 있는 브론즈 골드 프레임 디자인 */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#c4a484] via-[#8b5a2b] to-[#5d3a1a] rounded-2xl p-4 border-t-[4px] border-l-[4px] border-white/30">
+          {/* 프레임 내부 몰딩: 블랙 유광 포인트로 고급감 극대화 */}
+          <div className="w-full h-full rounded-2xl border-[8px] border-[#2a1d13] bg-[#3d2b1f] p-3 shadow-[inset_0_4px_20px_rgba(0,0,0,0.8)] relative">
+            {/* 거울 유리창 영역 (내부 로직 유지) */}
+            <div className="relative w-full h-full overflow-hidden rounded-[24px] bg-slate-200 shadow-2xl">
+              <video ref={videoRef} autoPlay playsInline className="hidden" />
+              <canvas
+                ref={canvasRef}
+                className={`w-full h-full object-cover transition-opacity duration-1000 ${
+                  isActive ? "opacity-100" : "opacity-0"
+                }`}
+              />
 
-            {/* 1. 점선 가이드라인 (카메라 활성 시에만 표시) */}
-            {isActive && !isResultMode && !count && !isProcessing && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <div className="w-56 h-72 border-4 border-dashed border-white/60 rounded-[100px] mb-8 shadow-[0_0_20px_rgba(0,0,0,0.2)]" />
-                <p className="bg-black/40 text-white px-6 py-2 rounded-full text-2xl font-bold backdrop-blur-sm">
-                  점선 안에 얼굴을 맞춰주세요
-                </p>
-              </div>
-            )}
-
-            {/* 2. 카운트다운 숫지 표시 */}
-            {count !== null && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/10 z-20">
-                <span className="text-[150px] font-black text-white drop-shadow-2xl animate-ping">
-                  {count}
-                </span>
-              </div>
-            )}
-
-            {/* 3. 셔터 효과 (플래시) */}
-            {isShutter && (
-              <div className="absolute inset-0 bg-white z-50 animate-in fade-in duration-75" />
-            )}
-
-            {!isActive && (
-              <div className="absolute inset-0 bg-gradient-to-tr from-blue-100 via-white to-blue-50 flex flex-col items-center justify-center p-4 text-center">
-                <Camera className="size-32 text-blue-400 mb-6 animate-bounce" />
-                <p className="text-6xl font-black text-blue-600 break-keep leading-tight">
-                  거울을
-                  <br />
-                  터치하세요
-                </p>
-              </div>
-            )}
-
-            {isProcessing && (
-              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-40 backdrop-blur-sm">
-                {/* 1. 스캔 라인 효과 */}
-                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-slate-400 to-transparent shadow-[0_0_15px_#fbbf24] animate-scan" />
-
-                {/* 3. 단계별 텍스트 (순차적 표시 느낌) */}
-                <div className="text-center space-y-4">
-                  <p className="text-white text-5xl font-black tracking-tighter animate-bounce">
-                    젊음의 마법을 부리는 중...
+              {/* 1. 점선 가이드라인 */}
+              {isActive && !isResultMode && !count && !isProcessing && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <div className="w-72 h-72 border-4 border-dashed border-white/60 rounded-[100px] mb-8 mt-2 shadow-[0_0_30px_rgba(0,0,0,0.3)]" />
+                  <p className="bg-black/40 text-white px-8 py-2 rounded-full text-2xl font-black backdrop-blur-md border border-white/20">
+                    점선 안에 얼굴을 맞춰주세요
                   </p>
-                  <div className="flex justify-center gap-2">
-                    <span className="w-3 h-3 bg-slate-400 rounded-full animate-[bounce_1s_infinite_100ms]" />
-                    <span className="w-3 h-3 bg-slate-400 rounded-full animate-[bounce_1s_infinite_200ms]" />
-                    <span className="w-3 h-3 bg-slate-400 rounded-full animate-[bounce_1s_infinite_300ms]" />
+                </div>
+              )}
+
+              {/* 2. 카운트다운 숫자 표시 */}
+              {count !== null && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/10 z-20">
+                  <span className="text-[180px] font-black text-white drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] animate-ping">
+                    {count}
+                  </span>
+                </div>
+              )}
+
+              {/* 3. 셔터 효과 (플래시) */}
+              {isShutter && (
+                <div className="absolute inset-0 bg-white z-50 animate-in fade-in duration-75" />
+              )}
+
+              {!isActive && (
+                <div className="absolute inset-0 bg-gradient-to-tr from-blue-300 via-white to-blue-200 flex flex-col items-center justify-center p-4 text-center">
+                  <Camera className="size-32 text-blue-400 mb-2 animate-bounce duration-800" />
+                  <p className="text-6xl font-black text-blue-600 break-keep leading-tight">
+                    거울을
+                    <br />
+                    터치하세요
+                  </p>
+                </div>
+              )}
+
+              {isProcessing && (
+                <div className="absolute inset-0 bg-[#1a110a]/70 flex flex-col items-center justify-center z-40 backdrop-blur-md">
+                  <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent via-[#fbbf24] to-transparent shadow-[0_0_20px_#fbbf24] animate-scan" />
+                  <div className="text-center space-y-6">
+                    <p className="text-amber-200 text-5xl font-black tracking-tighter animate-pulse">
+                      마법의 시간이 흐르는 중...
+                    </p>
+                    <div className="flex justify-center gap-3">
+                      <span className="w-4 h-4 bg-amber-400 rounded-full animate-bounce delay-100" />
+                      <span className="w-4 h-4 bg-amber-500 rounded-full animate-bounce delay-200" />
+                      <span className="w-4 h-4 bg-amber-600 rounded-full animate-bounce delay-300" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-            <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/20 via-transparent to-black/10" />
+              )}
+
+              {/* 거울 표면 유리 반사 효과: 브론즈 톤에 맞춰 따뜻하게 조절 */}
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/20 via-transparent to-[#8b5a2b]/10" />
+            </div>
           </div>
         </div>
       </div>
@@ -244,7 +248,7 @@ export default function MagicMirror() {
         ) : (
           <div className="flex flex-col items-center justify-between text-center animate-in zoom-in-95 duration-500 gap-6 w-full h-full">
             <div>
-              <h2 className="text-5xl font-extrabold text-[#2D3A5A] break-keep leading-snug">
+              <h2 className="text-5xl font-extrabold text-slate-900 break-keep leading-snug">
                 {isResultMode && !isProcessing
                   ? "와우! 정말 멋져요!"
                   : count !== null

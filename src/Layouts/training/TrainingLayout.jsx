@@ -18,10 +18,14 @@ export default function TrainingLayout() {
   // 2. 메뉴 여부 판단 (경로가 정확히 /exercise 일 때)
   const isMenu = pathname === "/training";
   const modeKey = isMenu ? null : currentPath.toUpperCase();
+
+  const handleComplete = () => {
+    navigate("/training");
+  };
   return (
-    <div className="flex flex-col w-full h-full p-6 bg-slate-50 overflow-hidden font-extrabold text-[#2D3A5A]">
+    <div className="flex flex-col w-full h-full p-2 overflow-hidden font-extrabold text-slate-900">
       {/* 헤더 */}
-      <header className="flex items-center pb-4 border-b-2 border-slate-200 mb-6">
+      <header className="flex items-center pb-2 border-b-2 mb-4">
         <div className="flex items-center text-4xl font-black cursor-pointer">
           <ArrowBigLeft
             className="size-14 mr-2 cursor-pointer hover:scale-110 transition-transform"
@@ -39,8 +43,8 @@ export default function TrainingLayout() {
       </header>
 
       {/* 메인 영역 */}
-      <main className="flex-1 overflow-hidden relative">
-        <Outlet />
+      <main className="flex-1 overflow-hidden relative gap-4">
+        <Outlet context={{ onComplete: handleComplete }} />
       </main>
     </div>
   );

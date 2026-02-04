@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext, useMemo } from "react";
+import React, { useState, useRef, useContext, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import Dialog from "@/components/Dialog";
 import { IconRenderer } from "@/components/ui/IconRenderer";
@@ -12,83 +12,42 @@ const USER_SCRIPT_LIST = [
   "사랑하는 우리 가족들아, 오늘도 건강하고 웃음 가득한 하루 보내렴. 언제나 너희를 응원하고 아주 많이 사랑한다.",
   "오늘 날씨가 참 맑고 좋네요. 기분 좋은 바람도 솔솔 불어오니, 차 한 잔 마시면서 여유로운 시간 보내세요.",
   "인생은 아름다운 여행이라고 합니다. 오늘도 새로운 풍경을 마주하듯 즐겁고 행복하게 보내시길 바랍니다.",
-  "푸른 하늘 아래 복숭아꽃이 활짝 피었습니다. 숲속 새들의 노랫소리를 들으며 천천히 산책을 해볼까요?",
   "우리 예쁜 손주들, 할머니 목소리 듣고 오늘도 힘차게 보내렴. 너희는 세상에서 가장 소중한 보물이란다.",
 ];
 
 export default function VoiceReplication() {
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [resultAudio, setResultAudio] = useState(null);
-
+  const [stage, setStage] = useState("idle");
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef(null);
-  const [highlightIndex, setHighlightIndex] = useState(-1);
-  const timerRef = useRef(null);
-
-  // 녹음 데이터 보관
-  const mediaRecorderRef = useRef(null);
-  const audioChunkRef = useRef([]);
-
+  const [resultAudio, setResultAudio] = useState(null);
   const [currentScript, setCurrentScript] = useState(
     () => USER_SCRIPT_LIST[Math.floor(Math.random() * USER_SCRIPT_LIST.length)],
   );
 
+  const audioRef = useRef(null);
+  const timerRef = useRef(null);
+  const highlightRef = useRef(-1);
+  const mediaRecorderRef = useRef(null);
+  const audioChunkRef = useRef([]);
+
   const { humanInfo } = useContext(GlobalContext);
   const targetVoice = useMemo(() => {
-    if(!humanInfo) return;
+    if (!humanInfo) return 42;
+    const { age, gender } = humanInfo;
+    const isMale = gender === "M";
+    if (age > 50) return isMale ? 42 : 65;
+    return isMale ? 48 : 7;
+  }, [humanInfo]);
 
-    const { age, gender} = humanInfo;
-    if(age > 50) {
-      return gender === 'M' ? 42 : 65
-    } else if(age > 20) {
-      return gender === "M" ? 48 : 7
-    } else {
-      return gender === 'M' ? 25 : 22
-    }
-  }, [humanInfo])
-
-  const handlePlayAudio = (e) => {
-    if (audioRef.current && !isPlaying) {
-      e.stopPropagation();
-      setIsPlaying(true); // 버튼 비활성화 상태로 변경
-      audioRef.current.play();
-    }
-  };
-  const handleAudioEnded = () => {
-    setIsPlaying(false); // 버튼 다시 활성화
-  };
-
-  useEffect(() => {
-    if (isRecording) {
-      setHighlightIndex(0);
-      // 글자당 250ms 간격으로 강조 (속도는 필요에 따라 조절 가능)
-      timerRef.current = setInterval(() => {
-        setHighlightIndex((prev) => {
-          if (prev < currentScript.length) return prev + 1;
-          clearInterval(timerRef.current);
-          return prev;
-        });
-      }, 250);
-    } else {
-      clearInterval(timerRef.current);
-      setHighlightIndex(-1);
-    }
-    return () => clearInterval(timerRef.current);
-  }, [isRecording, currentScript]);
-
-  const sendVoiceFile = async (sourceFile, targetFile) => {
-    setLoading(true);
-    try {
-      const response = await postVoice2Wav(sourceFile, targetFile);
-      // console.log("response = ", response);
-
-      setResultAudio(response);
-    } catch (error) {
-      console.log("[FAILED] sendVoiceFile MSG: ", error);
-    } finally {
-      setLoading(false);
+  // 에메랄드 톤 하이라이트 UI 업데이트
+  const updateHighlightUI = (index, active) => {
+    const el = document.getElementById(`char-${index}`);
+    if (el) {
+      el.className = cn(
+        "transition-colors duration-200",
+        active
+          ? "text-emerald-600 font-black scale-110 inline-block"
+          : "text-slate-300",
+      );
     }
   };
 
@@ -96,232 +55,211 @@ export default function VoiceReplication() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
-      audioChunkRef.current = []; // 데이터 초기화
-
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunkRef.current.push(event.data);
-        }
-      };
+      audioChunkRef.current = [];
+      mediaRecorderRef.current.ondataavailable = (e) =>
+        audioChunkRef.current.push(e.data);
 
       mediaRecorderRef.current.start();
-      setIsFlipped(true);
-      setIsRecording(true);
-    } catch (error) {
-      console.log("[FAILED] voiceReplcation MSG: ", error);
+      setStage("recording");
+
+      highlightRef.current = 0;
+      timerRef.current = setInterval(() => {
+        if (highlightRef.current < currentScript.length) {
+          updateHighlightUI(highlightRef.current, true);
+          highlightRef.current += 1;
+        } else {
+          clearInterval(timerRef.current);
+        }
+      }, 250);
+    } catch (e) {
+      console.error(e);
     }
   };
 
   const handleStop = () => {
-    if (mediaRecorderRef.current && isRecording) {
+    if (mediaRecorderRef.current && stage === "recording") {
+      clearInterval(timerRef.current);
       mediaRecorderRef.current.onstop = async () => {
-        // 파일 전처리
-        // makeTarget
-        const targetBlob = new Blob(audioChunkRef.current, {
-          type: "audio/wav",
-        });
-        const targetFile = new File([targetBlob], "target.wav", {
-          type: "audio/wav",
-        });
+        setStage("loading");
+        try {
+          const targetBlob = new Blob(audioChunkRef.current, {
+            type: "audio/wav",
+          });
+          const sourceBlob = await getTtsBlob(currentScript, targetVoice);
+          const response = await postVoice2Wav(sourceBlob, targetBlob);
 
-        const sourceBlob = await getTtsBlob(currentScript, targetVoice);
-        const sourceFile = new File([sourceBlob], "source.wav", {
-          type: "audio/wav",
-        });
-        sendVoiceFile(sourceFile, targetFile);
-
-        // 마이크 종료
-        mediaRecorderRef.current?.stream
-          .getTracks()
-          .forEach((track) => track.stop());
+          setResultAudio(response);
+          setStage("result");
+          setTimeout(() => {
+            if (audioRef.current) {
+              setIsPlaying(true);
+              audioRef.current.play();
+            }
+          }, 800);
+        } catch (err) {
+          setStage("idle");
+        }
       };
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
     }
-
-    mediaRecorderRef.current.stop();
-    setIsRecording(false);
   };
 
   const handleReset = () => {
-    setIsFlipped(false);
+    setStage("idle");
     setResultAudio(null);
-    setHighlightIndex(-1); // 인덱스 초기화
-    const nextIndex = Math.floor(Math.random() * USER_SCRIPT_LIST.length);
-    setCurrentScript(USER_SCRIPT_LIST[nextIndex]);
+    highlightRef.current = -1;
+    setCurrentScript(
+      USER_SCRIPT_LIST[Math.floor(Math.random() * USER_SCRIPT_LIST.length)],
+    );
   };
 
   return (
-    <div className="flex w-full h-full mx-auto p-2 rounded-xl overflow-hidden">
-      {/* [좌측 섹션] 카드 뒤집기 영역 */}
-      <div className="w-8/12 p-2 [perspective:2000px]">
+    <div className="flex flex-col w-full h-full bg-[#F0FDF4] rounded-3xl overflow-hidden p-4 md:p-6 shadow-inner border-2 border-white/50">
+      <main className="flex-1 flex flex-row items-center justify-center gap-4 md:gap-8 overflow-hidden px-2">
+        {/* 로봇 섹션 */}
         <div
           className={cn(
-            "relative w-full h-full duration-1000 [transform-style:preserve-3d] transition-transform shadow-xl rounded-2xl",
-            isFlipped ? "[transform:rotateY(180deg)]" : "",
+            "relative flex-shrink-0 transition-all duration-500",
+            stage === "recording" && "scale-105",
+            isPlaying && "animate-bounce",
           )}
         >
-          {/* 앞면: 안내 대기 화면 */}
-          <div className="absolute inset-0 [backface-visibility:hidden] bg-white rounded-2xl flex flex-col items-center justify-center p-10 overflow-hidden">
-            <div
-              className="absolute inset-0 opacity-20 pointer-events-none"
-              style={{
-                backgroundImage: `url('https://www.transparenttextures.com/patterns/natural-paper.png')`,
-              }}
-            />
-            <div className="bg-blue-50 p-8 rounded-full mb-6 border-2 border-blue-100 shadow-lg relative z-10">
-              <IconRenderer
-                icon="Mic"
-                style={{ width: 60, height: 60 }}
-                className="text-blue-500 animate-pulse"
-              />
-            </div>
-            <h2 className="text-4xl font-black text-slate-800 text-center leading-tight relative z-10">
-              내 목소리를 <br />
-              AI 친구에게 들려주세요
-            </h2>
-          </div>
-
+          <div className="absolute inset-0 bg-emerald-200/30 blur-3xl rounded-full" />
+          <img
+            src="/images/voice.png"
+            alt="robot"
+            className="relative w-auto h-[35vh] max-h-[320px] object-contain drop-shadow-2xl"
+          />
+          {isPlaying && (
+            <div className="absolute bottom-[24%] left-[44%] w-[12%] h-[4%] bg-slate-800 rounded-full animate-ping" />
+          )}
           <div
             className={cn(
-              "absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-2xl flex flex-col items-center justify-center p-12 overflow-hidden",
-              `${!resultAudio ? "bg-[#fdfcf0]" : "bg-white"}`,
-            )}
-          >
-            <div
-              className="absolute inset-0 opacity-30"
-              style={{
-                backgroundImage: `url('https://www.transparenttextures.com/patterns/paper-fibers.png')`,
-              }}
-            />
-            <div
-              className="absolute inset-0 opacity-[0.05]"
-              style={{
-                backgroundImage: !resultAudio
-                  ? `linear-gradient(#000 1.5px, transparent 1.5px), linear-gradient(90deg, #000 1.5px, transparent 1.5px)`
-                  : "",
-                backgroundSize: "60px 60px",
-              }}
-            />
-
-            {!resultAudio ? (
-              <div className="relative z-10 flex flex-col items-center w-full">
-                <div className="absolute -top-6 flex gap-24">
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="w-6 h-6 bg-slate-300/50 rounded-full shadow-inner"
-                    />
-                  ))}
-                </div>
-
-                <div className="bg-white border-2 border-amber-100 px-6 py-8 rounded-lg shadow-xl [transform:rotate(-1deg)]">
-                  {/* 변경 적용된 가라오케 텍스트 렌더링 */}
-                  <h2 className="text-4xl font-black text-center leading-snug break-keep tracking-tight font-serif">
-                    {currentScript.split("").map((char, index) => (
-                      <span
-                        key={index}
-                        className={cn(
-                          "transition-colors duration-300",
-                          index < highlightIndex
-                            ? "text-slate-900"
-                            : "text-slate-300",
-                        )}
-                      >
-                        {char}
-                      </span>
-                    ))}
-                  </h2>
-                </div>
-              </div>
-            ) : (
-              <div className="relative z-10 flex flex-col items-center gap-8">
-                <h2 className="text-5xl font-black text-slate-800">
-                  목소리 준비 완료!
-                </h2>
-                <audio
-                  ref={audioRef}
-                  src={resultAudio}
-                  onEnded={handleAudioEnded}
-                  className="hidden"
-                />
-                <Button
-                  onClick={(e) => handlePlayAudio(e)}
-                  disabled={isPlaying} // 재생 중일 때 버튼 비활성화
-                  className={cn(
-                    "w-full max-w-sm h-28 flex items-center justify-center gap-4 text-5xl font-black rounded-2xl transition-all shadow-xl",
-                    isPlaying
-                      ? "bg-slate-200 text-slate-400 border-b-0 translate-y-2 cursor-not-allowed"
-                      : "bg-orange-500 text-white border-b-[10px] border-orange-700 hover:bg-orange-600 active:border-b-0 active:translate-y-2",
-                  )}
-                >
-                  <IconRenderer
-                    icon="Headphones"
-                    style={{ width: 60, height: 60 }}
-                  />
-                  {isPlaying ? "듣는 중..." : "듣기"}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* [우측 섹션] 제어 버튼 */}
-      <div className="w-4/12 flex flex-col h-full p-2 gap-4">
-        <div className="bg-white p-6 rounded-2xl shadow-lg flex items-center justify-center gap-4">
-          <div
-            className={cn(
-              "w-8 h-8 rounded-full",
-              isRecording ? "bg-red-500 animate-pulse" : "bg-slate-300",
+              "absolute top-2 right-6 w-4 h-4 rounded-full border-2 border-white shadow-sm",
+              stage === "recording"
+                ? "bg-red-500 animate-pulse"
+                : "bg-emerald-400",
             )}
           />
-          <span className="text-3xl font-black text-slate-700 uppercase tracking-tighter">
-            {isRecording ? "녹음중" : "대기중"}
-          </span>
         </div>
 
-        <div className="flex-1 flex flex-col gap-5">
-          {!isFlipped ? (
+        {/* 인터랙션 섹션 */}
+        <div className="flex-1 max-w-xl h-full flex items-center justify-center">
+          {stage === "recording" ? (
+            <div className="w-full bg-white p-6 md:p-8 rounded-[2.5rem] shadow-xl border-4 border-emerald-50 relative animate-in slide-in-from-right-10">
+              <div className="hidden md:block absolute -left-5 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[15px] border-t-transparent border-r-[25px] border-r-white border-b-[15px] border-b-transparent" />
+              <p className="text-2xl md:text-3xl font-bold text-slate-800 leading-relaxed flex flex-wrap justify-start">
+                {currentScript.split(" ").map((word, wordIdx) => (
+                  <span key={wordIdx} className="flex mr-2 mb-1">
+                    {" "}
+                    {/* 단어 단위로 묶음 */}
+                    {word.split("").map((char, charIdx) => {
+                      // 전체 문장에서 이 글자가 몇 번째 인덱스인지 계산
+                      const absoluteIndex =
+                        currentScript
+                          .split("")
+                          .slice(0, currentScript.indexOf(word, wordIdx))
+                          .length + charIdx;
+
+                      return (
+                        <span
+                          key={charIdx}
+                          id={`char-${absoluteIndex}`}
+                          className="text-slate-300 transition-all duration-200"
+                        >
+                          {char}
+                        </span>
+                      );
+                    })}
+                  </span>
+                ))}
+              </p>
+            </div>
+          ) : stage === "result" ? (
+            <div className="flex flex-col items-center gap-6 animate-in zoom-in">
+              <div className="bg-emerald-100 text-emerald-800 px-6 py-2 rounded-full text-xl font-black shadow-sm border border-emerald-200">
+                목소리 학습 완료! ✨
+              </div>
+              <audio
+                ref={audioRef}
+                src={resultAudio}
+                onEnded={() => setIsPlaying(false)}
+                className="hidden"
+              />
+              <Button
+                onClick={() => {
+                  setIsPlaying(true);
+                  audioRef.current.play();
+                }}
+                disabled={isPlaying}
+                className="w-48 h-16 md:w-60 md:h-24 rounded-[2rem] bg-orange-500 text-white text-2xl md:text-4xl font-black border-b-[10px] border-orange-800 active:border-b-0 active:translate-y-2 transition-all shadow-xl hover:bg-orange-400"
+              >
+                {isPlaying ? "말하는 중" : "다시 듣기"}
+              </Button>
+            </div>
+          ) : (
+            <div className="text-center space-y-2">
+              <p className="text-5xl font-black text-emerald-900/80">
+                "나를 따라해봐!"
+              </p>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* 푸터: 에메랄드 포인트 */}
+      <footer className="flex-none w-full max-w-5xl mx-auto bg-white/80 backdrop-blur-md p-3 md:p-4 rounded-[2.5rem] shadow-lg flex items-center justify-between border-2 border-emerald-50 mt-2">
+        <div className="flex items-center gap-3 ml-3">
+          <div
+            className={cn(
+              "w-3 h-3 rounded-full shadow-inner",
+              stage === "recording"
+                ? "bg-red-500 animate-pulse"
+                : "bg-emerald-300",
+            )}
+          />
+          <span className="text-sm md:text-lg font-black text-emerald-900/70">
+            {stage === "idle" && "새로운 목소리를 배워볼까요?"}
+            {stage === "recording" && "로봇이 귀를 기울이고 있어요"}
+            {stage === "loading" && "기억하는 중입니다..."}
+            {stage === "result" && "짜잔! 똑같죠?"}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          {stage === "idle" && (
             <Button
               onClick={handleStart}
-              className="flex-1 flex flex-col gap-3 text-5xl font-black rounded-2xl bg-blue-600 text-white border-b-[12px] border-blue-800 hover:bg-blue-700 active:border-b-0 active:translate-y-3 transition-all shadow-xl"
+              className="h-12 md:h-16 px-8 md:px-12 rounded-2xl bg-emerald-600 text-white text-lg md:text-2xl font-black border-b-6 border-emerald-800 hover:bg-emerald-500 active:border-b-0 active:translate-y-1"
             >
-              <IconRenderer icon="Play" style={{ width: 60, height: 60 }} />
-              대본 읽기
+              시작하기
             </Button>
-          ) : isRecording ? (
+          )}
+          {stage === "recording" && (
             <Button
               onClick={handleStop}
-              className="flex-1 flex flex-col gap-3 text-5xl font-black rounded-2xl bg-red-500 text-white border-b-[12px] border-red-700 hover:bg-red-600 active:border-b-0 active:translate-y-3 transition-all shadow-xl"
+              className="h-12 md:h-16 px-8 md:px-12 rounded-2xl bg-red-500 text-white text-lg md:text-2xl font-black border-b-6 border-red-800 hover:bg-red-400 active:border-b-0 active:translate-y-1"
             >
-              <IconRenderer icon="Square" style={{ width: 60, height: 60 }} />
-              녹음 종료
+              다 읽었어요
             </Button>
-          ) : (
+          )}
+          {stage === "result" && (
             <Button
               onClick={handleReset}
-              className="flex-1 flex flex-col gap-3 text-5xl font-black rounded-2xl bg-emerald-500 text-white border-b-8 border-emerald-800 hover:bg-emerald-600 shadow-xl"
+              className="h-12 md:h-16 px-8 md:px-12 rounded-2xl bg-slate-500 text-white text-lg md:text-2xl font-black border-b-6 border-slate-700 hover:bg-slate-400 active:border-b-0 active:translate-y-1"
             >
-              <IconRenderer
-                icon="RotateCcw"
-                style={{ width: 60, height: 60 }}
-              />
               다시 하기
             </Button>
           )}
         </div>
-      </div>
+      </footer>
 
-      <Dialog
-        isOpen={loading}
-        onClose={() => setLoading(false)}
-        title="AI 목소리 생성"
-      >
-        <div className="text-center p-10 flex flex-col items-center gap-8">
-          <ThreeDot variant="bounce" color="#3b82f6" size="large" />
-          <p className="text-3xl font-black text-slate-800">
-            어르신의 목소리를
-            <br />
-            열심히 공부하고 있어요!
+      {/* 로딩 다이얼로그: 에메랄드 테마 */}
+      <Dialog isOpen={stage === "loading"} onClose={() => {}} title="">
+        <div className="p-8 flex flex-col items-center gap-6">
+          <ThreeDot color="#10b981" size="large" />
+          <p className="text-3xl font-black text-emerald-900">
+            열심히 배우고 있어요!
           </p>
         </div>
       </Dialog>

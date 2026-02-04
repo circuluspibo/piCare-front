@@ -9,19 +9,19 @@ export default function HeadGame() {
   const BASE_IMAGE_PATH = "/images/exercise";
 
   const getBgClass = (side) => {
-    if (lastResult.target === null) return "bg-white border-gray-100 shadow-sm";
+    if (lastResult.target === null) return "bg-white border-gray-100 shadow-md";
     const isTarget = side === lastResult.target;
     if (lastResult.isPass)
       return isTarget
-        ? "bg-green-100 border-green-500 shadow-2xl scale-[1.03]"
+        ? "bg-green-100 border-green-500 shadow-md scale-[1.03]"
         : "bg-white opacity-20";
     return !isTarget
-      ? "bg-red-100 border-red-500 shadow-2xl scale-[1.03]"
+      ? "bg-red-100 border-red-500 shadow-md scale-[1.03]"
       : "bg-white opacity-20";
   };
 
   return (
-    <div className="w-full h-full flex gap-4 p-4">
+    <div className="w-full h-full flex gap-4">
       {["right", "left"].map((side) => (
         <div
           key={side}
@@ -31,7 +31,7 @@ export default function HeadGame() {
           )}
         >
           <img
-            className="w-3/4 object-contain"
+            className="w-[85%] object-contain aspect-sqare"
             src={`${BASE_IMAGE_PATH}/head/${
               side === target ? "check" : "hand"
             }.png`}

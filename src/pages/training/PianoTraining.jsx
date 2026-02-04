@@ -3,6 +3,9 @@ import { Music, PlayCircle, CheckCircle2, XCircle } from "lucide-react"; // XCir
 import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
 import { fireInfoConfetti } from "@/components/magicui/connfetti";
+import { useOutletContext } from "react-router-dom";
+import ScoreBoard from "@/components/ui/ScoreBoard";
+import ResultDialog from "@/components/ResultDialog";
 
 const TOTAL_ROUNDS = 5;
 const PIANO_KEYS = [
@@ -16,7 +19,8 @@ const PIANO_KEYS = [
   { id: "snd8", label: "도", color: "bg-white" },
 ];
 
-export default function PianoTraining({ onComplete }) {
+export default function PianoTraining() {
+  const { onComplete } = useOutletContext();
   const [targetSequence, setTargetSequence] = useState([]);
   const [userSequence, setUserSequence] = useState([]); // {val: 숫자, isCorrect: boolean} 형태
   const [scores, setScores] = useState([]);
@@ -183,9 +187,9 @@ export default function PianoTraining({ onComplete }) {
     if (isFinish) fireInfoConfetti();
   }, [isFinish]);
   return (
-    <div className="flex h-full gap-6 animate-in fade-in duration-500 font-extrabold text-[#2D3A5A]">
-      <section className="w-3/4 h-full flex flex-col gap-6">
-        <div className="flex-1 bg-slate-800 rounded-3xl p-12 flex items-stretch gap-2 shadow-2xl relative overflow-hidden">
+    <div className="flex h-full gap-4 animate-in fade-in duration-500 font-extrabold p-2">
+      <section className="flex-[3] h-full flex flex-col gap-6">
+        <div className="flex-1 bg-slate-800 rounded-xl p-12 flex items-stretch gap-2 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-12 bg-gradient-to-b from-black/50 to-transparent" />
           {PIANO_KEYS.map((key) => (
             <button
@@ -217,7 +221,7 @@ export default function PianoTraining({ onComplete }) {
         </div>
 
         {/* 현재 입력 상태 표시 (수정됨: 색상 로직 반영) */}
-        <div className="h-32 bg-white rounded-3xl border flex items-center justify-center gap-6">
+        <div className="h-32 bg-white rounded-3xl shadow-md flex items-center justify-center gap-6">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
@@ -250,84 +254,65 @@ export default function PianoTraining({ onComplete }) {
       </section>
 
       {/* 우측 영역 생략 (기존과 동일하므로 유지) */}
-      <aside className="w-1/4 flex flex-col space-y-2">
-        <div className="bg-white p-2 rounded-xl shadow-inner border grid grid-cols-5 gap-1">
-          {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (
-            <div
-              key={i}
-              className={cn(
-                "aspect-square rounded-full flex items-center justify-center text-2xl transition-all duration-300 border-b-4",
-                i === scores.length
-                  ? "bg-blue-500 text-white animate-pulse border-blue-700"
-                  : scores[i]?.isPass
-                    ? "bg-green-500 text-white border-green-700"
-                    : scores[i]
-                      ? "bg-red-400 text-white border-red-600"
-                      : "bg-slate-100 text-slate-300 border-slate-200",
-              )}
-            >
-              {i + 1}
-            </div>
-          ))}
-        </div>
-
-        <div className="flex-1 flex flex-col items-center justify-center text-center bg-white shaodow-inner border rounded-xl gap-4 p-2">
+      <aside className="flex-1 flex flex-col gap-4">
+        {/* SECTION: 진행판 */}
+        <ScoreBoard total={5} scores={scores} />
+        {/* 중앙 미션 카드 (ColorTraining 스타일) */}
+        <div className="flex-1 flex flex-col rounded-2xl bg-slate-50 items-center justify-center text-center gap-4 p-2 shadow-inner border border-slate-100">
           <div
             className={cn(
-              "size-28 rounded-xl flex items-center justify-center transition-all duration-500",
+              "size-36 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl bg-white",
               isPlayingTarget
-                ? "bg-blue-100 text-blue-600 scale-110"
-                : "bg-slate-100 text-slate-400",
+                ? "scale-110 ring-[12px] ring-blue-100"
+                : "scale-100",
             )}
           >
             <Music
-              className={cn("size-20", isPlayingTarget && "animate-spin-slow")}
+              className={cn(
+                "size-20",
+                isPlayingTarget
+                  ? "text-blue-600 animate-bounce"
+                  : "text-slate-300",
+              )}
             />
           </div>
-          <div className="py-2">
-            <p className="text-4xl font-black text-slate-800 break-keep">
-              {isPlayingTarget ? "소리가 나옵니다" : "순서대로 누르세요"}
-            </p>
+
+          <div>
+            <h2 className="text-4xl font-black text-slate-800 break-keep leading-tight">
+              {isPlayingTarget ? (
+                <span className="text-blue-600 underline underline-offset-8">
+                  연주 소리
+                </span>
+              ) : (
+                "순서대로"
+              )}
+              <br />
+              {isPlayingTarget ? "감상 중입니다" : "연주해 주세요"}
+            </h2>
           </div>
+
+          {/* 다시 듣기 버튼 - ColorTraining의 하단 가이드 박스 위치 */}
           {!isPlayingTarget && !isEvaluating && (
             <button
               onClick={handleReplay}
-              className="flex items-center gap-3 px-8 py-4 bg-slate-800 text-white rounded-2xl hover:bg-black transition-colors"
+              className="flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl hover:bg-black transition-all shadow-lg active:scale-95"
             >
               <PlayCircle className="size-6" />
-              <span className="text-2xl font-bold">다시 듣기</span>
+              <span className="text-2xl font-black">다시 듣기</span>
             </button>
           )}
         </div>
       </aside>
 
-      <Dialog isOpen={isFinish} onClose={onComplete} title="훈련 결과">
-        <div className="text-center flex flex-col items-center gap-3">
-          <h2 className="text-5xl font-black mb-10 break-keep leading-snug text-[#2D3A5A]">
-            {getFeedbackMsg()}
-          </h2>
-          <div className="flex flex-row items-center gap-6 text-center">
-            <div>
-              <p className="text-gray-400 font-bold text-2xl">성공 횟수</p>
-              <p className="text-6xl font-black text-green-600">
-                {scores.filter((s) => s.isPass).length}회
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-400 font-bold text-2xl">소요 시간</p>
-              <p className="text-6xl font-black text-blue-600">
-                {totalElapsedTime}초
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onComplete}
-            className="w-[80%] py-4 bg-[#2D3A5A] text-white text-5xl font-black rounded-2xl hover:bg-slate-800 transition-all shadow-xl"
-          >
-            확인
-          </button>
-        </div>
-      </Dialog>
+      {/* 결과 다이얼로그에서 getFeedbackMsg() 호출 */}
+      <ResultDialog
+        isOpen={isFinish}
+        onClose={onComplete}
+        feedbackMsg={getFeedbackMsg}
+        successCount={scores.filter((s) => s.isPass).length}
+        time={totalElapsedTime}
+        onConfirm={onComplete}
+      />
     </div>
   );
 }

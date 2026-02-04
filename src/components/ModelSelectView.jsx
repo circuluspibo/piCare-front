@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 
-export default function ModeSelectView() {
+export default function ModelSelectView() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -52,7 +52,7 @@ export default function ModeSelectView() {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500">
       <div className="mb-10 text-center">
-        <h2 className="text-6xl font-black text-[#2D3A5A]">{config.title}</h2>
+        <h2 className="text-6xl font-black text-slate-900">{config.title}</h2>
       </div>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-8 w-full max-w-6xl px-6">
