@@ -144,39 +144,38 @@ export function useMainLogic({
 
   // 3. AI 자동 캡처 로직 (isProcessing 의존성 추가하여 중복 방지)
 
-  const runAutoCapture = useCallback(async () => {
-    // 이미 처리 중이면 중복 실행 방지
+  const processingRef = useRef(false);
 
-    if (isProcessing) return;
+  const runAutoCapture = useCallback(async () => {
+    // ref와 state 모두 체크하여 중복 진입 차단
+    if (processingRef.current || isProcessing) return;
+
+    processingRef.current = true;
+    setIsProcessing(true);
 
     await controlEngine("AI", "START");
-
-    setIsProcessing(true);
 
     try {
       if (videoRef.current) {
         const canvas = document.createElement("canvas");
-
         canvas.width = 320;
         canvas.height = 240;
-
         canvas.getContext("2d").drawImage(videoRef.current, 0, 0, 320, 240);
 
         const blob = await new Promise((res) =>
           canvas.toBlob(res, "image/jpeg", 0.5),
         );
-
         const response = await postImg2Chat(
           new File([blob], "ai.jpg"),
           PERSONA_SYSTEMS[personaId],
         );
 
+        // 응답 파싱 로직 (기존 유지)
         const rawText =
           typeof response === "string" ? response : JSON.stringify(response);
-
-        const result = rawText.match(/\{[\s\S]*\}/)
-          ? JSON.parse(rawText.match(/\{[\s\S]*\}/)[0].replace(/'/g, '"'))
-              .result
+        const match = rawText.match(/\{[\s\S]*\}/);
+        const result = match
+          ? JSON.parse(match[0].replace(/'/g, '"')).result
           : rawText;
 
         if (result) await sendMessage("", result);
@@ -184,26 +183,35 @@ export function useMainLogic({
     } catch (e) {
       console.error("AI Error:", e);
     } finally {
-      setIsProcessing(false);
-
       await controlEngine("AI", "STOP");
+      // 종료 시점에만 상태 해제
+      setIsProcessing(false);
+      processingRef.current = false;
     }
-  }, [personaId, sendMessage, controlEngine, isProcessing]);
+  }, [personaId, sendMessage, controlEngine]);
 
-  // [수정된 부분] AI 모드 ON 시 즉시 실행 및 인터벌 설정
-
+  // [수정 포인트 2] 의존성 루프를 끊은 타이머 로직
   useEffect(() => {
+    let timerId = null;
+
+    const scheduleNext = () => {
+      if (!isAutoMode) return;
+
+      // 재귀적으로 호출하여 "종료 후 120초"를 보장함
+      timerId = setTimeout(async () => {
+        await runAutoCapture();
+        scheduleNext(); // 처리가 끝나면 다음 실행 예약
+      }, AI_INTERVAL);
+    };
+
     if (isAutoMode) {
-      // 즉시 실행
-
-      runAutoCapture();
-
-      // 이후 120초마다 실행
-
-      const timer = setInterval(runAutoCapture, AI_INTERVAL);
-
-      return () => clearInterval(timer);
+      runAutoCapture(); // 처음 켰을 때 즉시 실행
+      scheduleNext(); // 루프 시작
     }
+
+    return () => {
+      if (timerId) clearTimeout(timerId);
+    };
   }, [isAutoMode, runAutoCapture]);
 
   // 카메라 스트림 유지
