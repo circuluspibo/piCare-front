@@ -136,7 +136,7 @@ export default function DrawByVoice() {
   return (
     <div className="flex w-full h-full gap-4 overflow-hidden items-stretch">
       <div
-        className="w-3/4 relative flex items-center justify-center"
+        className="w-2/3 relative flex items-center justify-center"
         ref={parentRef}
       >
         <div className="w-full h-full bg-[#5D4037] rounded-2xl p-4 shadow-[inset_0_4px_10px_rgba(0,0,0,0.5),0_10px_20px_rgba(0,0,0,0.2)] relative flex items-center justify-center">
@@ -159,7 +159,7 @@ export default function DrawByVoice() {
         </div>
       </div>
 
-      <div className="w-1/4 flex flex-col gap-2 h-full">
+      <div className="w-1/3 flex flex-col gap-2 h-full">
         {/** SECTION: 화풍선택 및 도구 */}
         <div className="h-20 grid grid-cols-4 gap-2 shrink-0">
           <button
@@ -173,7 +173,7 @@ export default function DrawByVoice() {
             }
             className="col-span-1 bg-rose-50 rounded-xl border-2 border-rose-100 flex items-center justify-center text-rose-500 active:bg-rose-100 active:scale-95 transition-all shadow-sm"
           >
-            <RotateCcw size={28} />
+            <RotateCcw size={36} />
           </button>
           <div className="col-span-3 bg-white flex p-1 rounded-2xl shadow-lg">
             {["real", "anim"].map((m) => (
@@ -181,7 +181,7 @@ export default function DrawByVoice() {
                 key={m}
                 onClick={() => setSketchModel(m)}
                 className={cn(
-                  "flex-1 rounded-xl text-xl font-black transition-all",
+                  "flex-1 rounded-xl text-3xl font-black transition-all",
                   sketchModel === m
                     ? "bg-slate-800 text-white shadow-md"
                     : "text-slate-300",
@@ -205,11 +205,11 @@ export default function DrawByVoice() {
           </button>
           <div className="flex-1 flex flex-col items-center justify-center px-4 text-center">
             <div className="bg-blue-50 px-3 py-1 rounded-full mb-2">
-              <span className="text-xs font-black text-blue-500 uppercase">
+              <span className="text-xl font-black text-blue-500 uppercase">
                 추천 주제
               </span>
             </div>
-            <p className="text-[28px] font-black text-slate-900 leading-tight break-keep">
+            <p className="text-4xl font-black text-slate-900 leading-tight break-keep">
               {SUBJECTS[subjectIdx]}
             </p>
           </div>
@@ -230,16 +230,16 @@ export default function DrawByVoice() {
               onStart={handleStartRecording}
               onStop={handleStopRecording}
               isListening={isRecording}
-              micText="text-2xl"
-              iconSize="size-8"
+              micText="text-4xl"
+              iconSize="size-12"
             />
           </div>
           <button
             onClick={handleManualGenerate}
             className="flex-1 bg-blue-600 border-b-[8px] border-blue-800 text-white rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg"
           >
-            <Paintbrush size={28} />
-            <span className="text-2xl font-black">그리기</span>
+            <Paintbrush size={40} />
+            <span className="text-4xl font-black">그리기</span>
           </button>
         </div>
       </div>
