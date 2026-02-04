@@ -9,6 +9,8 @@ import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
 import { fireInfoConfetti } from "@/components/magicui/connfetti";
 import { useOutletContext } from "react-router-dom";
+import ScoreBoard from "@/components/ui/ScoreBoard";
+import ResultDialog from "@/components/ResultDialog";
 
 const TOTAL_ROUNDS = 5;
 const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -144,27 +146,8 @@ export default function NumberTraining() {
 
       {/* 2. 우측: 정보 및 가이드 영역 (aside) */}
       <aside className="flex-1 flex flex-col gap-2">
-        {/* 상단 라운드 진행도 */}
-        <div className="bg-slate-50 p-3 rounded-2xl shadow-sm grid grid-cols-5 gap-2 border border-slate-100">
-          {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (
-            <div
-              key={i}
-              className={cn(
-                "aspect-square rounded-full flex items-center justify-center text-xl transition-all border-b-4",
-                i === scores.length
-                  ? "bg-blue-500 text-white animate-pulse border-blue-700"
-                  : scores[i]?.isPass
-                    ? "bg-emerald-500 text-white border-emerald-700"
-                    : scores[i]
-                      ? "bg-rose-500 text-white border-rose-700"
-                      : "bg-white text-slate-300 border-slate-100",
-              )}
-            >
-              {i + 1}
-            </div>
-          ))}
-        </div>
-
+        {/* SECTION: 진행판 */}
+        <ScoreBoard total={5} scores={scores} />
         {/* 미션 안내 카드 (Color/Piano 레이아웃 통일) */}
         <div className="flex-1 flex flex-col rounded-[40px] bg-slate-50 items-center justify-center gap-2 p-2 shadow-inner border border-slate-100">
           <div className="flex flex-col items-center gap-2">
@@ -216,34 +199,15 @@ export default function NumberTraining() {
         </div>
       </aside>
 
-      {/* 결과 다이얼로그 */}
-      <Dialog isOpen={isFinish} onClose={onComplete} title="훈련 결과">
-        <div className="text-center flex flex-col items-center gap-2">
-          <h2 className="text-5xl font-black text-slate-900 leading-tight">
-            {getFeedbackMsg()}
-          </h2>
-          <div className="flex w-full gap-4 mb-4">
-            <div className="flex-1 bg-emerald-50 p-4 rounded-2xl border-2 border-emerald-100">
-              <p className="text-emerald-600 font-bold text-2xl">성공 횟수</p>
-              <p className="text-5xl font-black text-emerald-700">
-                {scores.filter((s) => s.isPass).length}회
-              </p>
-            </div>
-            <div className="flex-1 bg-blue-50 p-4 rounded-2xl border-2 border-blue-100">
-              <p className="text-blue-600 font-bold text-2xl mb-1">소요 시간</p>
-              <p className="text-5xl font-black text-blue-700">
-                {totalElapsedTime}초
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onComplete}
-            className="w-full py-4 bg-slate-900 text-white text-5xl font-black rounded-3xl hover:bg-black shadow-xl"
-          >
-            확인
-          </button>
-        </div>
-      </Dialog>
+      {/* 결과 다이얼로그에서 getFeedbackMsg() 호출 */}
+      <ResultDialog
+        isOpen={isFinish}
+        onClose={onComplete}
+        feedbackMsg={getFeedbackMsg}
+        successCount={scores.filter((s) => s.isPass).length}
+        time={totalElapsedTime}
+        onConfirm={onComplete}
+      />
     </div>
   );
 }

@@ -3,9 +3,9 @@ import { ArrowBigLeft } from "lucide-react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 const GAME_INFO = {
-  DRAW: { title: "말하는 대로 그림 그리기" },
+  DRAW: { title: "말하는 캔버스" },
   MIRROR: { title: "젊어지는 거울" },
-  VOICE: { title: "AI 음성 변조" },
+  VOICE: { title: "따라하는 로봇" },
 };
 
 export default function AiLayout() {
