@@ -149,37 +149,45 @@ export function useMainLogic({
 
 
   // 3. AI 자동 캡처 (요구하신 대로 엔진 제어 없이 독립 실행)
-  const runAutoCapture = useCallback(async () => {
+const runAutoCapture = useCallback(async () => {
     if (processingRef.current) return;
     processingRef.current = true;
     setIsProcessing(true);
 
     try {
-    const video = videoRef.current;
-    
-    // [수정 포인트 1] 비디오 상태 체크: 데이터가 준비되지 않았으면 중단
-    if (!video || video.paused || video.ended || video.readyState < 2) {
-      console.warn("비디오가 아직 준비되지 않았습니다.");
-      return;
-    }
-    const canvas = document.createElement("canvas");
-    canvas.width = 320; canvas.height = 240;
-    canvas.getContext("2d").drawImage(videoRef.current, 0, 0, 320, 240);
-    const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg"));
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `capture_${new Date().getTime()}.jpg`;
-    link.click();
-    const response = await postImg2Chat(new File([blob], "ai.jpg"), PERSONA_SYSTEMS[personaId]);
+      const video = videoRef.current;
+      
+      // [수정 포인트] 비디오가 준비될 때까지 최대 3초간 대기 (0.5초 간격 체크)
+      let retryCount = 0;
+      while ((!video || video.readyState < 2) && retryCount < 6) {
+        console.log("비디오 스트림 대기 중...");
+        await new Promise(res => setTimeout(res, 500));
+        retryCount++;
+      }
 
-    const rawText = typeof response === "string" ? response : JSON.stringify(response);
-    const match = rawText.match(/\{[\s\S]*\}/);
-    const result = match ? JSON.parse(match[0].replace(/'/g, '"')).result : rawText;
+      if (!video || video.paused || video.ended || video.readyState < 2) {
+        console.warn("비디오가 여전히 준비되지 않았습니다.");
+        return; // 다음 루프(120초 후)를 기약
+      }
 
-    // [포인트] sendMessage가 끝날 때까지 여기서 딱 대기합니다.
-    if (result) {
-      await sendMessage("", result);
-    }
+      // 캡처 로직 진행
+      const canvas = document.createElement("canvas");
+      canvas.width = 320; 
+      canvas.height = 240;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, 320, 240);
+      
+      const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg"));
+      
+      // (기존 코드와 동일)
+      const response = await postImg2Chat(new File([blob], "ai.jpg"), PERSONA_SYSTEMS[personaId]);
+      const rawText = typeof response === "string" ? response : JSON.stringify(response);
+      const match = rawText.match(/\{[\s\S]*\}/);
+      const result = match ? JSON.parse(match[0].replace(/'/g, '"')).result : rawText;
+
+      if (result) {
+        await sendMessage("", result);
+      }
       
     } catch (e) {
       console.error("AI Error:", e);
