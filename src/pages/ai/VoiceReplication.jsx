@@ -102,7 +102,22 @@ export default function VoiceReplication() {
       USER_SCRIPT_LIST[Math.floor(Math.random() * USER_SCRIPT_LIST.length)],
     );
   };
+  useEffect(() => {
+    let playTimer;
+    if(resultAudio && stage === 'result' && audioRef.current) {
+      playTimer = setTimeout(() => {
+        setIsPlaying(true);
 
+        audioRef.current.play().catch((error) => {
+          console.log('자동 재생이 차단되었습니다.', error);
+          setIsPlaying(false)
+        });
+      }, 800)
+    }
+    return () => {
+      if(playTimer) clearTimeout(playTimer)
+    }
+  }, [resultAudio, stage])
   const renderKaraokeText = (script, hIndex) => {
     let charCounter = 0; // 전체 글자 순서를 추적하기 위한 카운터
 

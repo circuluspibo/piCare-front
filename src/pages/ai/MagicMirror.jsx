@@ -75,7 +75,7 @@ export default function MagicMirror() {
 
       // 퀄리티 최적화된 Blob 추출
       const blob = await new Promise((resolve) =>
-        canvasRef.current.toBlob(resolve, "image/jpeg", 0.9),
+        canvasRef.current.toBlob(resolve, "image/jpeg", 1.0),
       );
       // image debug 용
       // const link = document.createElement('a');
@@ -97,6 +97,8 @@ export default function MagicMirror() {
       img.src = res;
       img.onload = () => {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high'
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       };
@@ -241,11 +243,14 @@ export default function MagicMirror() {
           {/* 고급스러운 명판(Plaque) 스타일의 메시지 박스 */}
           <div className="bg-[#fffdfa] border-2 border-[#e5e0d8] border-b-[6px] rounded-[2.5rem] p-10 shadow-md flex flex-col items-center text-center transition-all">
             <p className="text-2xl font-bold text-[#5d3a1a]/70 leading-relaxed break-keep tracking-tight">
-              {!isActive
+              {isProcessing
+                ? "거울 속의 시간을\n거꾸로 돌리고 있습니다..."
+                : !isActive 
                 ? "왼쪽의 마법 거울을 터치하여\n새로운 나를 만나보세요."
                 : isResultMode
                   ? "마법이 완성되었습니다.\n정말 멋진 모습이네요!"
-                  : "준비가 되셨다면 아래의\n젊어지기 버튼을 눌러주세요."}
+                  : "준비가 되셨다면 아래의\n젊어지기 버튼을 눌러주세요."
+              }
             </p>
           </div>
         </div>
@@ -257,21 +262,21 @@ export default function MagicMirror() {
               onClick={handleMagicMirror}
               disabled={isProcessing || !isActive}
               className={cn(
-                "relative group w-full py-8 rounded-xl text-6xl font-black transition-all",
+                "w-full py-8 rounded-xl text-6xl font-black",
                 "flex flex-col items-center justify-center gap-2",
                 isActive
-                  ? "bg-gradient-to-b from-[#8b5a2b] to-[#5d3a1a] text-[#f5e6d3] border-b-[12px] border-[#2a1d13] active:translate-y-2 active:border-b-[4px] active:shadow-inner"
-                  : "bg-[#d9d3cd] text-[#a69e96] border-b-[8px] border-[#c2bab2] cursor-not-allowed opacity-60",
+                  ? "bg-amber-800 text-stone-100 border-b-[8px] border-stone-900 active:translate-y-2"
+                  : "bg-stone-300 text-stone-500 border-b-[8px] border-stone-400 cursor-not-allowed opacity-60",
               )}
             >
-              <span className="drop-shadow-md">젊어지기</span>
+              <span>젊어지기</span>
             </button>
           )}
 
           {isResultMode && !isProcessing && (
             <button
               onClick={handleReset}
-              className="w-full py-10 rounded-[2.5rem] text-5xl font-black bg-white text-[#5d3a1a] border-2 border-[#5d3a1a] border-b-[12px] border-b-[#2a1d13] shadow-xl active:translate-y-2 active:border-b-[4px] active:shadow-none flex items-center justify-center gap-5 transition-all group"
+              className="w-full py-10 rounded-2xl text-5xl font-black bg-white text-stone-800 border-2 border-stone-800 border-b-[8px] border-stone-900 shadow-xl active:translate-y-2 group flex items-center justify-center gap-5"
             >
               <RotateCcw
                 size={48}
