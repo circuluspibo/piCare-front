@@ -11,7 +11,7 @@ export default function useVoiceChat({ enableTTS }) {
   const { sendLogToServer } = useDialogAnalyze();
 
   const mediaRecorderRef = useRef(null);
-  const { currentLang, personaId, personaVoice } = useContext(GlobalContext);
+  const { currentLang, personaId, personaVoice, isGpuLocked, setIsGpuLocked } = useContext(GlobalContext);
 
   const [isRecording, setIsRecording] = useState(false);
   const [gumStream, setGumStream] = useState(null);
@@ -48,17 +48,25 @@ export default function useVoiceChat({ enableTTS }) {
       const ttsUrl = await getTts(text, targetVoice, currentLang);
       return new Promise((resolve) => {
         const audio = new Audio(ttsUrl);
+
+        // 자원 해제를 위한 공통 함수
+        const cleanup = () => {
+          audio.pause();
+          audio.src = "";
+          audio.load(); // 오디오 리소스를 완전히 비움
+          URL.revokeObjectURL(ttsUrl); // 생성된 Blob URL 메모리 해제
+        };
         audio.onended = () => {
-          URL.revokeObjectURL(ttsUrl);
+          cleanup();
           resolve();
         };
         audio.onerror = () => {
-          URL.revokeObjectURL(ttsUrl);
-          resolve();
+          cleanup(); // 에러 발생 시에도 반드시 해제!
+          resolve(); // 에러가 나도 큐(Queue)가 멈추지 않도록 resolve 호출
         };
         audio.play().catch((err) => {
           console.warn("[재생 차단됨]:", err);
-          URL.revokeObjectURL(ttsUrl);
+          cleanup(); // 실행 실패 시에도 해제
           resolve();
         });
       });
@@ -95,13 +103,22 @@ export default function useVoiceChat({ enableTTS }) {
 
   // 4. LLM 스트리밍 응답 처리
   const sendMessage = useCallback(
-    async (message, autoPrompt) => {
+    async (message, autoPrompt, force = false) => {
       if (!message && !autoPrompt) return;
+
+      // [보안] 이미 GPU가 작업 중이면 실행하지 않음
+     if (!force && isGpuLocked) {
+        console.log("GPU 사용 중이라 대화를 시작할 수 없어요.");
+        return;
+     }
 
       // 실제 서버에 보낼 텍스트 결정: autoPrompt가 있으면 우선 사용
       const textToSearch = autoPrompt || message;
 
       setFullResponse("");
+      if (!force) setIsGpuLocked(true); // 직접 호출할 때만 잠금
+
+
       let accumulatedResponse = "";
       let lastSentenceEnd = 0;
 
@@ -148,6 +165,8 @@ export default function useVoiceChat({ enableTTS }) {
         }
       } catch (error) {
         console.log("[FAILED] REQ sendMessage MSG: ", error);
+      } finally {
+        if (!force) setIsGpuLocked(false); // 직접 호출할 때만 해제
       }
     },
     [currentSystem, currentLang, addToTtsQueue, addMessage, sendLogToServer],

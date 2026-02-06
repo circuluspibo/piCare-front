@@ -47,8 +47,9 @@ export default function ActionSidebar({
         </span>
       </div>
 
-      {/* AI 모드 스위치 */}
-      <div className="flex items-center justify-between bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
+      
+      {/* NOTE: 임시 주석 AI 모드 스위치 */}
+      {/* <div className="flex items-center justify-between bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
         <span
           className={cn(
             "text-lg font-black",
@@ -58,7 +59,7 @@ export default function ActionSidebar({
           AI 모드
         </span>
         <Switch checked={isAutoMode} onCheckedChange={setIsAutoMode} />
-      </div>
+      </div> */}
 
       {/* 메뉴 버튼 리스트 */}
       {buttonLabels.map((v, i) => (

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 
-export default function ModelSelectView() {
+export default function ModeSelectView() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -55,7 +55,7 @@ export default function ModelSelectView() {
         <h2 className="text-6xl font-black text-slate-900">{config.title}</h2>
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-8 w-full max-w-6xl px-6">
+      <div className="w-full h-full grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-8 px-6">
         {Object.entries(config.options).map(([key, info]) => (
           <button
             key={key}

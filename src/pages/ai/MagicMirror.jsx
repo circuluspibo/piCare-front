@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Sparkles, Camera, RotateCcw } from "lucide-react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { Camera, RotateCcw, UserCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { postFace2Img } from "@/api/gpuService";
 import { getHeartbeat, getStartCollection } from "@/api/npuService";
@@ -8,22 +8,30 @@ export default function MagicMirror() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
+  const timerRef = useRef(null);
 
   const [isActive, setIsActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isResultMode, setIsResultMode] = useState(false);
 
-  // 추가된 UI 상태
-  const [count, setCount] = useState(null); // 카운트다운 숫자
-  const [isShutter, setIsShutter] = useState(false); // 셔터 효과
+  const [count, setCount] = useState(null);
+  const [isShutter, setIsShutter] = useState(false);
 
-  const stopCamera = () => {
+  // 1. 카메라 제어 최적화 및 메모리 누수 방지
+  const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
     if (videoRef.current) {
       videoRef.current.srcObject = null;
+    }
+  }, []);
+
+  const clearTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
   };
 
@@ -38,8 +46,8 @@ export default function MagicMirror() {
         setIsActive(true);
       }
     } catch (error) {
-      console.log("[FAILED] access camera MSG : ", error);
-      alert("카메라를 찾을 수 없거나 권한이 없습니다.");
+      console.error("[FAILED] access camera:", error);
+      alert("카메라 권한을 확인해주세요.");
     }
   };
 
@@ -48,47 +56,54 @@ export default function MagicMirror() {
     startCamera();
   };
 
-  // 실제 캡처 및 생성 로직 (카운트다운 종료 후 실행)
+  // 2. 캡처 및 AI 생성 로직 최적화
   const processCapture = async () => {
     if (!canvasRef.current) return;
 
-    // 1. 셔터 효과(플래시) 발생
     setIsShutter(true);
     setTimeout(() => setIsShutter(false), 150);
 
     setIsProcessing(true);
     setIsResultMode(true);
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-
     try {
       await getStartCollection();
       const hbResp = await getHeartbeat();
-      const hbResult = await JSON.parse(JSON.stringify(hbResp));
-      // console.log("hbResult = ", hbResult);
-      const { human } = hbResult.data;
+      const human = hbResp?.data?.human;
 
-      console.log("human = ", human);
+      if (!human) throw new Error("Human data missing");
+
+      // 퀄리티 최적화된 Blob 추출
       const blob = await new Promise((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg"),
+        canvasRef.current.toBlob(resolve, "image/jpeg", 1.0),
       );
+      // image debug 용
+      // const link = document.createElement('a');
+      // link.href = URL.createObjectURL(blob);
+      // link.download = `test_${Date.now()}.jpg`;
+      // link.click();
+
       const file = new File([blob], "mirror.jpg", { type: "image/jpeg" });
       const gender = human.gender === "M" ? "man" : "woman";
-      const systemPrompt = `(Solo:1.5), ${human.age} ${gender}, (neutral facial bone structure:1.4), 10 year younger version of this ${gender}, clear skin texture, natural lighting, high quality, photorealistic, sharp focus`;
+      const systemPrompt = `(Solo:1.5), ${human.age} ${gender}, 10 year younger version of this ${gender}, clear skin, high quality, photorealistic, cinematic lighting`;
+
       const res = await postFace2Img(file, systemPrompt);
 
       stopCamera();
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
       const img = new Image();
       img.src = res;
       img.onload = () => {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high'
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       };
     } catch (error) {
-      console.log("[FAILED] processCamera MSG : ", error);
+      console.error("[FAILED] processCapture:", error);
       setIsResultMode(false);
       startCamera();
     } finally {
@@ -96,16 +111,14 @@ export default function MagicMirror() {
     }
   };
 
-  // 버튼 클릭 시 카운트다운 핸들러
   const handleMagicMirror = () => {
     if (isProcessing || count !== null) return;
-
-    setCount(3); // 3초 카운트다운 시작
-    const timer = setInterval(() => {
+    setCount(3);
+    timerRef.current = setInterval(() => {
       setCount((prev) => {
         if (prev <= 1) {
-          clearInterval(timer);
-          processCapture(); // 0초가 되면 캡처 실행
+          clearTimer();
+          processCapture();
           return null;
         }
         return prev - 1;
@@ -114,21 +127,26 @@ export default function MagicMirror() {
   };
 
   const handleMirrorClick = () => {
-    if (!isActive) {
-      startCamera();
-    } else {
+    if (isProcessing) return;
+    if (!isActive) startCamera();
+    else {
       stopCamera();
       setIsActive(false);
     }
   };
+
+  // 3. 렌더링 루프 최적화 (alpha: false)
   useEffect(() => {
     let videoId;
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    if (!canvas || !video) return;
+
+    const ctx = canvas.getContext("2d", { alpha: false });
+
     const renderFrame = () => {
       if (isResultMode) return;
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      if (video && canvas && video.readyState >= 2) {
-        const ctx = canvas.getContext("2d");
+      if (video.readyState >= 2) {
         if (canvas.width !== canvas.clientWidth) {
           canvas.width = canvas.clientWidth;
           canvas.height = canvas.clientHeight;
@@ -142,58 +160,57 @@ export default function MagicMirror() {
       videoId = requestAnimationFrame(renderFrame);
     };
 
-    if (isActive && !isResultMode) renderFrame();
-    return () => cancelAnimationFrame(videoId);
+    if (isActive && !isResultMode) videoId = requestAnimationFrame(renderFrame);
+    return () => {
+      cancelAnimationFrame(videoId);
+      clearTimer();
+    };
   }, [isActive, isResultMode]);
 
   useEffect(() => {
     return () => stopCamera();
-  }, []);
+  }, [stopCamera]);
 
   return (
-    <div className="flex items-center justify-center w-full h-full overflow-hidden gap-6 p-2">
+    <div className="flex items-center justify-center w-full h-full overflow-hidden gap-10">
+      {/* LEFT: Mirror Frame (기존 스타일 보존) */}
       <div
-        className="relative flex-shrink-0 w-8/12 h-full cursor-pointer transition-transform duration-500 hover:scale-[1.01]"
+        className="relative flex-shrink-0 w-8/12 h-full cursor-pointer transition-transform duration-500 hover:scale-[1.005]"
         onClick={handleMirrorClick}
       >
-        {/* 외부 영역: 깊이감 있는 브론즈 골드 프레임 디자인 */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#c4a484] via-[#8b5a2b] to-[#5d3a1a] rounded-2xl p-4 border-t-[4px] border-l-[4px] border-white/30">
-          {/* 프레임 내부 몰딩: 블랙 유광 포인트로 고급감 극대화 */}
           <div className="w-full h-full rounded-2xl border-[8px] border-[#2a1d13] bg-[#3d2b1f] p-3 shadow-[inset_0_4px_20px_rgba(0,0,0,0.8)] relative">
-            {/* 거울 유리창 영역 (내부 로직 유지) */}
-            <div className="relative w-full h-full overflow-hidden rounded-[24px] bg-slate-200 shadow-2xl">
+            <div className="relative w-full h-full overflow-hidden rounded-[24px] bg-[#222] shadow-2xl">
               <video ref={videoRef} autoPlay playsInline className="hidden" />
               <canvas
                 ref={canvasRef}
-                className={`w-full h-full object-cover transition-opacity duration-1000 ${
-                  isActive ? "opacity-100" : "opacity-0"
-                }`}
+                className={cn(
+                  "w-full h-full object-cover transition-opacity duration-1000",
+                  isActive ? "opacity-100" : "opacity-40",
+                )}
               />
 
-              {/* 1. 점선 가이드라인 */}
+              {/* Guide Area */}
               {isActive && !isResultMode && !count && !isProcessing && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <div className="w-72 h-72 border-4 border-dashed border-white/60 rounded-[100px] mb-8 mt-2 shadow-[0_0_30px_rgba(0,0,0,0.3)]" />
-                  <p className="bg-black/40 text-white px-8 py-2 rounded-full text-2xl font-black backdrop-blur-md border border-white/20">
-                    점선 안에 얼굴을 맞춰주세요
+                  <div className="w-72 h-72 border-2 border-dashed border-white/40 rounded-[100px] my-4 shadow-[0_0_40px_rgba(0,0,0,0.5)]" />
+                  <p className="bg-[#5d3a1a]/80 text-[#f5e6d3] px-8 py-2 rounded-full text-2xl font-bold backdrop-blur-sm border border-white/10">
+                    원 안에 얼굴을 맞춰주세요
                   </p>
                 </div>
               )}
 
-              {/* 2. 카운트다운 숫자 표시 */}
+              {/* Countdown & Effects */}
               {count !== null && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/10 z-20">
-                  <span className="text-[180px] font-black text-white drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] animate-ping">
+                <div className="absolute inset-0 flex items-center justify-center z-20">
+                  <span className="text-[200px] font-black text-[#f59e0b] drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)] animate-pulse">
                     {count}
                   </span>
                 </div>
               )}
-
-              {/* 3. 셔터 효과 (플래시) */}
               {isShutter && (
                 <div className="absolute inset-0 bg-white z-50 animate-in fade-in duration-75" />
               )}
-
               {!isActive && (
                 <div className="absolute inset-0 bg-gradient-to-tr from-blue-300 via-white to-blue-200 flex flex-col items-center justify-center p-4 text-center">
                   <Camera className="size-32 text-blue-400 mb-2 animate-bounce duration-800" />
@@ -206,85 +223,70 @@ export default function MagicMirror() {
               )}
 
               {isProcessing && (
-                <div className="absolute inset-0 bg-[#1a110a]/70 flex flex-col items-center justify-center z-40 backdrop-blur-md">
-                  <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent via-[#fbbf24] to-transparent shadow-[0_0_20px_#fbbf24] animate-scan" />
-                  <div className="text-center space-y-6">
-                    <p className="text-amber-200 text-5xl font-black tracking-tighter animate-pulse">
-                      마법의 시간이 흐르는 중...
-                    </p>
-                    <div className="flex justify-center gap-3">
-                      <span className="w-4 h-4 bg-amber-400 rounded-full animate-bounce delay-100" />
-                      <span className="w-4 h-4 bg-amber-500 rounded-full animate-bounce delay-200" />
-                      <span className="w-4 h-4 bg-amber-600 rounded-full animate-bounce delay-300" />
-                    </div>
-                  </div>
+                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-40 backdrop-blur-md">
+                  <div className="w-full h-[2px] bg-gradient-to-r from-transparent via-[#c4a484] to-transparent shadow-[0_0_15px_#c4a484] animate-scan absolute top-0" />
+                  <p className="text-[#c4a484] text-4xl font-black animate-pulse tracking-widest">
+                    분석 중...
+                  </p>
                 </div>
               )}
-
-              {/* 거울 표면 유리 반사 효과: 브론즈 톤에 맞춰 따뜻하게 조절 */}
-              <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/20 via-transparent to-[#8b5a2b]/10" />
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/10 via-transparent to-black/20" />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col w-4/12 h-full justify-center items-center px-2">
-        {!isActive ? (
-          <div className="flex flex-col items-center gap-6 text-center animate-in fade-in duration-700">
-            <div className="bg-amber-100 p-6 rounded-full">
-              <Sparkles className="size-16 text-amber-600" />
-            </div>
-            <div>
-              <h2 className="text-4xl font-black text-[#5d3a1a] mb-4 break-keep">
-                젊어지는 거울
-              </h2>
-              <p className="text-3xl text-stone-600 font-bold break-keep leading-relaxed">
-                왼쪽의 거울을 누르면
-                <br />
-                <span className="text-amber-700">마법</span>이 시작됩니다.
-              </p>
-            </div>
+      {/* RIGHT: Sophisticated UI Area (보완된 디자인) */}
+      <div className="w-4/12 h-full flex flex-col justify-between py-2">
+        {/* 상단: 타이틀 및 안내 섹션 */}
+        <div className="flex flex-col gap-6">
+          {/* 고급스러운 명판(Plaque) 스타일의 메시지 박스 */}
+          <div className="bg-[#fffdfa] border-2 border-[#e5e0d8] border-b-[6px] rounded-[2.5rem] p-10 shadow-md flex flex-col items-center text-center transition-all">
+            <p className="text-2xl font-bold text-[#5d3a1a]/70 leading-relaxed break-keep tracking-tight">
+              {isProcessing
+                ? "거울 속의 시간을\n거꾸로 돌리고 있습니다..."
+                : !isActive 
+                ? "왼쪽의 마법 거울을 터치하여\n새로운 나를 만나보세요."
+                : isResultMode
+                  ? "마법이 완성되었습니다.\n정말 멋진 모습이네요!"
+                  : "준비가 되셨다면 아래의\n젊어지기 버튼을 눌러주세요."
+              }
+            </p>
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-between text-center animate-in zoom-in-95 duration-500 gap-6 w-full h-full">
-            <div>
-              <h2 className="text-5xl font-extrabold text-slate-900 break-keep leading-snug">
-                {isResultMode && !isProcessing
-                  ? "와우! 정말 멋져요!"
-                  : count !== null
-                    ? "움직이지 마세요!"
-                    : isProcessing
-                      ? "젊어지는 중"
-                      : "가장 예쁜\n미소를 지어보세요"}
-              </h2>
-            </div>
+        </div>
 
-            <div className="flex flex-col w-full gap-4">
-              {!isResultMode && count === null && (
-                <button
-                  onClick={handleMagicMirror}
-                  disabled={isProcessing || count !== null}
-                  className={cn(
-                    "w-full py-10 rounded-2xl text-5xl font-black transition-all active:translate-y-2 active:shadow-none",
-                    "bg-amber-500 text-white border-b-8 border-amber-800",
-                  )}
-                >
-                  젊어지기
-                </button>
+        {/* 하단: 동작 버튼 섹션 */}
+        <div className="w-full flex flex-col gap-6">
+          {!isResultMode && count === null && (
+            <button
+              onClick={handleMagicMirror}
+              disabled={isProcessing || !isActive}
+              className={cn(
+                "w-full py-8 rounded-xl text-6xl font-black",
+                "flex flex-col items-center justify-center gap-2",
+                isActive
+                  ? "bg-amber-800 text-stone-100 border-b-[8px] border-stone-900 active:translate-y-2"
+                  : "bg-stone-300 text-stone-500 border-b-[8px] border-stone-400 cursor-not-allowed opacity-60",
               )}
+            >
+              <span>젊어지기</span>
+            </button>
+          )}
 
-              {isResultMode && !isProcessing && (
-                <button
-                  onClick={handleReset}
-                  className="w-full py-10 rounded-2xl text-5xl bg-indigo-600 text-white border-b-8 border-indigo-900 transition-all active:translate-y-1 active:shadow-none flex items-center justify-center gap-4"
-                >
-                  <RotateCcw className="size-10" />
-                  다시 찍기
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+          {isResultMode && !isProcessing && (
+            <button
+              onClick={handleReset}
+              className="w-full py-10 rounded-2xl text-5xl font-black bg-white text-stone-800 border-2 border-stone-800 border-b-[8px] border-stone-900 shadow-xl active:translate-y-2 group flex items-center justify-center gap-5"
+            >
+              <RotateCcw
+                size={48}
+                strokeWidth={4}
+                className="group-hover:rotate-[-45deg] transition-transform"
+              />
+              <span>다시 하기</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

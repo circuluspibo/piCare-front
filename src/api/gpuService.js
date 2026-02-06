@@ -83,7 +83,7 @@ export const postImg2Chat = async (file, systemPrompt, lang = "ko") => {
   formData.append("file", file);
   formData.append(
     "prompt",
-    "recognize this image as OCR, response only json like this, { 'result' : 'value'}",
+    "사진에 보이는 내 표정과 주변 환경을 먼저 구체적으로 설명하고, 그 내용을 바탕으로 JSON 형식으로만 답해줘: { 'result' : '답변' }",
   );
   formData.append("system", systemPrompt);
   formData.append("lang", lang);
