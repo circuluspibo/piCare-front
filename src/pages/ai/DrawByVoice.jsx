@@ -8,12 +8,35 @@ import useVoiceChat from "@/hooks/useVoiceChat";
 import { Paintbrush, RotateCcw, ChevronUp, ChevronDown } from "lucide-react";
 
 const SUBJECTS = [
-  "석양이 지는 바다",
-  "단풍 든 가을 산",
-  "눈 내린 작은 마을",
-  "활짝 핀 해바라기",
-  "숲속의 작은 오두막",
-  "보름달 뜬 밤하늘",
+  // --- 자연과 풍경 (기존 보완) ---
+  "석양이 지는 붉은 바다와 수평선",
+  "단풍 든 가을 산과 노란 들판",
+  "눈 내린 작은 마을과 굴뚝 연기",
+  "보름달이 뜬 푸른 밤하늘과 별",
+  
+  // --- 꽃과 식물 (구체적 형태) ---
+  "들판에 활짝 핀 노란 해바라기",
+  "화분에 담긴 분홍색 장미 꽃바구니",
+  "초록색 잎이 무성한 커다란 선인장",
+  "연못 위에 떠 있는 커다란 연꽃",
+
+  // --- 동물 (움직임이 명확한) ---
+  "풀밭 위에서 뛰노는 하얀 강아지",
+  "지붕 위에서 잠을 자는 줄무늬 고양이",
+  "푸른 하늘을 날아가는 커다란 독수리",
+  "강가에서 헤엄치는 노란색 새끼 오리",
+
+  // --- 정물과 음식 (형태가 뚜렷함) ---
+  "바구니에 담긴 빨간 사과와 과일들",
+  "식탁 위에 놓인 따뜻한 김이 나는 커피",
+  "창가 옆에 놓인 여러 권의 두꺼운 책",
+  "화려한 색깔의 3단 생일 케이크",
+
+  // --- 동화적 풍경 (모델이 좋아하는 주제) ---
+  "숲속의 작은 나무 오두막과 오솔길",
+  "구름 위에 떠 있는 화려한 무지개",
+  "바닷속을 헤엄치는 커다란 고래",
+  "꽃밭 사이를 날아다니는 알록달록한 나비"
 ];
 
 export default function DrawByVoice() {
@@ -248,8 +271,9 @@ export default function DrawByVoice() {
         <div className="text-center py-6 px-4 flex flex-col items-center gap-4">
           <ThreeDot variant="bounce" color="#2563eb" size="medium" />
           <p className="text-3xl font-black text-slate-800 break-keep">
-            AI 화가가 <span className="text-blue-600">"{activePrompt}"</span>
-            <br />를 열심히 그리고 있어요!
+            AI 화가가 <br/>
+            <span className="text-blue-600">"{activePrompt}"를</span>
+            <br />열심히 그리고 있어요!
           </p>
         </div>
       </Dialog>

@@ -15,11 +15,12 @@ export const GlobalContext = createContext({
   personaVoice: 0,
   sId: "",
   humanInfo: null,
+  isGpuLocked: false,
   updatePersona: () => {},
   updateHumanInfo: () => {},
+  setIsGpuLocked: () => {},
 });
 
-// Provider 컴포넌트 생성 (오타 수정됨)
 export const GlobalContextProvider = ({ children }) => {
   const [personaId, setPersonaId] = useState(DEFAULT.id);
   const [currentLang, setCurrentLang] = useState("ko");
@@ -28,6 +29,8 @@ export const GlobalContextProvider = ({ children }) => {
   const [humanInfo, setHumanInfo] = useState(null)
   const timerRef = useRef(null);
 
+  // GPU 관리 
+  const [isGpuLocked, setIsGpuLocked] = useState(false);
   // 타이머를 리셋하고 5분 뒤에 sid를 새로 발급하는 함수
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -79,6 +82,8 @@ export const GlobalContextProvider = ({ children }) => {
     sId,
     updatePersona,
     updateHumanInfo,
+    isGpuLocked,
+    setIsGpuLocked,
   };
 
   return (

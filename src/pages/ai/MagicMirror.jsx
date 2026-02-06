@@ -73,6 +73,13 @@ export default function MagicMirror() {
       const blob = await new Promise((resolve) =>
         canvas.toBlob(resolve, "image/jpeg"),
       );
+
+      // image debug 용
+      // const link = document.createElement('a');
+      // link.href = URL.createObjectURL(blob);
+      // link.download = `test_${Date.now()}.jpg`;
+      // link.click();
+      
       const file = new File([blob], "mirror.jpg", { type: "image/jpeg" });
       const gender = human.gender === "M" ? "man" : "woman";
       const systemPrompt = `(Solo:1.5), ${human.age} ${gender}, (neutral facial bone structure:1.4), 10 year younger version of this ${gender}, clear skin texture, natural lighting, high quality, photorealistic, sharp focus`;

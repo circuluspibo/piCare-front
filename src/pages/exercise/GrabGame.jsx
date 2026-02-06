@@ -5,8 +5,11 @@ export default function GrabGame() {
   // 엔진 상태 구독
   const { state } = useOutletContext();
   const { target, lastResult, totalScores } = state;
-  const currentCount = totalScores.length; // 시도 횟수를 인덱스로 활용
 
+  const isShowingResult = lastResult.target !== null;
+  const currentCount = isShowingResult 
+    ? totalScores.length - 1 
+    : totalScores.length;
   const BASE_IMAGE_PATH = "/images/exercise";
   const fruits = [
     "cherries",

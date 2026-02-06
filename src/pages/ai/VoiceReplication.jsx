@@ -86,7 +86,7 @@ export default function VoiceReplication() {
             type: "audio/wav",
           });
           const sourceBlob = await getTtsBlob(currentScript, targetVoice);
-          const response = await postVoice2Wav(sourceBlob, targetBlob);
+          const response = await postVoice2Wav(targetBlob, sourceBlob);
 
           setResultAudio(response);
           setStage("result");

@@ -1,17 +1,15 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useContext } from "react";
 
 import {
   getHeartbeat,
   getStartCollection,
   getStopCollection,
 } from "@/api/npuService";
-
 import { postImg2Chat } from "@/api/gpuService";
-
 import { PERSONA_SYSTEMS } from "@/utils/PersonaSystem";
+import { GlobalContext } from "@/contexts/GlobalContext";
 
 const AI_INTERVAL = 1000 * 120;
-
 const HB_INTERVAL = 1000 * 90;
 
 export function useMainLogic({
@@ -20,49 +18,37 @@ export function useMainLogic({
   compareAndLog,
   sendMessage,
 }) {
+  const { isGpuLocked, setIsGpuLocked } = useContext(GlobalContext)
+  
   const [humidity, setHumidity] = useState(0);
-
   const [temperature, setTemperature] = useState(0);
-
   const [air, setAir] = useState("");
-
   const [isAutoMode, setIsAutoMode] = useState(false);
-
   const [showVideoFeed, setShowVideoFeed] = useState(false);
-
   const [isProcessing, setIsProcessing] = useState(false);
-
   const videoRef = useRef(null);
-
   const activeLocks = useRef(new Set());
-
   const isEngineRunning = useRef(false);
-
   const isTransitioning = useRef(false);
-
   const processingRef = useRef(false);
-
   const loopActiveRef = useRef(false);
-  // [엔진 제어 통합 함수] - 기존 로직 유지
 
   const controlEngine = useCallback(async (lockId, action) => {
     if (action === "START") {
       activeLocks.current.add(lockId);
 
       if (isEngineRunning.current || isTransitioning.current) return true;
-
       isTransitioning.current = true;
 
       try {
         await getStartCollection();
-
         isEngineRunning.current = true;
-
         console.log(`[Engine] >>> START by ${lockId}`);
-
         return true;
+
       } catch (e) {
         return false;
+
       } finally {
         isTransitioning.current = false;
       }
@@ -78,10 +64,9 @@ export function useMainLogic({
 
         try {
           await getStopCollection();
-
           isEngineRunning.current = false;
-
           console.log(`[Engine] <<< STOP by ${lockId}`);
+
         } finally {
           isTransitioning.current = false;
         }
@@ -90,15 +75,14 @@ export function useMainLogic({
   }, []);
 
   // 1. 하트비트 (기존 루프 방지 로직 유지)
-
   useEffect(() => {
     const fetchHB = async () => {
       const isFirstLock = activeLocks.current.size === 0;
 
       if (isFirstLock) {
         await controlEngine("HB", "START");
-
         await new Promise((r) => setTimeout(r, 1500));
+
       } else {
         activeLocks.current.add("HB");
       }
@@ -107,25 +91,19 @@ export function useMainLogic({
         const { data } = await getHeartbeat();
 
         setHumidity(parseFloat(data.env.humidity || 0).toFixed(1));
-
         setTemperature(parseFloat(data.env.temp || 0).toFixed(1));
-
         setAir(data.env.air);
-
         updateHumanInfo(data.human);
-
         compareAndLog(data);
+
       } finally {
         await controlEngine("HB", "STOP");
       }
     };
 
     const timer = setInterval(fetchHB, HB_INTERVAL);
-
     fetchHB();
-
     return () => clearInterval(timer);
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -150,8 +128,15 @@ export function useMainLogic({
 
   // 3. AI 자동 캡처 (요구하신 대로 엔진 제어 없이 독립 실행)
 const runAutoCapture = useCallback(async () => {
+    
+    if (isGpuLocked || processingRef.current) {
+      console.log("[Skip] GPU가 바빠서 자동 캡처를 건너뜁니다.");
+      return;
+    }
+
     if (processingRef.current) return;
     processingRef.current = true;
+    setIsGpuLocked(true); // GPU 잠금 시작
     setIsProcessing(true);
 
     try {
@@ -178,6 +163,11 @@ const runAutoCapture = useCallback(async () => {
       ctx.drawImage(video, 0, 0, 320, 240);
       
       const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg"));
+      // Debug용
+      // const link = document.createElement('a');
+      // link.href = URL.createObjectURL(blob);
+      // link.download = `test_${Date.now()}.jpg`;
+      // link.click();용
       
       // (기존 코드와 동일)
       const response = await postImg2Chat(new File([blob], "ai.jpg"), PERSONA_SYSTEMS[personaId]);
@@ -186,12 +176,13 @@ const runAutoCapture = useCallback(async () => {
       const result = match ? JSON.parse(match[0].replace(/'/g, '"')).result : rawText;
 
       if (result) {
-        await sendMessage("", result);
+        await sendMessage("", result, true);
       }
       
     } catch (e) {
       console.error("AI Error:", e);
     } finally {
+      setIsGpuLocked(false); // GPU 잠금 해제
       setIsProcessing(false);
       processingRef.current = false;
     }
@@ -260,7 +251,6 @@ useEffect(() => {
     air,
     isAutoMode,
     setIsAutoMode,
-
     showVideoFeed,
     toggleVideoFeed,
     videoRef,

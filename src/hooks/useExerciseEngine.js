@@ -37,23 +37,40 @@ export function useExerciseEngine(gameMode) {
     stateRef.current = state;
   }, [state]);
 
-  const audios = useMemo(() => {
-    const pass = new Audio("/sound/pass.mp3");
-    const fail = new Audio("/sound/fail.mp3");
-    const music = new Audio("/sound/exercise.mp3");
-    music.volume = 0.5;
-    music.loop = true;
+const audios = useMemo(() => {
+  const pass = new Audio("/sound/pass.mp3");
+  const fail = new Audio("/sound/fail.mp3");
+  const music = new Audio("/sound/exercise.mp3");
+  music.volume = 0.5;
+  music.loop = true;
 
-    const safeStopMusic = () => {
-      music.pause();
-      if (music.readyState >= 1) {
-        // 메타데이터가 로드된 상태에서만 시간 조작
-        music.currentTime = 0;
-      }
-    };
+  // 단순 정지용
+  const safeStopMusic = () => {
+    music.pause();
+    if (music.readyState >= 1) music.currentTime = 0;
+  };
 
-    return { pass, fail, music, safeStopMusic };
-  }, []);
+  // [개선] 메모리 해제 및 완전 파괴용
+  const destroy = () => {
+    [pass, fail, music].forEach((audio) => {
+      audio.pause();
+      audio.src = ""; // 소스 연결 해제
+      audio.load();   // 리소스 해제 강제
+    });
+    console.log("[Cleanup] Audio objects destroyed");
+  };
+
+  return { pass, fail, music, safeStopMusic, destroy };
+}, []);
+// 마스터 클리너
+useEffect(() => {
+  return () => {
+
+    audios.destroy();
+    if (intvRef.current) clearInterval(intvRef.current);
+  };
+}, [audios]);
+
 
   // 문제 생성
   const startNextTrial = useCallback(() => {
@@ -252,10 +269,32 @@ export function useExerciseEngine(gameMode) {
     initEngine();
 
     return () => {
-      isAlive = false;
-      camera?.stop();
-      instance?.close();
-      if (intvRef.current) clearInterval(intvRef.current);
+      isAlive = false; // 1. 더 이상 결과 콜백이 실행되지 않도록 차단
+
+      // 2. 카메라 중지 (웹캠 점유 해제)
+      if (camera) {
+        camera.stop();
+        console.log(`[Cleanup] Camera Stopped (${gameMode})`);
+      }
+
+      // 3. MediaPipe 인스턴스 파괴 (GPU 자원 반납)
+      if (instance) {
+        instance.close(); 
+        console.log(`[Cleanup] MediaPipe Instance Closed (${gameMode})`);
+      }
+
+      // 4. 비디오 트랙 강제 종료 (브라우저 상단 녹화 중 표시 제거)
+      if (videoRef.current && videoRef.current.srcObject) {
+        const tracks = videoRef.current.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
+
+      // 5. 캔버스 잔상 제거
+      if (canvasRef.current) {
+        const ctx = canvasRef.current.getContext("2d");
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
     };
   }, [gameMode, state.isStart]);
 
