@@ -5,38 +5,39 @@ import Dialog from "@/components/Dialog";
 import { ThreeDot } from "react-loading-indicators";
 import { getPrepare, postTxt2Img } from "@/api/gpuService";
 import useVoiceChat from "@/hooks/useVoiceChat";
-import { Paintbrush, RotateCcw, ChevronUp, ChevronDown } from "lucide-react";
+import { Paintbrush, ChevronUp, ChevronDown, Trash } from "lucide-react";
 
 const SUBJECTS = [
-  // --- 자연과 풍경 (기존 보완) ---
-  "석양이 지는 붉은 바다와 수평선",
-  "단풍 든 가을 산과 노란 들판",
-  "눈 내린 작은 마을과 굴뚝 연기",
-  "보름달이 뜬 푸른 밤하늘과 별",
-  
-  // --- 꽃과 식물 (구체적 형태) ---
-  "들판에 활짝 핀 노란 해바라기",
-  "화분에 담긴 분홍색 장미 꽃바구니",
-  "초록색 잎이 무성한 커다란 선인장",
-  "연못 위에 떠 있는 커다란 연꽃",
+  // --- 동물 ---
+  "귀여운 강아지",
+  "잠자는 고양이",
+  "노란색 새끼 오리",
+  "커다란 코끼리",
+  "알록달록 앵무새",
 
-  // --- 동물 (움직임이 명확한) ---
-  "풀밭 위에서 뛰노는 하얀 강아지",
-  "지붕 위에서 잠을 자는 줄무늬 고양이",
-  "푸른 하늘을 날아가는 커다란 독수리",
-  "강가에서 헤엄치는 노란색 새끼 오리",
+  // --- 식물 ---
+  "노란 해바라기",
+  "빨간 장미꽃",
+  "초록색 선인장",
+  "커다란 나무",
 
-  // --- 정물과 음식 (형태가 뚜렷함) ---
-  "바구니에 담긴 빨간 사과와 과일들",
-  "식탁 위에 놓인 따뜻한 김이 나는 커피",
-  "창가 옆에 놓인 여러 권의 두꺼운 책",
-  "화려한 색깔의 3단 생일 케이크",
+  // --- 음식 ---
+  "빨간 사과",
+  "맛있는 수박",
+  "생일 케이크",
+  "노란 바나나",
 
-  // --- 동화적 풍경 (모델이 좋아하는 주제) ---
-  "숲속의 작은 나무 오두막과 오솔길",
-  "구름 위에 떠 있는 화려한 무지개",
-  "바닷속을 헤엄치는 커다란 고래",
-  "꽃밭 사이를 날아다니는 알록달록한 나비"
+  // --- 자연 ---
+  "둥근 아침 해",
+  "예쁜 무지개",
+  "밤하늘 달과 별",
+  "푸른 바다",
+
+  // --- 사물/기타 ---
+  "알록달록 우산",
+  "하늘 위 비행기",
+  "웃는 얼굴",
+  "우리집 화분",
 ];
 
 export default function DrawByVoice() {
@@ -181,10 +182,7 @@ export default function DrawByVoice() {
           />
         </div>
       </div>
-
-      <div className="w-1/3 flex flex-col gap-2 h-full">
-        {/** SECTION: 화풍선택 및 도구 */}
-        <div className="h-20 grid grid-cols-4 gap-2 shrink-0">
+      {/* <div className="h-20 grid grid-cols-4 gap-2 shrink-0">
           <button
             onClick={() =>
               ctxRef.current.clearRect(
@@ -214,21 +212,22 @@ export default function DrawByVoice() {
               </button>
             ))}
           </div>
-        </div>
-
-        {/* SECTION: 주제 선택 화면 */}
-        <div className="flex-[2.5] bg-white flex flex-col overflow-hidden rounded-xl shadow-sm border border-slate-100">
+        </div> */}
+      <div className="w-1/3 flex flex-col gap-3 h-full">
+        {/* 1. 주제 선택 섹션 (높이 비중 확대) */}
+        <div className="flex-[3] bg-white flex flex-col overflow-hidden rounded-[2rem] shadow-lg border-2 border-amber-50">
           <button
             onClick={() =>
               setSubjectIdx((p) => (p > 0 ? p - 1 : SUBJECTS.length - 1))
             }
-            className="h-14 flex items-center justify-center text-slate-500 hover:bg-slate-50 shrink-0"
+            className="h-10 flex items-center justify-center text-slate-300 hover:text-amber-500 hover:bg-amber-50 active:bg-amber-100 transition-all shrink-0"
           >
-            <ChevronUp size={44} strokeWidth={3} />
+            <ChevronUp size={48} strokeWidth={4} />
           </button>
-          <div className="flex-1 flex flex-col items-center justify-center px-4 text-center">
-            <div className="bg-blue-50 px-3 py-1 rounded-full mb-2">
-              <span className="text-xl font-black text-blue-500 uppercase">
+
+          <div className="flex-1 flex flex-col items-center justify-center px-2 text-center">
+            <div className="bg-amber-100 px-2 py-1 rounded-full mb-2 shadow-sm">
+              <span className="text-xl font-black text-amber-600 uppercase tracking-widest">
                 추천 주제
               </span>
             </div>
@@ -236,34 +235,56 @@ export default function DrawByVoice() {
               {SUBJECTS[subjectIdx]}
             </p>
           </div>
+
           <button
             onClick={() =>
               setSubjectIdx((p) => (p < SUBJECTS.length - 1 ? p + 1 : 0))
             }
-            className="h-14 flex items-center justify-center text-slate-500 hover:bg-slate-50 shrink-0"
+            className="h-10 flex items-center justify-center text-slate-300 hover:text-amber-500 hover:bg-amber-50 active:bg-amber-100 transition-all shrink-0"
           >
-            <ChevronDown size={44} strokeWidth={3} />
+            <ChevronDown size={48} strokeWidth={4} />
           </button>
         </div>
 
-        {/* SECTION: 동작 버튼 */}
-        <div className="flex-1 flex gap-2 shrink-0">
-          <div className="flex-1 flex justify-center">
-            <MicToggleButton
-              onStart={handleStartRecording}
-              onStop={handleStopRecording}
-              isListening={isRecording}
-              micText="text-4xl"
-              iconSize="size-12"
-            />
+        {/* 2. 동작 버튼 섹션 (마이크 + 실행 버튼) */}
+        <div className="flex-[1.5] flex flex-col gap-3">
+          {/* 마이크 영역: 중앙 정렬 및 여백 확보 */}
+
+          <MicToggleButton
+            onStart={handleStartRecording}
+            onStop={handleStopRecording}
+            isListening={isRecording}
+            micText="text-4xl"
+            iconSize="size-16"
+          />
+
+          {/* 지우기 & 그리기 버튼 그룹 */}
+          <div className="h-20 flex gap-3">
+            {/* 지우기 버튼: 아이콘을 강조한 정사각형 형태 */}
+            <button
+              onClick={() =>
+                ctxRef.current.clearRect(
+                  0,
+                  0,
+                  canvasRef.current.width,
+                  canvasRef.current.height,
+                )
+              }
+              className="w-28 bg-rose-50 rounded-xl border-b-[8px] border-rose-200 flex items-center justify-center text-rose-500 active:translate-y-1 active:border-b-0 transition-all shadow-sm hover:bg-rose-100"
+              title="전체 지우기"
+            >
+              <Trash size={44} strokeWidth={3} />
+            </button>
+
+            {/* 그리기 버튼: 메인 액션 버튼으로 가장 크게 강조 */}
+            <button
+              onClick={handleManualGenerate}
+              className="flex-1 bg-emerald-600 border-b-[8px] border-emerald-800 text-white rounded-xl flex items-center justify-center gap-2 active:translate-y-1 active:border-b-0 transition-all shadow-xl hover:bg-emerald-500"
+            >
+              <Paintbrush size={44} />
+              <span className="text-4xl font-black">그리기</span>
+            </button>
           </div>
-          <button
-            onClick={handleManualGenerate}
-            className="flex-1 bg-blue-600 border-b-[8px] border-blue-800 text-white rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg"
-          >
-            <Paintbrush size={40} />
-            <span className="text-4xl font-black">그리기</span>
-          </button>
         </div>
       </div>
 
@@ -271,9 +292,10 @@ export default function DrawByVoice() {
         <div className="text-center py-6 px-4 flex flex-col items-center gap-4">
           <ThreeDot variant="bounce" color="#2563eb" size="medium" />
           <p className="text-3xl font-black text-slate-800 break-keep">
-            AI 화가가 <br/>
+            AI 화가가 <br />
             <span className="text-blue-600">"{activePrompt}"를</span>
-            <br />열심히 그리고 있어요!
+            <br />
+            열심히 그리고 있어요!
           </p>
         </div>
       </Dialog>
