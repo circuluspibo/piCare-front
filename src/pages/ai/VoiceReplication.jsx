@@ -2,8 +2,7 @@ import React, { useState, useRef, useContext, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
-import { ThreeDot } from "react-loading-indicators";
-import { RotateCcw, Mic, PlayCircle, Info, Headphones } from "lucide-react";
+import { RotateCcw, Headphones } from "lucide-react";
 import { postVoice2Wav } from "@/api/gpuService";
 import { getTtsBlob } from "@/api/cpuService";
 import { GlobalContext } from "@/contexts/GlobalContext";
@@ -104,20 +103,20 @@ export default function VoiceReplication() {
   };
   useEffect(() => {
     let playTimer;
-    if(resultAudio && stage === 'result' && audioRef.current) {
+    if (resultAudio && stage === "result" && audioRef.current) {
       playTimer = setTimeout(() => {
         setIsPlaying(true);
 
         audioRef.current.play().catch((error) => {
-          console.log('자동 재생이 차단되었습니다.', error);
-          setIsPlaying(false)
+          console.log("자동 재생이 차단되었습니다.", error);
+          setIsPlaying(false);
         });
-      }, 800)
+      }, 800);
     }
     return () => {
-      if(playTimer) clearTimeout(playTimer)
-    }
-  }, [resultAudio, stage])
+      if (playTimer) clearTimeout(playTimer);
+    };
+  }, [resultAudio, stage]);
   const renderKaraokeText = (script, hIndex) => {
     let charCounter = 0; // 전체 글자 순서를 추적하기 위한 카운터
 
@@ -280,21 +279,26 @@ export default function VoiceReplication() {
       />
       {/* Loading Dialog */}
       <Dialog isOpen={stage === "loading"} onClose={() => {}} title="">
-        <div className="px-10 py-4 flex flex-col items-center gap-6">
-          <div className="flex items-center">
+        <div className="py-6 flex flex-col items-center gap-3">
+          {/* 로봇 이미지 섹션: 부드러운 둥둥 뜨기 효과 */}
+          <div className="relative flex items-center justify-center">
+            {/* 바닥 그림자: 로봇이 뜰 때 같이 변하게 하면 입체감이 살아납니다 */}
             <img
               src="/images/robotThinking.png"
-              alt="robot"
-              className={cn(
-                "w-36 h-36 object-contain transition-transform duration-500",
-                stage === "recording" && "scale-110",
-              )}
+              alt="thinking robot"
+              className="w-52 h-52 object-contain animate-bounce relative z-10 duration-800"
             />
-            <ThreeDot color="#0891b2" size="large" />
           </div>
-          <p className="text-4xl font-black text-cyan-900 text-center leading-tight break-keep">
-            잠시만 기다려주세요!
-          </p>
+
+          {/* 텍스트 섹션: 가독성 극대화 */}
+          <div className="flex flex-col gap-4 items-center">
+            <h3 className="text-4xl font-black text-slate-800 text-center leading-tight break-keep">
+              로봇이 목소리를 열심히 배우고 있어요
+            </h3>
+            <p className="text-2xl font-bold text-cyan-600 animate-pulse tracking-widest">
+              잠시만 기다려주세요...
+            </p>
+          </div>
         </div>
       </Dialog>
     </div>
