@@ -30,26 +30,25 @@ export const useHaniOCR = () => {
             .then((meta) => meta.labels),
         ]);
 
-        const probs = tf.tidy(() => {
-          let tensor = tf.browser.fromPixels(canvas);
-          tensor = tf.image.resizeBilinear(tensor, [224, 224]);
-          const normalized = tensor.toFloat().div(tf.scalar(255)).expandDims(0);
-          return model.predict(normalized).dataSync();
+        const predictedLabel = tf.tidy(() => {
+          const tensor = tf.browser.fromPixels(canvas);
+          const normalized = tf.image
+            .resizeBilinear(tensor, [224, 224])
+            .toFloat()
+            .div(tf.scalar(255))
+            .expandDims(0);
+
+          const prediction = model.predict(normalized);
+          const data = prediction.dataSync();
+          // 가장 큰 값의 인덱스 찾기
+          const maxIndex = data.indexOf(Math.max(...data));
+          return labels[maxIndex];
         });
 
-        // ✅ 확률이 높은 순서대로 인덱스 정렬
-        const rankedIndices = Array.from(probs)
-          .map((p, i) => ({ index: i, probability: p }))
-          .sort((a, b) => b.probability - a.probability);
-
-        // ✅ 상위 3개의 라벨만 추출해서 배열로 반환
-        const topKLabels = rankedIndices
-          .slice(0, 3)
-          .map((item) => labels[item.index]);
-        return topKLabels; // ["ㅏ", "ㅑ", "ㅓ"] 형태
+        return String(predictedLabel).trim(); // ✅ 확실하게 공백 제거된 문자열 반환
       } catch (error) {
         console.error(error);
-        return [];
+        return "";
       } finally {
         setIsPredicting(false);
       }
