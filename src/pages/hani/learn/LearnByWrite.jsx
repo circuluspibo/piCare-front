@@ -116,11 +116,12 @@ const LearnByWrite = ({
         await worker.terminate();
       }
 
+      const isCorrect = recognizedText.trim() === item.letter.trim();
       // 결과 제출 (백엔드 페이로드 구조)
       await handleAnswer({
         user: recognizedText || "미인식",
         correct: item.letter,
-        isCorrect: recognizedText === item.letter,
+        isCorrect: isCorrect,
         responseTime: 0,
         concentration: {
           level: "high",
