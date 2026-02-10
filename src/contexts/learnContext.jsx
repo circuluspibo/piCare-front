@@ -4,7 +4,7 @@ import {
   useSessionQuery,
   useUpdateProgressMutation,
   usePostAttemptMutation,
-  usePostStartSessionMutation, // startSession API를 호출하는 훅 (추가 필요)
+  usePostStartSessionMutation,
 } from "@/hooks/useHaniQuery";
 import { METHODS, TARGETS } from "@/utils/haniUtil";
 import {
@@ -15,15 +15,16 @@ import {
   useMemo,
   useState,
 } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 export const CHARACTER = "691a6d43eb6b241816a865d1";
 const LearnContext = createContext(null);
 
 export const LearnProvider = ({ children }) => {
   const { character, chapter, method } = useParams();
+  const navigate = useNavigate();
   const [openContentList, setOpenContentList] = useState(false);
-  const [sessionId, setSessionId] = useState(null); // 현재 활성화된 세션 ID 상태
+  const [sessionId, setSessionId] = useState(null);
 
   // 1️⃣ 데이터 쿼리
   const { curriculumData, isCurriculumLoading } = useCurriculumQuery(CHARACTER);
@@ -34,7 +35,7 @@ export const LearnProvider = ({ children }) => {
     method,
   );
 
-  // 2️⃣ 세션 조회 쿼리
+  // 2️⃣ 세션 조회 쿼리 (refetchSession은 여기서 나옵니다)
   const {
     data: sessionData,
     isLoading: isSessionLoading,
@@ -49,25 +50,21 @@ export const LearnProvider = ({ children }) => {
   // 3️⃣ Mutation 훅들
   const { mutateAsync: submitAttempt, isPending: isAttemptPending } =
     usePostAttemptMutation();
-  const { mutateAsync: startSession } = usePostStartSessionMutation(); // 신규 세션 생성 훅
+  const { mutateAsync: startSession } = usePostStartSessionMutation();
   const { updateProgress } = useUpdateProgressMutation();
 
-  // 4️⃣ [핵심] 세션 초기화 로직 (조회 후 없으면 생성)
+  // 4️⃣ 세션 초기화 로직
   useEffect(() => {
-    // 컨텐츠 정보나 초기 세션 조회 로딩 중이면 대기
     if (isDataLoading || isSessionLoading || !contentData) return;
 
     const initializeSession = async () => {
-      // (1) 서버에 활성화된 세션이 있는 경우 (복구)
       if (sessionData?.active) {
         setSessionId(sessionData.session._id);
         return;
       }
 
-      // (2) 활성 세션이 없고, 현재 세션 ID가 아직 없을 때만 생성 (중복 생성 방지)
       if (sessionData && !sessionData.active && !sessionId) {
         try {
-          // 기기 정보 수집
           const device = {
             userAgent: navigator.userAgent,
             locale: navigator.language,
@@ -78,7 +75,6 @@ export const LearnProvider = ({ children }) => {
             },
           };
 
-          // IP 및 위치 정보 (간소화된 방식)
           let geoData = {};
           try {
             const res = await fetch("https://ipapi.co/json/");
@@ -109,7 +105,7 @@ export const LearnProvider = ({ children }) => {
 
           if (started?.sessionId) {
             setSessionId(started.sessionId);
-            refetchSession(); // 쿼리 캐시 갱신
+            await refetchSession();
           }
         } catch (error) {
           console.error("세션 생성 중 오류:", error);
@@ -118,7 +114,18 @@ export const LearnProvider = ({ children }) => {
     };
 
     initializeSession();
-  }, [sessionData, isSessionLoading, isDataLoading, contentData, sessionId]);
+  }, [
+    sessionData,
+    isSessionLoading,
+    isDataLoading,
+    contentData,
+    sessionId,
+    character,
+    chapter,
+    method,
+    startSession,
+    refetchSession,
+  ]);
 
   // 5️⃣ 세션 기반 상태 계산
   const activeSession = sessionData?.active ? sessionData.session : null;
@@ -129,7 +136,6 @@ export const LearnProvider = ({ children }) => {
   const contentFrom = contentData?.contents;
   const item = contentFrom?.[currentItemIdx];
 
-  // 커리큘럼 기반 전체 학습 리스트 생성
   const learningList = useMemo(() => {
     if (!curriculumData) return [];
     return curriculumData.flatMap((ch) =>
@@ -141,7 +147,6 @@ export const LearnProvider = ({ children }) => {
     );
   }, [curriculumData]);
 
-  // 다음 단계 정보를 계산하는 함수
   const getNextStep = useCallback(() => {
     if (!learningList.length || !contentData?.target) return null;
 
@@ -198,14 +203,22 @@ export const LearnProvider = ({ children }) => {
   );
 
   const handleContentSelect = useCallback(
-    (index) => {
+    async (index) => {
       const targetItem = contentFrom?.[index];
       if (sessionId && targetItem) {
-        updateProgress({ sessionId, item: targetItem, method });
+        await updateProgress({ sessionId, item: targetItem, method });
+        await refetchSession(); // 인덱스 강제 변경 후 동기화
       }
       handleContentListClose();
     },
-    [contentFrom, sessionId, method, updateProgress, handleContentListClose],
+    [
+      contentFrom,
+      sessionId,
+      method,
+      updateProgress,
+      handleContentListClose,
+      refetchSession,
+    ],
   );
 
   const getMethodData = useCallback(
@@ -219,7 +232,7 @@ export const LearnProvider = ({ children }) => {
     [curriculumData],
   );
 
-  // 정답 전송 및 결과 처리
+  // [중요] 정답 전송 후 즉시 다음 문제로 넘기는 핵심 로직
   const sendAnswer = useCallback(
     async (answer) => {
       if (!sessionId || isAttemptPending) return;
@@ -243,11 +256,22 @@ export const LearnProvider = ({ children }) => {
       };
 
       try {
+        // 1. 서버에 답안 기록
         const response = await submitAttempt(payload);
-        if (response.session?.status === "ended") {
+
+        // 2. 서버 DB가 변경되었으므로 클라이언트의 세션 데이터를 다시 가져옴 (이게 실행되어야 화면이 바뀜)
+        await refetchSession();
+
+        // 3. 학습 종료 시 다음 단계 이동
+        if (
+          response.session?.status === "ended" ||
+          response.status === "ended"
+        ) {
           const nextStepInfo = getNextStep();
-          // TODO: 여기서 결과 모달을 띄우는 이벤트를 발행하거나 상태를 업데이트합니다.
           console.log("학습 종료:", nextStepInfo);
+          if (nextStepInfo?.next) {
+            navigate(nextStepInfo.next);
+          }
         }
       } catch (error) {
         console.error("답안 전송 에러:", error);
@@ -266,6 +290,8 @@ export const LearnProvider = ({ children }) => {
       currentLearningCnt,
       getNextStep,
       submitAttempt,
+      refetchSession,
+      navigate,
     ],
   );
 

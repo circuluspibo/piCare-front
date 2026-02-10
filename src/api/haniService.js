@@ -61,7 +61,7 @@ const encodeGetParams = (p) =>
     .join("&");
 
 export const getAsset = ({ type, content }) => {
-  return type && content
+  return type
     ? `${API_URL}/asset?${encodeGetParams({ type, content })}`
     : `${API_URL}/asset?${encodeGetParams({ content })}`;
 };

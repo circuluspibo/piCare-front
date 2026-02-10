@@ -55,7 +55,7 @@ export default function Learn() {
           {method === "listen" && <LearnByListen {...commonProps} />}
           {method === "speak" && <LearnBySpeak {...commonProps} />}
           {/** TODO: Write에 맞는 OCR 모델 변경 필요할듯 */}
-          {/* {method === "write" && <LearnByWrite {...commonProps} />} */}
+          {method === "write" && <LearnByWrite {...commonProps} />}
         </>
       )}
     </>

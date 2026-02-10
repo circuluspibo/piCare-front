@@ -1,52 +1,52 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useRef, useState, useEffect } from "react";
-import { Loader2Icon, Eraser, Lightbulb, CheckCircle2 } from "lucide-react";
-import { JOSA } from "@/utils/haniUtil";
+import { createWorker } from "tesseract.js";
+import { Loader2Icon } from "lucide-react";
 import { getAsset } from "@/api/haniService";
-import { useIntegratedMonitor } from "@/hooks/useIntegratedMonitor";
+import { JOSA } from "@/utils/haniUtil";
+import { useHaniOCR } from "@/hooks/useHaniOCR";
+
+const TM_INPUT_SIZE = 224;
+const USE_TF_FOR = new Set(["vowel", "consonant"]);
 
 const LearnByWrite = ({
   item,
   target,
   handleAnswer,
   currentItemIdx,
-  currentLearningCount,
+  currentLearningCnt,
 }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [hint, setHint] = useState(true);
   const [busy, setBusy] = useState(false);
 
+  // 훅에서 비즈니스 로직 가져오기
+  const { runInference, isPredicting } = useHaniOCR();
+
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const parentRef = useRef(null);
 
-  const { startQuestion, submitAnswer } = useIntegratedMonitor();
-
-  // 1️⃣ 캔버스 초기화 및 설정
+  console.log("item = ", item);
+  // 캔버스 초기 설정
   useEffect(() => {
-    startQuestion();
     const canvas = canvasRef.current;
+    if (!canvas || !parentRef.current) return;
+
     canvas.width = parentRef.current.clientWidth;
     canvas.height = parentRef.current.clientHeight;
-    const ctx = canvas.getContext("2d");
+
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.strokeStyle = "#000";
-    ctx.lineWidth = 18; // 필기 인식에 적합한 두께
+    ctx.lineWidth = 18;
     ctxRef.current = ctx;
+
     clearCanvas();
-  }, [currentItemIdx, currentLearningCount]);
+    setHint(true);
+  }, [item, currentItemIdx, currentLearningCnt]);
 
-  const clearCanvas = () => {
-    ctxRef.current.clearRect(
-      0,
-      0,
-      canvasRef.current.width,
-      canvasRef.current.height,
-    );
-  };
-
-  // 드로잉 좌표 계산
   const getPos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -55,7 +55,7 @@ const LearnByWrite = ({
   };
 
   const startDraw = (e) => {
-    if (busy) return;
+    if (busy || isPredicting) return;
     const { x, y } = getPos(e);
     ctxRef.current.beginPath();
     ctxRef.current.moveTo(x, y);
@@ -63,124 +63,167 @@ const LearnByWrite = ({
   };
 
   const draw = (e) => {
-    if (!isDrawing || busy) return;
+    if (!isDrawing || busy || isPredicting) return;
     const { x, y } = getPos(e);
     ctxRef.current.lineTo(x, y);
     ctxRef.current.stroke();
   };
 
-  // 2️⃣ Tesseract.js를 이용한 오프라인 판별 로직
+  const clearCanvas = () => {
+    if (ctxRef.current && canvasRef.current) {
+      ctxRef.current.clearRect(
+        0,
+        0,
+        canvasRef.current.width,
+        canvasRef.current.height,
+      );
+    }
+  };
+
+  const getProcessedCanvas = () => {
+    const src = canvasRef.current;
+    const sw = src.width;
+    const sh = src.height;
+    const sctx = src.getContext("2d");
+
+    // 1. 실제 그려진 영역(Bounding Box) 찾기
+    const imgData = sctx.getImageData(0, 0, sw, sh);
+    const data = imgData.data;
+    let minX = sw,
+      minY = sh,
+      maxX = 0,
+      maxY = 0;
+    let hasPixels = false;
+
+    for (let y = 0; y < sh; y++) {
+      for (let x = 0; x < sw; x++) {
+        const alpha = data[(y * sw + x) * 4 + 3];
+        if (alpha > 0) {
+          // 투명도가 있는 부분(그려진 부분) 체크
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+          hasPixels = true;
+        }
+      }
+    }
+
+    // 2. 만약 아무것도 안 그렸다면 기본 캔버스 반환
+    if (!hasPixels) {
+      minX = 0;
+      minY = 0;
+      maxX = sw;
+      maxY = sh;
+    }
+
+    // 3. 여백(Padding) 추가 및 정삼각형 비율 유지
+    const p = 20; // 패딩
+    let w = maxX - minX + p * 2;
+    let h = maxY - minY + p * 2;
+    const size = Math.max(w, h); // 정사각화
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    // 4. 흰색 배경의 최종 가공용 캔버스 생성
+    const out = document.createElement("canvas");
+    out.width = TM_INPUT_SIZE;
+    out.height = TM_INPUT_SIZE;
+    const octx = out.getContext("2d");
+    octx.fillStyle = "#ffffff";
+    octx.fillRect(0, 0, TM_INPUT_SIZE, TM_INPUT_SIZE);
+
+    // 5. 원본에서 글자 부분만 추출하여 중앙에 배치하며 그리기
+    octx.drawImage(
+      src,
+      centerX - size / 2,
+      centerY - size / 2,
+      size,
+      size, // 원본의 글자 영역
+      0,
+      0,
+      TM_INPUT_SIZE,
+      TM_INPUT_SIZE, // 결과물 224x224
+    );
+
+    // Tesseract용(전체)과 모델용(가공) 반환
+    const flat = document.createElement("canvas");
+    flat.width = sw;
+    flat.height = sh;
+    const fctx = flat.getContext("2d");
+    fctx.fillStyle = "#ffffff";
+    fctx.fillRect(0, 0, sw, sh);
+    fctx.drawImage(src, 0, 0);
+
+    return { flat, out };
+  };
+
   const handleSubmit = async () => {
+    if (busy || isPredicting) return;
     setBusy(true);
+
     try {
-      // 투명 배경을 흰색으로 합성 (OCR 성능 향상 필수)
-      const canvas = canvasRef.current;
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height;
-      const tCtx = tempCanvas.getContext("2d");
-      tCtx.fillStyle = "#FFFFFF";
-      tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-      tCtx.drawImage(canvas, 0, 0);
+      const { flat, out } = getProcessedCanvas();
+      let recognizedArray = [];
 
-      // Tesseract 워커 생성 (한글 모드)
+      if (USE_TF_FOR.has(target)) {
+        recognizedArray = await runInference(out, target);
+      } else {
+        const worker = await createWorker("kor");
+        const {
+          data: { text },
+        } = await worker.recognize(flat);
+        recognizedArray = [text.replace(/\s/g, "")];
+        await worker.terminate();
+      }
+      const isCorrect = recognizedArray.includes(item.letter);
 
-      // 인식 결과 정제 (공백 및 줄바꿈 제거)
-      const userAnswer = "text".replace(/\s/g, "");
-      const isCorrect = userAnswer.includes(item.letter); // 포함 여부로 체크 (필기 특성상 공백 포함 가능성)
-
-      const monData = submitAnswer(userAnswer, item.letter);
-
-      handleAnswer({
-        user: userAnswer,
+      // 결과 제출 (백엔드 페이로드 구조)
+      await handleAnswer({
+        user: isCorrect ? item.letter : recognizedArray[0] || "미인식",
         correct: item.letter,
-        isCorrect,
-        responseTime: monData.solvingTime,
+        isCorrect: isCorrect,
+        responseTime: 0,
         concentration: {
           level: "high",
-          focusRate: 100,
+          focusRate: 1,
           faceDetected: true,
           attentionScore: 1,
         },
       });
-
-      if (!isCorrect) clearCanvas();
-    } catch (e) {
-      console.error("인식 중 오류 발생:", e);
+    } catch (error) {
+      console.error("인식 중 오류:", error);
     } finally {
       setBusy(false);
     }
   };
 
-  // 1️⃣ 캔버스 초기화 및 실시간 크기 최적화
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const parent = parentRef.current;
-    if (!canvas || !parent) return;
-
-    // 부모 크기에 캔버스 해상도를 맞추는 함수
-    const updateCanvasSize = () => {
-      // 1. 현재 그려진 내용 백업
-      const tempCanvas = document.createElement("canvas");
-      const tempCtx = tempCanvas.getContext("2d");
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height;
-      tempCtx.drawImage(canvas, 0, 0);
-
-      // 2. 캔버스 해상도를 부모 크기와 일치시킴
-      canvas.width = parent.clientWidth;
-      canvas.height = parent.clientHeight;
-
-      // 3. 컨텍스트 설정 다시 세팅 (크기 바뀌면 초기화됨)
-      const ctx = canvas.getContext("2d");
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.strokeStyle = "#000";
-      ctx.lineWidth = 18;
-      ctxRef.current = ctx;
-
-      // 4. 백업된 내용 복원 (리사이즈 시 그림 유지하고 싶다면)
-      ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
-    };
-
-    // 부모 요소의 크기 변화를 감지하는 옵저버
-    const resizeObserver = new ResizeObserver(() => {
-      updateCanvasSize();
-    });
-
-    resizeObserver.observe(parent);
-    startQuestion(); // 문항 시작 측정
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, [currentItemIdx, currentLearningCount]);
+  const isWorking = busy || isPredicting;
 
   return (
-    <div className="grid h-full grid-cols-12 gap-4">
-      {/* 왼쪽: 가이드 이미지 */}
-      <div className="col-span-4 bg-white border rounded-lg shadow-sm flex items-center justify-center p-6">
+    <div className="grid h-full grid-cols-12 gap-4 p-2">
+      <div className="col-span-4 flex items-center justify-center bg-white border rounded-3xl shadow-sm">
         <img
-          src={getAsset({ content: item.letter, type: "write" })}
-          className="w-2/3 h-auto"
-          alt="hint"
-          onError={(e) => (e.target.style.display = "none")}
+          src={getAsset({ content: `${item.letter}` })}
+          alt="target"
+          className="max-h-[70%] object-contain"
         />
       </div>
 
-      {/* 오른쪽: 쓰기 영역 */}
-      <div className="col-span-8 grid grid-rows-[auto_1fr] gap-4">
-        <div className="p-3 text-2xl font-bold text-center bg-rose-200 border rounded-lg shadow-sm">
+      <div className="col-span-8 flex flex-col gap-4">
+        <div className="p-4 text-2xl font-black text-center bg-rose-200 text-rose-800 rounded-2xl border-b-4 border-rose-300">
           {`"${item.letter}"${JOSA().c(item.letter, "을/를")} 직접 써보세요.`}
         </div>
 
         <div
-          className="relative bg-white border rounded-lg shadow-sm overflow-hidden"
+          className="relative flex-1 bg-white border-4 border-dashed border-gray-100 rounded-3xl overflow-hidden"
           ref={parentRef}
         >
           {hint && (
-            <div className="absolute inset-0 flex items-center justify-center text-[15rem] font-black text-gray-100 select-none pointer-events-none">
-              {item.letter}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-10">
+              <span className="text-[200px] font-black text-black">
+                {item.letter}
+              </span>
             </div>
           )}
 
@@ -196,32 +239,28 @@ const LearnByWrite = ({
             onTouchEnd={() => setIsDrawing(false)}
           />
 
-          {/* 도구 버튼들 */}
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-4">
+          <div className="absolute right-4 bottom-4 z-20 flex flex-col gap-2">
             <button
               onClick={() => setHint(!hint)}
-              className={`p-4 rounded-xl shadow-md border ${hint ? "bg-amber-100" : "bg-white"}`}
+              className={`w-16 h-16 text-3xl bg-white border-2 rounded-2xl shadow-lg ${hint ? "border-amber-300 bg-amber-50" : "border-gray-200"}`}
             >
-              <Lightbulb
-                size={40}
-                className={hint ? "text-amber-500" : "text-gray-400"}
-              />
+              💡
             </button>
             <button
               onClick={clearCanvas}
-              className="p-4 bg-white rounded-xl shadow-md border hover:bg-red-50"
+              className="w-16 h-16 text-3xl bg-white border-2 border-red-100 rounded-2xl shadow-lg text-red-400"
             >
-              <Eraser size={40} className="text-red-500" />
+              ❌
             </button>
             <button
               onClick={handleSubmit}
-              disabled={busy}
-              className="p-4 bg-rose-500 rounded-xl shadow-md text-white hover:bg-rose-600 disabled:bg-gray-300"
+              disabled={isWorking}
+              className="w-16 h-16 text-3xl bg-white border-2 border-green-200 rounded-2xl shadow-lg text-green-500 flex items-center justify-center"
             >
-              {busy ? (
-                <Loader2Icon size={40} className="animate-spin" />
+              {isWorking ? (
+                <Loader2Icon className="animate-spin w-8 h-8 text-rose-400" />
               ) : (
-                <CheckCircle2 size={40} />
+                "✅"
               )}
             </button>
           </div>
