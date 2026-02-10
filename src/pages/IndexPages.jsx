@@ -73,22 +73,22 @@ export default function Main() {
   return (
     <>
       {/* 캡처용 숨겨진 비디오 (자동 모드 및 비디오 피드 공유) */}
-<video
-  ref={videoRef}
-  autoPlay    // 자동 재생
-  playsInline // 모바일/일부 브라우저 필수
-  muted       // 정책상 음소거 필수
-  style={{
-    position: "fixed",
-    bottom: 0,
-    right: 0,
-    width: "10px",   // 너무 작으면 무시될 수 있으니 10px 정도로 설정
-    height: "10px",
-    opacity: 0.1,    // 0.1 정도로 살짝 올려서 렌더링 강제
-    zIndex: -1,
-    pointerEvents: "none"
-  }}
-/>
+      <video
+        ref={videoRef}
+        autoPlay // 자동 재생
+        playsInline // 모바일/일부 브라우저 필수
+        muted // 정책상 음소거 필수
+        style={{
+          position: "fixed",
+          bottom: 0,
+          right: 0,
+          width: "10px", // 너무 작으면 무시될 수 있으니 10px 정도로 설정
+          height: "10px",
+          opacity: 0.1, // 0.1 정도로 살짝 올려서 렌더링 강제
+          zIndex: -1,
+          pointerEvents: "none",
+        }}
+      />
 
       <div className="flex w-full h-full mx-auto p-2 rounded-xl overflow-hidden">
         {/* [좌측] 페르소나 영역 */}
@@ -137,11 +137,7 @@ export default function Main() {
           isAutoMode={isAutoMode}
           setIsAutoMode={setIsAutoMode}
           onWeatherClick={() => setIsWeatherDialogOpen(true)}
-          onMenuClick={(v) =>
-            v.value === "language"
-              ? (window.location.href = import.meta.env.VITE_HANI_URL)
-              : navigation(`/${v.value}`)
-          }
+          onMenuClick={(v) => navigation(`/${v.value}`)}
         />
       </div>
 

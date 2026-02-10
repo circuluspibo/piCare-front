@@ -42,3 +42,25 @@ export const TRAINING_OPTIONS = {
     idx: 2,
   },
 };
+
+// NOTE: 또박 한글 옵션
+export const HANI_OPTIONS = {
+  VOWEL: {
+    title: "모음",
+    value: "vowel",
+    index: 0,
+  },
+  CONSONANT: {
+    title: "자음",
+    value: "consonant",
+    index: 1,
+  },
+  SYLLABLE: {
+    title: "글자",
+    value: "syllable",
+  },
+  WORD: {
+    title: "낱말",
+    value: "word",
+  },
+};

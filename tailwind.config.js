@@ -128,10 +128,54 @@ export default {
           DEFAULT: "hsl(var(--color-error))",
           content: "hsl(var(--color-error-content))",
         },
-        vowel: "#71cfff",
-        consonant: "#ffa6ea",
-        letter: "#cbadff",
-        word: "#6f5ff8",
+        read: {
+          50: "oklch(98.7% 0.022 95.277)",
+          200: "oklch(92.4% 0.12 95.746)",
+          500: "oklch(76.9% 0.188 70.08)",
+          700: "oklch(55.5% 0.163 48.998)",
+        },
+        vowel: {
+          50: "oklch(98.7% 0.022 95.277)",
+          200: "oklch(92.4% 0.12 95.746)",
+          500: "oklch(76.9% 0.188 70.08)",
+          700: "oklch(55.5% 0.163 48.998)",
+        },
+        listen: {
+          50: "oklch(97.7% 0.013 236.62)",
+          200: "oklch(90.1% 0.058 230.902)",
+          500: "oklch(68.5% 0.169 237.323)",
+          700: "oklch(50% 0.134 242.749)",
+        },
+        consonant: {
+          50: "oklch(97.7% 0.013 236.62)",
+          200: "oklch(90.1% 0.058 230.902)",
+          500: "oklch(68.5% 0.169 237.323)",
+          700: "oklch(50% 0.134 242.749)",
+        },
+        speak: {
+          50: "oklch(98.6% 0.031 120.757)",
+          200: "oklch(93.8% 0.127 124.321)",
+          500: "oklch(76.8% 0.233 130.85)",
+          700: "oklch(53.2% 0.157 131.589)",
+        },
+        letter: {
+          50: "oklch(98.6% 0.031 120.757)",
+          200: "oklch(93.8% 0.127 124.321)",
+          500: "oklch(76.8% 0.233 130.85)",
+          700: "oklch(53.2% 0.157 131.589)",
+        },
+        write: {
+          50: "oklch(96.9% 0.016 293.756)",
+          200: "oklch(89.4% 0.057 293.283)",
+          500: "oklch(60.6% 0.25 292.717)",
+          700: "oklch(49.1% 0.27 292.581)",
+        },
+        word: {
+          50: "oklch(96.9% 0.016 293.756)",
+          200: "oklch(89.4% 0.057 293.283)",
+          500: "oklch(60.6% 0.25 292.717)",
+          700: "oklch(49.1% 0.27 292.581)",
+        },
       },
       screens: {
         tl5: {
@@ -174,7 +218,7 @@ export default {
     },
     {
       pattern:
-        /^(bg|border|from|to|text)-(consonant|vowel|letter|word|info|success|warning|error).*$/,
+        /^(bg|border|from|to|text)-(consonant|vowel|letter|word|read|write|speak|listen|info|success|warning|error).*$/,
     },
     {
       pattern: /^(text)-(9xl|8xl|7xl|len1).*$/,
