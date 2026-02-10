@@ -47,7 +47,7 @@ export default function LearnByRead({
 
   const handleSelect = (choice) => {
     const data = submitAnswer(choice, item.letter);
-
+    // console.log("data = ", data);
     if (!data.isCorrect) {
       generateChoices();
     }

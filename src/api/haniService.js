@@ -65,3 +65,13 @@ export const getAsset = ({ type, content }) => {
     ? `${API_URL}/asset?${encodeGetParams({ type, content })}`
     : `${API_URL}/asset?${encodeGetParams({ content })}`;
 };
+export async function startSession(payload) {
+  const res = await fetch(`${API_URL}/sessions/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok || (res.status !== 200 && res.status !== 409))
+    throw new Error("startSession failed");
+  return res.json(); // { sessionId }
+}

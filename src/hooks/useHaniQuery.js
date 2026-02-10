@@ -3,6 +3,7 @@ import {
   getActiveSession,
   patchProgress,
   postAttempt,
+  startSession,
 } from "@/api/haniService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -78,6 +79,28 @@ const useSessionQuery = (param) => {
     enabled: !!(character && chapter && method && target),
     staleTime: 0,
     retry: 1, // 실패 시 1번만 재시도
+  });
+};
+export const usePostStartSessionMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload) => startSession(payload),
+    onSuccess: (data, variables) => {
+      // 세션 생성 성공 시, 해당 조건의 activeSession 쿼리를 무효화하여 최신화합니다.
+      queryClient.invalidateQueries({
+        queryKey: [
+          "activeSession",
+          variables.characterId,
+          variables.chapterId,
+          variables.method,
+          variables.target,
+        ],
+      });
+    },
+    onError: (error) => {
+      console.error("세션 시작 실패:", error);
+    },
   });
 };
 

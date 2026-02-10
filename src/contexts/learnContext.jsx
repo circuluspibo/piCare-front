@@ -1,10 +1,10 @@
-import { postAttempt } from "@/api/haniService";
 import {
   useCurriculumQuery,
   useContentQuery,
   useSessionQuery,
   useUpdateProgressMutation,
   usePostAttemptMutation,
+  usePostStartSessionMutation, // startSession API를 호출하는 훅 (추가 필요)
 } from "@/hooks/useHaniQuery";
 import { METHODS, TARGETS } from "@/utils/haniUtil";
 import {
@@ -13,43 +13,115 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 export const CHARACTER = "691a6d43eb6b241816a865d1";
 const LearnContext = createContext(null);
 
-// NOTE: Provider
 export const LearnProvider = ({ children }) => {
   const { character, chapter, method } = useParams();
   const [openContentList, setOpenContentList] = useState(false);
+  const [sessionId, setSessionId] = useState(null); // 현재 활성화된 세션 ID 상태
 
-  // 데이터 쿼리
-  const { curriculumData, isCurriculumLoading, isCurriculumError } =
-    useCurriculumQuery(CHARACTER);
+  // 1️⃣ 데이터 쿼리
+  const { curriculumData, isCurriculumLoading } = useCurriculumQuery(CHARACTER);
+
+  const { data: contentData, isLoading: isDataLoading } = useContentQuery(
+    character,
+    chapter,
+    method,
+  );
+
+  // 2️⃣ 세션 조회 쿼리
   const {
-    data: contentData,
-    isLoading: isDataLoading,
-    isError,
-    refetch: refetchData,
-  } = useContentQuery(character, chapter, method);
-  const { data: sessionData, isLoading: isSessionLoading } = useSessionQuery({
+    data: sessionData,
+    isLoading: isSessionLoading,
+    refetch: refetchSession,
+  } = useSessionQuery({
     character,
     chapter,
     method,
     target: contentData?.target,
   });
 
-  // Mutation
+  // 3️⃣ Mutation 훅들
   const { mutateAsync: submitAttempt, isPending: isAttemptPending } =
     usePostAttemptMutation();
-  const { updateProgress, isUpdatePending } = useUpdateProgressMutation();
+  const { mutateAsync: startSession } = usePostStartSessionMutation(); // 신규 세션 생성 훅
+  const { updateProgress } = useUpdateProgressMutation();
 
-  // Const
+  // 4️⃣ [핵심] 세션 초기화 로직 (조회 후 없으면 생성)
+  useEffect(() => {
+    // 컨텐츠 정보나 초기 세션 조회 로딩 중이면 대기
+    if (isDataLoading || isSessionLoading || !contentData) return;
+
+    const initializeSession = async () => {
+      // (1) 서버에 활성화된 세션이 있는 경우 (복구)
+      if (sessionData?.active) {
+        setSessionId(sessionData.session._id);
+        return;
+      }
+
+      // (2) 활성 세션이 없고, 현재 세션 ID가 아직 없을 때만 생성 (중복 생성 방지)
+      if (sessionData && !sessionData.active && !sessionId) {
+        try {
+          // 기기 정보 수집
+          const device = {
+            userAgent: navigator.userAgent,
+            locale: navigator.language,
+            platform: navigator.platform,
+            screen: {
+              width: window.screen.width,
+              height: window.screen.height,
+            },
+          };
+
+          // IP 및 위치 정보 (간소화된 방식)
+          let geoData = {};
+          try {
+            const res = await fetch("https://ipapi.co/json/");
+            const location = await res.json();
+            geoData = {
+              ip: location.ip,
+              geo: {
+                city: location.city,
+                region: location.region,
+                country: location.country,
+              },
+            };
+          } catch (e) {
+            console.warn("위치 정보를 가져올 수 없습니다.");
+          }
+
+          const started = await startSession({
+            characterId: character,
+            chapterId: chapter,
+            method,
+            target: contentData.target,
+            repeatSettings: {
+              correct: contentData.repeat || 1,
+              incorrect: Math.round((contentData.repeat || 1) * 1.5) || 2,
+            },
+            device: { ...device, ...geoData },
+          });
+
+          if (started?.sessionId) {
+            setSessionId(started.sessionId);
+            refetchSession(); // 쿼리 캐시 갱신
+          }
+        } catch (error) {
+          console.error("세션 생성 중 오류:", error);
+        }
+      }
+    };
+
+    initializeSession();
+  }, [sessionData, isSessionLoading, isDataLoading, contentData, sessionId]);
+
+  // 5️⃣ 세션 기반 상태 계산
   const activeSession = sessionData?.active ? sessionData.session : null;
-  const sessionId = activeSession?._id;
   const currentItemIdx = activeSession?.currentItemIndex ?? 0;
   const currentQuestion = activeSession?.currentQuestionNo ?? 1;
   const currentLearningCnt = activeSession?.currentLearningCount ?? 0;
@@ -57,22 +129,22 @@ export const LearnProvider = ({ children }) => {
   const contentFrom = contentData?.contents;
   const item = contentFrom?.[currentItemIdx];
 
+  // 커리큘럼 기반 전체 학습 리스트 생성
   const learningList = useMemo(() => {
     if (!curriculumData) return [];
-    // 모든 챕터의 메서드들을 하나의 리스트로 합칩니다.
     return curriculumData.flatMap((ch) =>
       ch.methods.map((m) => ({
         ...m,
         chapterId: ch.chapterId,
-        characterId: CHARACTER, // 현재 캐릭터
+        characterId: CHARACTER,
       })),
     );
   }, [curriculumData]);
 
+  // 다음 단계 정보를 계산하는 함수
   const getNextStep = useCallback(() => {
     if (!learningList.length || !contentData?.target) return null;
 
-    // 1. 현재 진행 중인 단계의 인덱스 찾기
     let currentIndex = learningList.findIndex(
       (step) =>
         step.chapterId === chapter &&
@@ -80,7 +152,6 @@ export const LearnProvider = ({ children }) => {
         step.method === method,
     );
 
-    // 2. 다음 단계 찾기 (이미 완료된 세션은 건너뜀)
     let nextIndex = currentIndex + 1;
     let nextListItem = learningList[nextIndex];
 
@@ -89,7 +160,6 @@ export const LearnProvider = ({ children }) => {
       nextListItem = learningList[nextIndex];
     }
 
-    // 3. 반환 데이터 구성
     let next = `/learn/${character}`;
     let title = `축하합니다!`;
     let description = [
@@ -116,43 +186,40 @@ export const LearnProvider = ({ children }) => {
     }),
     [contentData],
   );
-  const curriculumIdx = contentData?.index || 0;
 
-  // functions
-  // 콘텐츠 리스트 핸들러
-  const handleContentListToggle = useCallback(() => {
-    setOpenContentList((prev) => !prev);
-  }, []);
+  // 6️⃣ 핸들러 함수들
+  const handleContentListToggle = useCallback(
+    () => setOpenContentList((prev) => !prev),
+    [],
+  );
+  const handleContentListClose = useCallback(
+    () => setOpenContentList(false),
+    [],
+  );
 
-  const handleContentListClose = useCallback(() => {
-    setOpenContentList(false);
-  }, []);
   const handleContentSelect = useCallback(
     (index) => {
-      const targetItem = contentFrom[index];
+      const targetItem = contentFrom?.[index];
       if (sessionId && targetItem) {
-        updateProgress({
-          sessionId,
-          item: targetItem,
-          method,
-        });
+        updateProgress({ sessionId, item: targetItem, method });
       }
       handleContentListClose();
     },
     [contentFrom, sessionId, method, updateProgress, handleContentListClose],
   );
+
   const getMethodData = useCallback(
     (targetChapter) => {
       if (!curriculumData) return null;
-
-      const chapterData = curriculumData.find(
-        (item) => item.chapterId === targetChapter,
+      return (
+        curriculumData.find((item) => item.chapterId === targetChapter)
+          ?.methods || null
       );
-      return chapterData?.methods || null;
     },
     [curriculumData],
   );
 
+  // 정답 전송 및 결과 처리
   const sendAnswer = useCallback(
     async (answer) => {
       if (!sessionId || isAttemptPending) return;
@@ -174,18 +241,16 @@ export const LearnProvider = ({ children }) => {
         totalItemsCount: contentFrom?.length,
         concentration: answer?.concentration,
       };
+
       try {
         const response = await submitAttempt(payload);
         if (response.session?.status === "ended") {
-          // 학습 종료 시 다음 단계 정보 가져오기
           const nextStepInfo = getNextStep();
-          console.log("Next Step Info:", nextStepInfo);
-          // 여기서 결과 팝업(Modal)을 띄우는 로직을 연결하면 됩니다.
-        } else {
-          console.log("세션 유지중");
+          // TODO: 여기서 결과 모달을 띄우는 이벤트를 발행하거나 상태를 업데이트합니다.
+          console.log("학습 종료:", nextStepInfo);
         }
       } catch (error) {
-        console.error(error);
+        console.error("답안 전송 에러:", error);
       }
     },
     [
@@ -203,21 +268,17 @@ export const LearnProvider = ({ children }) => {
       submitAttempt,
     ],
   );
+
   const value = useMemo(
     () => ({
-      // params
       character,
       chapter,
       method,
       target: contentData?.target,
-
-      // Top 리스트 관련
       openContentList,
       handleContentListToggle,
       handleContentListClose,
       handleContentSelect,
-
-      // Data
       curriculumData,
       item,
       contentData,
@@ -226,11 +287,9 @@ export const LearnProvider = ({ children }) => {
       repeatSettings,
       currentItemIdx,
       currentLearningCnt,
-      // Loading
       isCurriculumLoading,
-      isDataLoading, // 추가: 컨텐츠 로딩 상태
-      isSessionLoading, // 추가: 세션 로딩 상태
-
+      isDataLoading,
+      isSessionLoading,
       getMethodData,
       getNextStep,
       sendAnswer,
@@ -259,6 +318,7 @@ export const LearnProvider = ({ children }) => {
       sendAnswer,
     ],
   );
+
   return (
     <LearnContext.Provider value={value}>{children}</LearnContext.Provider>
   );
@@ -266,8 +326,7 @@ export const LearnProvider = ({ children }) => {
 
 export const useLearnContext = () => {
   const ctx = useContext(LearnContext);
-  if (!ctx) {
+  if (!ctx)
     throw new Error("useLearnContext must be used within a LearnProvider");
-  }
   return ctx;
 };
