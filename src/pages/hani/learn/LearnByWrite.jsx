@@ -27,7 +27,6 @@ const LearnByWrite = ({
   const ctxRef = useRef(null);
   const parentRef = useRef(null);
 
-  console.log("item = ", item);
   // 캔버스 초기 설정
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -82,79 +81,18 @@ const LearnByWrite = ({
 
   const getProcessedCanvas = () => {
     const src = canvasRef.current;
-    const sw = src.width;
-    const sh = src.height;
-    const sctx = src.getContext("2d");
+    const flat = document.createElement("canvas");
+    flat.width = src.width;
+    flat.height = src.height;
+    const fctx = flat.getContext("2d");
+    fctx.fillStyle = "#ffffff";
+    fctx.fillRect(0, 0, flat.width, flat.height);
+    fctx.drawImage(src, 0, 0);
 
-    // 1. 실제 그려진 영역(Bounding Box) 찾기
-    const imgData = sctx.getImageData(0, 0, sw, sh);
-    const data = imgData.data;
-    let minX = sw,
-      minY = sh,
-      maxX = 0,
-      maxY = 0;
-    let hasPixels = false;
-
-    for (let y = 0; y < sh; y++) {
-      for (let x = 0; x < sw; x++) {
-        const alpha = data[(y * sw + x) * 4 + 3];
-        if (alpha > 0) {
-          // 투명도가 있는 부분(그려진 부분) 체크
-          if (x < minX) minX = x;
-          if (x > maxX) maxX = x;
-          if (y < minY) minY = y;
-          if (y > maxY) maxY = y;
-          hasPixels = true;
-        }
-      }
-    }
-
-    // 2. 만약 아무것도 안 그렸다면 기본 캔버스 반환
-    if (!hasPixels) {
-      minX = 0;
-      minY = 0;
-      maxX = sw;
-      maxY = sh;
-    }
-
-    // 3. 여백(Padding) 추가 및 정삼각형 비율 유지
-    const p = 20; // 패딩
-    let w = maxX - minX + p * 2;
-    let h = maxY - minY + p * 2;
-    const size = Math.max(w, h); // 정사각화
-    const centerX = (minX + maxX) / 2;
-    const centerY = (minY + maxY) / 2;
-
-    // 4. 흰색 배경의 최종 가공용 캔버스 생성
     const out = document.createElement("canvas");
     out.width = TM_INPUT_SIZE;
     out.height = TM_INPUT_SIZE;
-    const octx = out.getContext("2d");
-    octx.fillStyle = "#ffffff";
-    octx.fillRect(0, 0, TM_INPUT_SIZE, TM_INPUT_SIZE);
-
-    // 5. 원본에서 글자 부분만 추출하여 중앙에 배치하며 그리기
-    octx.drawImage(
-      src,
-      centerX - size / 2,
-      centerY - size / 2,
-      size,
-      size, // 원본의 글자 영역
-      0,
-      0,
-      TM_INPUT_SIZE,
-      TM_INPUT_SIZE, // 결과물 224x224
-    );
-
-    // Tesseract용(전체)과 모델용(가공) 반환
-    const flat = document.createElement("canvas");
-    flat.width = sw;
-    flat.height = sh;
-    const fctx = flat.getContext("2d");
-    fctx.fillStyle = "#ffffff";
-    fctx.fillRect(0, 0, sw, sh);
-    fctx.drawImage(src, 0, 0);
-
+    out.getContext("2d").drawImage(flat, 0, 0, TM_INPUT_SIZE, TM_INPUT_SIZE);
     return { flat, out };
   };
 
@@ -164,25 +102,25 @@ const LearnByWrite = ({
 
     try {
       const { flat, out } = getProcessedCanvas();
-      let recognizedArray = [];
+      let recognizedText = "";
 
       if (USE_TF_FOR.has(target)) {
-        recognizedArray = await runInference(out, target);
+        // ✅ 훅을 통해 문자열 결과만 바로 받음
+        recognizedText = await runInference(out, target);
       } else {
         const worker = await createWorker("kor");
         const {
           data: { text },
         } = await worker.recognize(flat);
-        recognizedArray = [text.replace(/\s/g, "")];
+        recognizedText = text.replace(/\s/g, "");
         await worker.terminate();
       }
-      const isCorrect = recognizedArray.includes(item.letter);
 
       // 결과 제출 (백엔드 페이로드 구조)
       await handleAnswer({
-        user: isCorrect ? item.letter : recognizedArray[0] || "미인식",
+        user: recognizedText || "미인식",
         correct: item.letter,
-        isCorrect: isCorrect,
+        isCorrect: recognizedText === item.letter,
         responseTime: 0,
         concentration: {
           level: "high",
@@ -204,7 +142,7 @@ const LearnByWrite = ({
     <div className="grid h-full grid-cols-12 gap-4 p-2">
       <div className="col-span-4 flex items-center justify-center bg-white border rounded-3xl shadow-sm">
         <img
-          src={getAsset({ content: `${item.letter}` })}
+          src={getAsset({ content: item.letter })}
           alt="target"
           className="max-h-[70%] object-contain"
         />
