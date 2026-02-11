@@ -62,7 +62,7 @@ export const useTouchAnalyze = () => {
 
       if (prevCount >= MIN_TOUCH_COUNT) {
         flush(prevSId, prevCount);
-        totalSessionCount.current = 0; // 카운트 초기화
+        totalSessionCount.current = 0;
       }
       currentSIdRef.current = sId;
     }
@@ -71,7 +71,6 @@ export const useTouchAnalyze = () => {
   useEffect(() => {
     const handleTouch = () => {
       totalSessionCount.current++;
-      console.log("터치/클릭 카운트 증가:", totalSessionCount.current);
     };
 
     const handleVisibility = () => {
@@ -107,8 +106,8 @@ export const useDialogAnalyze = () => {
       const payload = {
         hwId: "697b07b3251e185c8626a8ad",
         type,
-        // 질문과 답변을 배열 형태로 담아 전송
-        content: JSON.stringify([{ q, a, t: Date.now() }]),
+        // 질문만 저장
+        content: JSON.stringify([{ q }]),
       };
 
       await postInteraction(payload);

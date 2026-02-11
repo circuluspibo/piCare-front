@@ -18,14 +18,13 @@ export function useMainLogic({
   compareAndLog,
   sendMessage,
 }) {
-  const { isGpuLocked, setIsGpuLocked } = useContext(GlobalContext)
-  
+  const { isGpuLocked, setIsGpuLocked } = useContext(GlobalContext);
+
   const [humidity, setHumidity] = useState(0);
   const [temperature, setTemperature] = useState(0);
   const [air, setAir] = useState("");
   const [isAutoMode, setIsAutoMode] = useState(false);
   const [showVideoFeed, setShowVideoFeed] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const videoRef = useRef(null);
   const activeLocks = useRef(new Set());
   const isEngineRunning = useRef(false);
@@ -45,10 +44,8 @@ export function useMainLogic({
         isEngineRunning.current = true;
         console.log(`[Engine] >>> START by ${lockId}`);
         return true;
-
       } catch (e) {
         return false;
-
       } finally {
         isTransitioning.current = false;
       }
@@ -66,7 +63,6 @@ export function useMainLogic({
           await getStopCollection();
           isEngineRunning.current = false;
           console.log(`[Engine] <<< STOP by ${lockId}`);
-
         } finally {
           isTransitioning.current = false;
         }
@@ -74,7 +70,7 @@ export function useMainLogic({
     }
   }, []);
 
-  // 1. 하트비트 (기존 루프 방지 로직 유지)
+  // NOTE: 하트비트 셋팅
   useEffect(() => {
     const fetchHB = async () => {
       const isFirstLock = activeLocks.current.size === 0;
@@ -82,7 +78,6 @@ export function useMainLogic({
       if (isFirstLock) {
         await controlEngine("HB", "START");
         await new Promise((r) => setTimeout(r, 1500));
-
       } else {
         activeLocks.current.add("HB");
       }
@@ -95,7 +90,6 @@ export function useMainLogic({
         setAir(data.env.air);
         updateHumanInfo(data.human);
         compareAndLog(data);
-
       } finally {
         await controlEngine("HB", "STOP");
       }
@@ -104,11 +98,9 @@ export function useMainLogic({
     const timer = setInterval(fetchHB, HB_INTERVAL);
     fetchHB();
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [updateHumanInfo, compareAndLog, controlEngine]);
 
-  // 2. 비디오 제어
-
+  // 비디오 컨트롤러
   const toggleVideoFeed = useCallback(async () => {
     const nextState = !showVideoFeed;
 
@@ -123,12 +115,8 @@ export function useMainLogic({
     }
   }, [showVideoFeed, controlEngine]);
 
-  // 3. AI 자동 캡처 로직 (isProcessing 의존성 추가하여 중복 방지)
-
-
-  // 3. AI 자동 캡처 (요구하신 대로 엔진 제어 없이 독립 실행)
-const runAutoCapture = useCallback(async () => {
-    
+  // AI 자동 캡처
+  const runAutoCapture = useCallback(async () => {
     if (isGpuLocked || processingRef.current) {
       console.log("[Skip] GPU가 바빠서 자동 캡처를 건너뜁니다.");
       return;
@@ -136,17 +124,16 @@ const runAutoCapture = useCallback(async () => {
 
     if (processingRef.current) return;
     processingRef.current = true;
-    setIsGpuLocked(true); // GPU 잠금 시작
-    setIsProcessing(true);
+    setIsGpuLocked(true);
 
     try {
       const video = videoRef.current;
-      
+
       // [수정 포인트] 비디오가 준비될 때까지 최대 3초간 대기 (0.5초 간격 체크)
       let retryCount = 0;
       while ((!video || video.readyState < 2) && retryCount < 6) {
         console.log("비디오 스트림 대기 중...");
-        await new Promise(res => setTimeout(res, 500));
+        await new Promise((res) => setTimeout(res, 500));
         retryCount++;
       }
 
@@ -157,38 +144,61 @@ const runAutoCapture = useCallback(async () => {
 
       // 캡처 로직 진행
       const canvas = document.createElement("canvas");
-      canvas.width = 320; 
+      canvas.width = 320;
       canvas.height = 240;
       const ctx = canvas.getContext("2d");
       ctx.drawImage(video, 0, 0, 320, 240);
-      
+
       const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg"));
       // Debug용
       // const link = document.createElement('a');
       // link.href = URL.createObjectURL(blob);
       // link.download = `test_${Date.now()}.jpg`;
       // link.click();용
-      
-      // (기존 코드와 동일)
-      const response = await postImg2Chat(new File([blob], "ai.jpg"), PERSONA_SYSTEMS[personaId]);
-      const rawText = typeof response === "string" ? response : JSON.stringify(response);
+
+      const response = await postImg2Chat(
+        new File([blob], "ai.jpg"),
+        PERSONA_SYSTEMS[personaId],
+      );
+      const rawText =
+        typeof response === "string" ? response : JSON.stringify(response);
       const match = rawText.match(/\{[\s\S]*\}/);
-      const result = match ? JSON.parse(match[0].replace(/'/g, '"')).result : rawText;
+      const result = match
+        ? JSON.parse(match[0].replace(/'/g, '"')).result
+        : rawText;
 
       if (result) {
         await sendMessage("", result, true);
       }
-      
     } catch (e) {
       console.error("AI Error:", e);
     } finally {
-      setIsGpuLocked(false); // GPU 잠금 해제
-      setIsProcessing(false);
+      setIsGpuLocked(false);
       processingRef.current = false;
     }
-  }, [personaId, sendMessage]);
+  }, [personaId, sendMessage, setIsGpuLocked, isGpuLocked]);
 
-  // 4. [수정] 무한 재호출을 방지하는 독립 루프
+  // NOTE: 비디오 제어
+  useEffect(() => {
+    if (isAutoMode || showVideoFeed) {
+      navigator.mediaDevices.getUserMedia({ video: true }).then((s) => {
+        const video = videoRef.current;
+        if (video) {
+          video.srcObject = s;
+          video.onloadedmetadata = () => {
+            video.play().catch((e) => console.error("Video play failed:", e));
+          };
+        }
+      });
+    } else {
+      if (videoRef.current?.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+        videoRef.current.srcObject = null;
+      }
+    }
+  }, [isAutoMode, showVideoFeed]);
+
+  // NOTE: 무한 재호출을 방지하는 독립 루프
   useEffect(() => {
     let timerId = null;
 
@@ -203,14 +213,12 @@ const runAutoCapture = useCallback(async () => {
 
         // 2. sendMessage가 끝난 "직후"부터 정확히 120초를 대기
         console.log("대기 시작: 120초 동안 멈춤");
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
           timerId = setTimeout(resolve, AI_INTERVAL);
         });
-        
-        // 3. 120초가 지나면 while문 처음으로 돌아가서 다시 runAutoCapture 호출
         if (!isAutoMode) break;
       }
-      
+
       loopActiveRef.current = false;
     };
 
@@ -222,28 +230,39 @@ const runAutoCapture = useCallback(async () => {
       loopActiveRef.current = false;
       if (timerId) clearTimeout(timerId);
     };
-    // 의존성 배열에 runAutoCapture를 빼거나, 최소화하여 재실행을 막습니다.
-  }, [isAutoMode]);
+  }, [isAutoMode, runAutoCapture]);
 
-useEffect(() => {
-  if (isAutoMode || showVideoFeed) {
-    navigator.mediaDevices.getUserMedia({ video: true }).then((s) => {
-      const video = videoRef.current;
-      if (video) {
-        video.srcObject = s;
-        // [추가] 메타데이터가 로드되면 재생을 시작하도록 보장
-        video.onloadedmetadata = () => {
-          video.play().catch(e => console.error("Video play failed:", e));
-        };
+  // NOTE: Unmounted
+  useEffect(() => {
+    const currentLocks = activeLocks.current;
+    const currentVideo = videoRef.current;
+
+    return () => {
+      console.log("[Cleanup] 자원을 해제합니다.");
+
+      // 루프 중단 플래그
+      loopActiveRef.current = false;
+
+      // 엔진 점유 해제 및 정지
+      if (currentLocks) currentLocks.clear();
+      getStopCollection()
+        .then(() => {
+          isEngineRunning.current = false;
+          console.log("[Cleanup] Engine STOP 성공");
+        })
+        .catch((e) => console.error("Engine STOP 실패", e));
+
+      // 카메라 스트림 완전 종료
+      if (currentVideo && currentVideo.srcObject) {
+        const tracks = currentVideo.srcObject.getTracks();
+        tracks.forEach((track) => track.stop());
+        currentVideo.srcObject = null;
+        console.log("[Cleanup] Camera Stream 종료");
       }
-    });
-  } else {
-    if (videoRef.current?.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-      videoRef.current.srcObject = null;
-    }
-  }
-}, [isAutoMode, showVideoFeed]);
+
+      setIsGpuLocked(false);
+    };
+  }, [setIsGpuLocked]);
 
   return {
     humidity,

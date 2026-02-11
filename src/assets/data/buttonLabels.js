@@ -1,7 +1,7 @@
 export const buttonLabels = [
   {
     label: "언어",
-    value: "language",
+    value: "learn",
     icon: "BookOpen",
     color: "orange",
   },

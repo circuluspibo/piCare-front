@@ -26,7 +26,7 @@ export default function Dialog({
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       // onClick={handleBackdropClick}
     >
-      <div className="bg-white p-8 rounded-lg shadow-2xl text-center max-w-md w-full animate-fadeInDown rounded-xl">
+      <div className="bg-white p-8 rounded-lg shadow-2xl text-center max-w-lg w-full animate-fadeInDown rounded-xl">
         {/* 제목 (Title) */}
         {title && <h3 className={titleStyle}>{title}</h3>}
 
