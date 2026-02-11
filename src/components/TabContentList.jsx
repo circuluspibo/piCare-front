@@ -2,7 +2,7 @@
 /* eslint-disable no-unused-vars */
 import { ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 const TopContentList = ({
   open,
@@ -15,6 +15,14 @@ const TopContentList = ({
   const scrollContainerRef = useRef(null);
   const selectedButtonRef = useRef(null);
   const item = data?.[currentIndex];
+
+  const getFontSizeClass = useCallback((letter) => {
+    const len = letter?.length || 0;
+    if (len <= 1) return "text-2xl"; // 기본 (Config의 len1은 14rem으로 매우 크므로 상단 리스트용으로 적절히 조절 필요)
+    if (len === 2) return "text-xl";
+    if (len === 3) return "text-lg";
+    return "text-base"; // 4글자 이상
+  }, []);
 
   const scrollByAmount = (direction = "left", amount = 150) => {
     if (!scrollContainerRef.current) return;
@@ -72,7 +80,7 @@ const TopContentList = ({
                   name={`content_${item.letter}`}
                   key={item.name}
                   ref={i === currentIndex ? selectedButtonRef : null}
-                  className={`flex-1 min-w-[3.5rem] rounded-2xlh-14 text-lg font-bold ${
+                  className={`flex-shrink-0 w-fit h-14 px-4 rounded-xl w-full text-lg font-bold ${
                     i === currentIndex
                       ? `bg-${color}-400 text-${color}-50`
                       : `bg-${color}-50 border border-${color}-400 text-${color}-400`
@@ -85,7 +93,7 @@ const TopContentList = ({
                 <button
                   name={`content_${item.letter}`}
                   key={item.name}
-                  className="flex-1 min-w-[3.5rem]  text-lg font-bold text-gray-400 border border-gray-400"
+                  className="flex-1 min-w-[3.5rem] max-w-[7rem] text-lg font-bold text-gray-400 border border-gray-400"
                 >
                   {item.letter}
                 </button>

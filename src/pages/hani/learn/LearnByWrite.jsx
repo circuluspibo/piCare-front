@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import { Loader2Icon } from "lucide-react";
 import { getAsset } from "@/api/haniService";
 import { JOSA } from "@/utils/haniUtil";
@@ -22,6 +22,21 @@ const LearnByWrite = ({
   const ctxRef = useRef(null);
   const parentRef = useRef(null);
 
+  const responsiveConfig = useMemo(() => {
+    const len = item.letter?.trim().length || 1;
+
+    // 1자(기본)부터 5자(단어)까지의 설정값
+    const configs = {
+      1: { fontSize: "250px", lineWidth: 28 },
+      2: { fontSize: "200px", lineWidth: 24 },
+      3: { fontSize: "160px", lineWidth: 20 },
+      4: { fontSize: "130px", lineWidth: 18 },
+      5: { fontSize: "100px", lineWidth: 16 },
+    };
+
+    return configs[len] || configs[5];
+  }, [item.letter]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !parentRef.current) return;
@@ -31,7 +46,8 @@ const LearnByWrite = ({
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     ctx.lineCap = ctx.lineJoin = "round";
     ctx.strokeStyle = "#000";
-    ctx.lineWidth = USE_TF_FOR.has(target) ? 18 : 25;
+    const baseWidth = responsiveConfig.lineWidth;
+    ctx.lineWidth = USE_TF_FOR.has(target) ? baseWidth * 0.8 : baseWidth;
     ctxRef.current = ctx;
     clearCanvas();
     setHint(true);
@@ -144,7 +160,7 @@ const LearnByWrite = ({
       </div>
 
       <div className="col-span-8 flex flex-col gap-4">
-        <div className="p-4 text-2xl font-black text-center bg-rose-200 text-rose-800 rounded-2xl border-b-4 border-rose-300">
+        <div className="p-4 text-2xl font-black text-center bg-write-200 text-write-800 rounded-2xl border-b-4 border-write-300">
           {`"${item.letter}"${JOSA().c(item.letter, "을/를")} 직접 써보세요.`}
         </div>
 
@@ -153,7 +169,13 @@ const LearnByWrite = ({
           ref={parentRef}
         >
           {hint && (
-            <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none text-[200px] font-black">
+            <div
+              className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none text-[200px] font-black"
+              style={{
+                fontSize: responsiveConfig.fontSize,
+                lineHeight: 1,
+              }}
+            >
               {item.letter}
             </div>
           )}
