@@ -77,7 +77,7 @@ export async function resetConfigSession(payload) {
 }
 
 // 에셋 URL 생성
-export async function getAsset({ type, content }) {
+export function getAsset({ type, content }) {
   const params = type ? { type, content } : { content };
   const qs = new URLSearchParams(params).toString();
   return `${API_URL}/asset?${qs}`;

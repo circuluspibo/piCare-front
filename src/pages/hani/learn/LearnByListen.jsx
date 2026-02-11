@@ -89,7 +89,7 @@ const LearnByListen = ({
     document.addEventListener("stop-sound", stopHandler);
 
     try {
-      const url = await getAsset({ content: item.letter, type: "sound" });
+      const url = getAsset({ content: item.letter, type: "sound" });
       const playOnce = () => {
         if (cancelledRef.current) return;
         const audio = new Audio(url);
