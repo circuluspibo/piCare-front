@@ -21,6 +21,7 @@ const LearnByWrite = ({
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const parentRef = useRef(null);
+  const [failCount, setFailCount] = useState(0);
 
   const responsiveConfig = useMemo(() => {
     const len = item.letter?.trim().length || 1;
@@ -84,19 +85,36 @@ const LearnByWrite = ({
           data: { text },
         } = await worker.recognize(canvasRef.current);
         userDisplayLabel = text.replace(/\s/g, "");
-        isCorrect = userDisplayLabel === targetLetter;
+        // console.log(text);
+        isCorrect =
+          userDisplayLabel.includes(targetLetter) ||
+          userDisplayLabel === targetLetter;
       }
+
+      let finalIsCorrect = isCorrect;
 
       // 결과 처리
       if (!isCorrect) {
-        setTimeout(() => clearCanvas(), 500);
+        const nextFailCount = failCount + 1;
+        setFailCount(nextFailCount);
+
+        // 2번 틀리면 3번째 시도 혹은 2회 실패 시점에서 '강제 정답' 처리
+        if (nextFailCount >= 2) {
+          finalIsCorrect = true;
+          userDisplayLabel = targetLetter; // 서버에는 정답을 쓴 것으로 전달
+        } else {
+          // 아직 기회가 남았을 때만 캔버스 초기화
+          setTimeout(() => clearCanvas(), 500);
+        }
+      } else {
+        setFailCount(0); // 맞추면 초기화
       }
 
       // 결과 전달
       await handleAnswer({
         user: userDisplayLabel,
         correct: item.letter,
-        isCorrect,
+        isCorrect: finalIsCorrect,
         responseTime: 0,
         concentration: {
           level: "high",

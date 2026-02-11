@@ -16,12 +16,20 @@ const TopContentList = ({
   const selectedButtonRef = useRef(null);
   const item = data?.[currentIndex];
 
-  const getFontSizeClass = useCallback((letter) => {
+  const getItemClasses = useCallback((letter) => {
     const len = letter?.length || 0;
-    if (len <= 1) return "text-2xl"; // 기본 (Config의 len1은 14rem으로 매우 크므로 상단 리스트용으로 적절히 조절 필요)
-    if (len === 2) return "text-xl";
-    if (len === 3) return "text-lg";
-    return "text-base"; // 4글자 이상
+
+    // 길이에 따른 클래스 (폰트 사이즈, 최소 너비)
+    // 5자 이상일 때는 최소 너비를 더 크게 잡아 글자가 깨지지 않게 함
+    const configs = {
+      1: "text-2xl min-w-[70px]",
+      2: "text-xl min-w-[90px]",
+      3: "text-lg min-w-[110px]",
+      4: "text-base min-w-[130px]",
+      5: "text-sm min-w-[150px]",
+    };
+
+    return configs[len] || configs[5];
   }, []);
 
   const scrollByAmount = (direction = "left", amount = 150) => {
@@ -70,35 +78,39 @@ const TopContentList = ({
           >
             <ChevronLeft className={`text-${color}-500 m-auto`} />
           </div>
+          {/* 메인 리스트 컨테이너 (Flex) */}
           <div
-            className="flex-1 min-w-0 flex gap-2 px-4 py-4 overflow-x-auto no-scrollbar items-center"
+            className="flex-1 flex gap-3 px-14 py-4 overflow-x-auto no-scrollbar items-center scroll-smooth"
             ref={scrollContainerRef}
           >
-            {data?.map((item, i) =>
-              !item.complete ? (
+            {data?.map((item, i) => {
+              const isSelected = i === currentIndex;
+              const responsiveClasses = getItemClasses(item.letter);
+
+              // 공통 베이스 스타일
+              const baseStyle = `flex-shrink-0 h-14 rounded-xl font-black transition-all duration-200 flex items-center justify-center px-4 ${responsiveClasses}`;
+
+              // 상태별 컬러 스타일
+              const stateStyle = !item.complete
+                ? isSelected
+                  ? `bg-${color}-400 text-${color}-50 shadow-md scale-105 z-10`
+                  : `bg-${color}-50 border border-${color}-400 text-${color}-400 hover:bg-${color}-100`
+                : `bg-gray-50 border border-gray-300 text-gray-400 opacity-60`;
+
+              return (
                 <button
+                  key={item.name || i}
                   name={`content_${item.letter}`}
-                  key={item.name}
-                  ref={i === currentIndex ? selectedButtonRef : null}
-                  className={`flex-shrink-0 w-fit h-14 px-4 rounded-xl w-full text-lg font-bold ${
-                    i === currentIndex
-                      ? `bg-${color}-400 text-${color}-50`
-                      : `bg-${color}-50 border border-${color}-400 text-${color}-400`
-                  }`}
+                  ref={isSelected ? selectedButtonRef : null}
+                  className={`${baseStyle} ${stateStyle}`}
                   onClick={() => onSelect(i)}
                 >
-                  {item.letter}
+                  <span className="truncate whitespace-nowrap">
+                    {item.letter}
+                  </span>
                 </button>
-              ) : (
-                <button
-                  name={`content_${item.letter}`}
-                  key={item.name}
-                  className="flex-1 min-w-[3.5rem] max-w-[7rem] text-lg font-bold text-gray-400 border border-gray-400"
-                >
-                  {item.letter}
-                </button>
-              ),
-            )}
+              );
+            })}
           </div>
           <div
             className="absolute top-0 bottom-0 right-0 flex h-full px-2 py-0 cursor-pointer bg-gradient-to-l from-white/95 to-transparent"
