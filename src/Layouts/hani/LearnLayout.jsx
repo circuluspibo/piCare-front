@@ -4,10 +4,23 @@ import { useLearnContext } from "@/contexts/learnContext";
 import { COLORS, METHODS, TARGETS } from "@/utils/haniUtil";
 import { ArrowBigLeft } from "lucide-react";
 import { useMemo } from "react";
-import { Outlet, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Outlet,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
+import { Toaster } from "sonner";
 
 export default function LearnLayout() {
+  // const
   const navigate = useNavigate();
+  const [searchParam] = useSearchParams();
+  const location = useLocation();
+  const path = location.pathname;
+  const target = searchParam.get("target") || "";
+
+  // context
   const {
     character,
     chapter,
@@ -18,9 +31,8 @@ export default function LearnLayout() {
     handleContentSelect,
     handleContentListClose,
   } = useLearnContext();
-  const [searchParam] = useSearchParams();
-  const target = searchParam.get("target") || "";
-
+  // memo
+  // layout 타이틀 정의
   const getTitle = useMemo(() => {
     if (!target) return "학습";
     if (target in TARGETS) {
@@ -35,11 +47,11 @@ export default function LearnLayout() {
     }
     return "컨텐츠";
   }, [target]);
-
+  // layout 타이틀, 라우트 이동 정의
   const isMenu = useMemo(() => {
-    if (!character && !chapter)
+    if (path === "/learn")
       return { header: "👦🏻👧🏻 나는 누구일까요?", route: "/" };
-    if (character && !target)
+    if (character && !chapter)
       return { header: "📚 무엇을 배울까요?", route: "/learn" };
     else if (target)
       return {
@@ -47,7 +59,7 @@ export default function LearnLayout() {
         route: `/learn/${character}`,
       };
     else return { header: "", route: "/learn" };
-  }, [character, chapter, target, getTitle]);
+  }, [path, character, chapter, target, getTitle]);
 
   return (
     <div className="flex flex-col w-full h-full p-4 bg-white overflow-hidden font-extrabold text-slate-900">
@@ -83,6 +95,19 @@ export default function LearnLayout() {
 
       <main className="flex-grow overflow-hidden">
         <Outlet />
+        <Toaster
+          toastOptions={{
+            duration: 1500,
+            style: {
+              background: "transparent",
+              marginTop: "calc(90vh/2)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              border: "none",
+            },
+          }}
+        />
       </main>
     </div>
   );

@@ -16,6 +16,7 @@ export default function Learn() {
     isSessionLoading,
     sendAnswer,
     method,
+    isSubmitting,
   } = useLearnContext();
 
   // NOTE: 사용자 풀이 결과 전송
@@ -46,6 +47,7 @@ export default function Learn() {
     currentQuestion,
     currentLearningCnt,
     contents: contentData?.contents,
+    isSubmitting,
   };
   return (
     <>
@@ -53,8 +55,8 @@ export default function Learn() {
         <>
           {method === "read" && <LearnByRead {...commonProps} />}
           {method === "listen" && <LearnByListen {...commonProps} />}
-          {method === "speak" && <LearnBySpeak {...commonProps} />}
-          {/** TODO: Write에 맞는 OCR 모델 변경 필요할듯 */}
+          {/** 말하기는 오프라인에 backend 구현필요 */}
+          {/* {method === "speak" && <LearnBySpeak {...commonProps} />} */}
           {method === "write" && <LearnByWrite {...commonProps} />}
         </>
       )}

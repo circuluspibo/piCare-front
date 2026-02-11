@@ -13,6 +13,7 @@ export default function LearnByRead({
   currentQuestion,
   currentLearningCnt,
   contents,
+  isSubmitting,
 }) {
   // 선택 옵션 생성
   const [options, setOptions] = useState([]);
@@ -35,7 +36,7 @@ export default function LearnByRead({
 
     setTimeout(() => {
       setOptions(newOne);
-    }, 0);
+    }, 300);
   }, [item, contents]);
 
   const { startQuestion, submitAnswer } = useIntegratedMonitor();
@@ -132,7 +133,7 @@ export default function LearnByRead({
         {/* 보기 영역 */}
         <Options
           id={`${currentItemIdx}-${currentLearningCnt}-${currentQuestion}-${target}`}
-          enabled
+          enabled={!isSubmitting}
           correctAnswer={item.letter}
           options={options}
           onSelect={handleSelect}

@@ -11,7 +11,8 @@ export default function useVoiceChat({ enableTTS }) {
   const { sendLogToServer } = useDialogAnalyze();
 
   const mediaRecorderRef = useRef(null);
-  const { currentLang, personaId, personaVoice, isGpuLocked, setIsGpuLocked } = useContext(GlobalContext);
+  const { currentLang, personaId, personaVoice, isGpuLocked, setIsGpuLocked } =
+    useContext(GlobalContext);
 
   const [isRecording, setIsRecording] = useState(false);
   const [gumStream, setGumStream] = useState(null);
@@ -107,17 +108,16 @@ export default function useVoiceChat({ enableTTS }) {
       if (!message && !autoPrompt) return;
 
       // [보안] 이미 GPU가 작업 중이면 실행하지 않음
-     if (!force && isGpuLocked) {
+      if (!force && isGpuLocked) {
         console.log("GPU 사용 중이라 대화를 시작할 수 없어요.");
         return;
-     }
+      }
 
       // 실제 서버에 보낼 텍스트 결정: autoPrompt가 있으면 우선 사용
       const textToSearch = autoPrompt || message;
 
       setFullResponse("");
       if (!force) setIsGpuLocked(true); // 직접 호출할 때만 잠금
-
 
       let accumulatedResponse = "";
       let lastSentenceEnd = 0;
@@ -169,7 +169,15 @@ export default function useVoiceChat({ enableTTS }) {
         if (!force) setIsGpuLocked(false); // 직접 호출할 때만 해제
       }
     },
-    [currentSystem, currentLang, addToTtsQueue, addMessage, sendLogToServer],
+    [
+      currentSystem,
+      currentLang,
+      addToTtsQueue,
+      addMessage,
+      sendLogToServer,
+      isGpuLocked,
+      setIsGpuLocked,
+    ],
   );
 
   // 5. 음성 녹음 및 STT 전송

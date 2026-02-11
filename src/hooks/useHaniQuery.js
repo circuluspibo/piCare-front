@@ -3,11 +3,12 @@ import {
   getActiveSession,
   patchProgress,
   postAttempt,
+  resetConfigSession,
   startSession,
 } from "@/api/haniService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-const useCurriculumQuery = (characterId) => {
+export const useCurriculumQuery = (characterId) => {
   const { data, error, isPending, refetch } = useQuery({
     queryKey: ["character", "curriculum", characterId],
     queryFn: async () => {
@@ -21,8 +22,8 @@ const useCurriculumQuery = (characterId) => {
       return [];
     },
     enabled: !!characterId,
-    refetchOnMount: true, // 컴포넌트가 마운트될 때마다 refetch
-    staleTime: 0, // 데이터를 항상 stale로 간주하여 refetch 허용
+    refetchOnMount: true,
+    staleTime: 0,
   });
 
   return {
@@ -33,7 +34,7 @@ const useCurriculumQuery = (characterId) => {
   };
 };
 
-const useContentQuery = (characterId, chapterId, method) => {
+export const useContentQuery = (characterId, chapterId, method) => {
   const { data, error, isPending, refetch } = useQuery({
     queryKey: ["learning", "content", characterId, chapterId, method],
     queryFn: async () => {
@@ -52,9 +53,9 @@ const useContentQuery = (characterId, chapterId, method) => {
         return [];
       }
     },
-    enabled: !!(characterId && chapterId && method), // target이 있을 때만 쿼리를 실행합니다.
-    refetchOnMount: true, // 컴포넌트가 마운트될 때마다 refetch
-    staleTime: 0, // 데이터를 항상 stale로 간주하여 refetch 허용
+    enabled: !!(characterId && chapterId && method),
+    refetchOnMount: true,
+    staleTime: 0,
   });
   return {
     data,
@@ -64,7 +65,7 @@ const useContentQuery = (characterId, chapterId, method) => {
   };
 };
 
-const useSessionQuery = (param) => {
+export const useSessionQuery = (param) => {
   const { character, chapter, method, target } = param;
 
   return useQuery({
@@ -78,16 +79,15 @@ const useSessionQuery = (param) => {
       }),
     enabled: !!(character && chapter && method && target),
     staleTime: 0,
-    retry: 1, // 실패 시 1번만 재시도
+    retry: 1,
   });
 };
+
 export const usePostStartSessionMutation = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: (payload) => startSession(payload),
     onSuccess: (data, variables) => {
-      // 세션 생성 성공 시, 해당 조건의 activeSession 쿼리를 무효화하여 최신화합니다.
       queryClient.invalidateQueries({
         queryKey: [
           "activeSession",
@@ -104,45 +104,54 @@ export const usePostStartSessionMutation = () => {
   });
 };
 
-const useUpdateProgressMutation = () => {
+export const useUpdateProgressMutation = () => {
   const queryClient = useQueryClient();
-
-  // useQuery와 똑같이 내부에서 상태를 받아옵니다.
-  const { mutate, isPending, error } = useMutation({
+  return useMutation({
     mutationFn: async ({ sessionId, ...payload }) => {
-      // 실제 API 호출 부분
       return await patchProgress({ sessionId, ...payload });
     },
-    // ✅ 데이터 변경 성공 시, 'activeSession' 키를 가진 쿼리를 무효화(새로고침)
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["activeSession"] });
     },
   });
-
-  // 사용자가 정의한 변수명 스타일로 반환
-  return {
-    updateProgress: mutate, // 실행 함수 (LearnProvider에서 호출)
-    isUpdatePending: isPending, // 로딩 상태 (버튼 비활성화 등에 사용)
-    isUpdateError: error, // 에러 상태 (에러 메시지 등에 사용)
-  };
 };
 
-const usePostAttemptMutation = () => {
+export const usePostAttemptMutation = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: (payload) => postAttempt(payload),
-    onSuccess: () => {
-      // ✅ 세션 데이터 무효화 -> Provider의 데이터가 자동으로 최신화됨
-      queryClient.invalidateQueries({ queryKey: ["activeSession"] });
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [
+          "activeSession",
+          variables.characterId,
+          variables.chapterId,
+          variables.method,
+          variables.target,
+        ],
+      });
     },
   });
 };
 
-export {
-  useCurriculumQuery,
-  useContentQuery,
-  useSessionQuery,
-  useUpdateProgressMutation,
-  usePostAttemptMutation,
+export const useResetConfigMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload) => await resetConfigSession(payload),
+    onSuccess: async (_, variables) => {
+      // 1. 캐시 무효화
+      await queryClient.invalidateQueries({
+        queryKey: ["character", "curriculum", variables.characterId],
+      });
+      // 2. 강제로 다시 가져오기 (Refetch 완료될 때까지 await)
+      await queryClient.refetchQueries({
+        queryKey: ["character", "curriculum", variables.characterId],
+      });
+      // 3. 세션 정보도 함께 리프레시
+      queryClient.invalidateQueries({ queryKey: ["activeSession"] });
+    },
+    onError: (error) => {
+      console.error("초기화 실패:", error);
+    },
+  });
 };

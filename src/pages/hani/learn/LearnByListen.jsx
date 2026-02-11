@@ -12,6 +12,7 @@ const LearnByListen = ({
   contents, // 전체 데이터 (보기 생성을 위해 contents 사용)
   currentItemIdx, // 이름 통일
   currentLearningCount,
+  isSubmitting,
 }) => {
   const [options, setOptions] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -33,7 +34,9 @@ const LearnByListen = ({
       const random = pool[Math.floor(Math.random() * pool.length)];
       if (!choices.includes(random)) choices.push(random);
     }
-    setOptions(choices.sort(() => Math.random() - 0.5));
+    setTimeout(() => {
+      setOptions(choices.sort(() => Math.random() - 0.5));
+    }, 300);
   };
 
   const stopPlayback = () => {
@@ -94,7 +97,7 @@ const LearnByListen = ({
         audio.play().catch(() => stopPlayback());
         audio.onended = () => {
           repeatRef.current += 1;
-          if (repeatRef.current < 3 && !cancelledRef.current) {
+          if (repeatRef.current < 2 && !cancelledRef.current) {
             setTimeout(playOnce, 500);
           } else {
             stopPlayback();
@@ -174,7 +177,7 @@ const LearnByListen = ({
       {/* 우측 보기 영역 */}
       <Options
         id={`${currentItemIdx}-${currentLearningCount}`}
-        enabled={isPlayed} // 소리를 들어야 선택 가능
+        enabled={isPlayed && !isSubmitting} // 소리를 들어야 선택 가능
         correctAnswer={item.letter}
         options={options}
         onSelect={handleSelect}

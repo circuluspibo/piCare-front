@@ -1,77 +1,84 @@
 import axios from "axios";
-
-// API_URL()은 기존에 정의된 함수를 그대로 사용한다고 가정합니다.
 const API_URL = import.meta.env.VITE_API_URL;
-export const get = async (route, params, headers = {}, signal = null) => {
+
+// 공통 인스턴스 설정
+const client = axios.create({
+  baseURL: API_URL,
+  headers: { "Content-Type": "application/json" },
+});
+
+export const get = async (url, params = {}, config = {}) => {
   try {
-    const res = await axios.get(`${API_URL}/${route}`, {
-      // 1. params를 넣으면 axios가 자동으로 encodeGetParams처럼 직렬화해줍니다.
-      params: params,
-
-      // 2. 공통 헤더 설정 (Accept 등은 axios 기본값이 잘 잡혀있어 생략 가능)
-      headers: {
-        ...headers,
-        "Content-Type": "application/json",
-      },
-
-      // 3. 중단 신호(AbortController.signal) 처리
-      signal: signal || undefined,
-    });
-
-    // 4. axios는 결과가 이미 JSON으로 파싱되어 res.data에 담겨 나옵니다.
+    const res = await client.get(url, { params, ...config });
     return res.data;
   } catch (error) {
-    // 5. 에러 처리 (axios 에러 객체에서 응답 데이터를 추출하거나 커스텀 응답 반환)
-    return {
-      result: false,
-      error: error.response?.data || error.message,
-    };
+    return { result: false, error: error.response?.data || error.message };
   }
 };
 
+// 활성 세션 조회
 export async function getActiveSession(params) {
-  const qs = new URLSearchParams(params).toString();
-  const res = await fetch(`${API_URL}/sessions/active?${qs}`);
-  if (!res.ok) throw new Error("getActiveSession failed");
-  return res.json();
+  try {
+    const res = await client.get("/sessions/active", { params });
+    return res.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "getActiveSession failed");
+  }
 }
+
+// 학습 진도 업데이트
 export async function patchProgress({ sessionId, ...payload }) {
-  const res = await fetch(`${API_URL}/sessions/${sessionId}/progress`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  // console.log(res);
-  if (!res.ok) throw new Error("patchProgress failed");
-  return res.json(); // { session }
+  try {
+    const res = await client.patch(`/sessions/${sessionId}/progress`, payload);
+    return res.data; // { session }
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "patchProgress failed");
+  }
 }
+
+// 문제 풀이 기록 전송
 export async function postAttempt(payload) {
-  const res = await fetch(`${API_URL}/attempts`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error("postAttempt failed");
-  return res.json(); // { attemptId, session }
+  try {
+    const res = await client.post("/attempts", payload);
+    return res.data; // { attemptId, session }
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "postAttempt failed");
+  }
+}
+// 세션 시작
+export async function startSession(payload) {
+  try {
+    const res = await client.post("/sessions/start", payload);
+    return res.data; // { sessionId }
+  } catch (error) {
+    // 200이나 409 이외의 에러 처리
+    if (error.response?.status !== 409) {
+      throw new Error(error.response?.data?.message || "startSession failed");
+    }
+    return error.response.data;
+  }
 }
 
-const encodeGetParams = (p) =>
-  Object.entries(p)
-    .map((kv) => kv.map(encodeURIComponent).join("="))
-    .join("&");
+// 챕터 설정 초기화
+export async function resetConfigSession(payload) {
+  const { characterId, allConfigs } = payload;
+  console.log("characterId", characterId);
+  console.log("allConfig = ", JSON.parse(JSON.stringify(allConfigs)));
+  try {
+    // 요청하신 구조에 맞춰 chapterId를 키로 하는 객체 전달
+    const res = await client.put(
+      `/character/${characterId}/curriculum/configs`,
+      allConfigs,
+    );
+    return res.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "resetConfig failed");
+  }
+}
 
-export const getAsset = ({ type, content }) => {
-  return type
-    ? `${API_URL}/asset?${encodeGetParams({ type, content })}`
-    : `${API_URL}/asset?${encodeGetParams({ content })}`;
-};
-export async function startSession(payload) {
-  const res = await fetch(`${API_URL}/sessions/start`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok || (res.status !== 200 && res.status !== 409))
-    throw new Error("startSession failed");
-  return res.json(); // { sessionId }
+// 에셋 URL 생성
+export async function getAsset({ type, content }) {
+  const params = type ? { type, content } : { content };
+  const qs = new URLSearchParams(params).toString();
+  return `${API_URL}/asset?${qs}`;
 }

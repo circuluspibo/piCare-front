@@ -1,12 +1,10 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useRef, useState, useEffect } from "react";
-import { createWorker } from "tesseract.js";
 import { Loader2Icon } from "lucide-react";
 import { getAsset } from "@/api/haniService";
 import { JOSA } from "@/utils/haniUtil";
 import { useHaniOCR } from "@/hooks/useHaniOCR";
 
-const TM_INPUT_SIZE = 224;
 const USE_TF_FOR = new Set(["vowel", "consonant"]);
 
 const LearnByWrite = ({
@@ -14,58 +12,95 @@ const LearnByWrite = ({
   target,
   handleAnswer,
   currentItemIdx,
-  currentLearningCnt,
+  isSubmitting,
 }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [hint, setHint] = useState(true);
   const [busy, setBusy] = useState(false);
-
-  // 훅에서 비즈니스 로직 가져오기
   const { runInference, isPredicting } = useHaniOCR();
-
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const parentRef = useRef(null);
 
-  // 캔버스 초기 설정
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !parentRef.current) return;
 
     canvas.width = parentRef.current.clientWidth;
     canvas.height = parentRef.current.clientHeight;
-
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
+    ctx.lineCap = ctx.lineJoin = "round";
     ctx.strokeStyle = "#000";
-    ctx.lineWidth = 18;
+    ctx.lineWidth = USE_TF_FOR.has(target) ? 18 : 25;
     ctxRef.current = ctx;
-
     clearCanvas();
     setHint(true);
-  }, [item, currentItemIdx, currentLearningCnt]);
+  }, [item, target, currentItemIdx]);
+
+  const handleSubmit = async () => {
+    if (busy || isPredicting || isSubmitting) return;
+    setBusy(true);
+
+    let worker = null;
+    try {
+      let isCorrect = false;
+      let userDisplayLabel = "미인식";
+      const targetLetter = item.letter.trim();
+
+      // 추론 시작
+      if (USE_TF_FOR.has(target)) {
+        const topResults = await runInference(canvasRef.current, target);
+        if (topResults && topResults.length > 0) {
+          const top1 = topResults[0];
+          userDisplayLabel = top1.label;
+          const correctInTop3 = topResults.find(
+            (r) => r.label === targetLetter,
+          );
+
+          if (top1.label === targetLetter) isCorrect = true;
+          else if (correctInTop3 && top1.p - correctInTop3.p < 0.15)
+            isCorrect = true;
+        }
+      } else {
+        const { createWorker } = await import("tesseract.js");
+        worker = await createWorker("kor");
+        const {
+          data: { text },
+        } = await worker.recognize(canvasRef.current);
+        userDisplayLabel = text.replace(/\s/g, "");
+        isCorrect = userDisplayLabel === targetLetter;
+      }
+
+      // 결과 처리
+      if (!isCorrect) {
+        setTimeout(() => clearCanvas(), 500);
+      }
+
+      // 결과 전달
+      await handleAnswer({
+        user: userDisplayLabel,
+        correct: item.letter,
+        isCorrect,
+        responseTime: 0,
+        concentration: {
+          level: "high",
+          focusRate: 1,
+          faceDetected: true,
+          attentionScore: 1,
+        },
+      });
+    } catch (e) {
+      console.error("[Submit Error]", e);
+    } finally {
+      if (worker) await worker.terminate(); // 워커 반드시 종료
+      setBusy(false);
+    }
+  };
 
   const getPos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const { clientX, clientY } = e.touches ? e.touches[0] : e;
     return { x: clientX - rect.left, y: clientY - rect.top };
-  };
-
-  const startDraw = (e) => {
-    if (busy || isPredicting) return;
-    const { x, y } = getPos(e);
-    ctxRef.current.beginPath();
-    ctxRef.current.moveTo(x, y);
-    setIsDrawing(true);
-  };
-
-  const draw = (e) => {
-    if (!isDrawing || busy || isPredicting) return;
-    const { x, y } = getPos(e);
-    ctxRef.current.lineTo(x, y);
-    ctxRef.current.stroke();
   };
 
   const clearCanvas = () => {
@@ -79,74 +114,33 @@ const LearnByWrite = ({
     }
   };
 
-  const getProcessedCanvas = () => {
-    const src = canvasRef.current;
-    const flat = document.createElement("canvas");
-    flat.width = src.width;
-    flat.height = src.height;
-    const fctx = flat.getContext("2d");
-    fctx.fillStyle = "#ffffff";
-    fctx.fillRect(0, 0, flat.width, flat.height);
-    fctx.drawImage(src, 0, 0);
-
-    const out = document.createElement("canvas");
-    out.width = TM_INPUT_SIZE;
-    out.height = TM_INPUT_SIZE;
-    out.getContext("2d").drawImage(flat, 0, 0, TM_INPUT_SIZE, TM_INPUT_SIZE);
-    return { flat, out };
-  };
-
-  const handleSubmit = async () => {
-    if (busy || isPredicting) return;
-    setBusy(true);
-
-    try {
-      const { flat, out } = getProcessedCanvas();
-      let recognizedText = "";
-
-      if (USE_TF_FOR.has(target)) {
-        // ✅ 훅을 통해 문자열 결과만 바로 받음
-        recognizedText = await runInference(out, target);
-      } else {
-        const worker = await createWorker("kor");
-        const {
-          data: { text },
-        } = await worker.recognize(flat);
-        recognizedText = text.replace(/\s/g, "");
-        await worker.terminate();
-      }
-
-      const isCorrect = recognizedText.trim() === item.letter.trim();
-      // 결과 제출 (백엔드 페이로드 구조)
-      await handleAnswer({
-        user: recognizedText || "미인식",
-        correct: item.letter,
-        isCorrect: isCorrect,
-        responseTime: 0,
-        concentration: {
-          level: "high",
-          focusRate: 1,
-          faceDetected: true,
-          attentionScore: 1,
-        },
-      });
-    } catch (error) {
-      console.error("인식 중 오류:", error);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const isWorking = busy || isPredicting;
+  const isWorking = busy || isPredicting || isSubmitting;
 
   return (
     <div className="grid h-full grid-cols-12 gap-4 p-2">
-      <div className="col-span-4 flex items-center justify-center bg-white border rounded-3xl shadow-sm">
-        <img
-          src={getAsset({ content: item.letter })}
-          alt="target"
-          className="max-h-[70%] object-contain"
-        />
+      <div className="col-span-4 flex items-center justify-center bg-white border rounded-3xl">
+        {item.type !== "letter" ? (
+          <img
+            src={getAsset({ content: item.letter })}
+            className="max-h-[70%]"
+            alt="target"
+          />
+        ) : (
+          <>
+            {" "}
+            <img
+              src={getAsset({ content: item.components[0] })}
+              className="max-h-[30%]"
+              alt="c1"
+            />
+            <span className="text-5xl font-bold">+</span>
+            <img
+              src={getAsset({ content: item.components[1] })}
+              className="max-h-[30%]"
+              alt="c2"
+            />
+          </>
+        )}
       </div>
 
       <div className="col-span-8 flex flex-col gap-4">
@@ -159,22 +153,37 @@ const LearnByWrite = ({
           ref={parentRef}
         >
           {hint && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-10">
-              <span className="text-[200px] font-black text-black">
-                {item.letter}
-              </span>
+            <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none text-[200px] font-black">
+              {item.letter}
             </div>
           )}
-
           <canvas
             ref={canvasRef}
             className="absolute inset-0 z-10 touch-none cursor-crosshair"
-            onMouseDown={startDraw}
-            onMouseMove={draw}
+            onMouseDown={(e) => {
+              ctxRef.current.beginPath();
+              ctxRef.current.moveTo(getPos(e).x, getPos(e).y);
+              setIsDrawing(true);
+            }}
+            onMouseMove={(e) => {
+              if (isDrawing) {
+                ctxRef.current.lineTo(getPos(e).x, getPos(e).y);
+                ctxRef.current.stroke();
+              }
+            }}
             onMouseUp={() => setIsDrawing(false)}
             onMouseLeave={() => setIsDrawing(false)}
-            onTouchStart={startDraw}
-            onTouchMove={draw}
+            onTouchStart={(e) => {
+              ctxRef.current.beginPath();
+              ctxRef.current.moveTo(getPos(e).x, getPos(e).y);
+              setIsDrawing(true);
+            }}
+            onTouchMove={(e) => {
+              if (isDrawing) {
+                ctxRef.current.lineTo(getPos(e).x, getPos(e).y);
+                ctxRef.current.stroke();
+              }
+            }}
             onTouchEnd={() => setIsDrawing(false)}
           />
 
@@ -194,10 +203,10 @@ const LearnByWrite = ({
             <button
               onClick={handleSubmit}
               disabled={isWorking}
-              className="w-16 h-16 text-3xl bg-white border-2 border-green-200 rounded-2xl shadow-lg text-green-500 flex items-center justify-center"
+              className="w-16 h-16 text-3xl bg-white border-2 border-green-200 rounded-2xl shadow-lg text-green-500 flex items-center justify-center disabled:opacity-50"
             >
               {isWorking ? (
-                <Loader2Icon className="animate-spin w-8 h-8 text-rose-400" />
+                <Loader2Icon className="animate-spin text-rose-400" />
               ) : (
                 "✅"
               )}
