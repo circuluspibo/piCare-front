@@ -1,11 +1,12 @@
 import { cn } from "@/lib/utils";
+import { useEffect, useRef } from "react";
 import { useOutletContext } from "react-router-dom";
 
 export default function HeadGame() {
   // 엔진 상태 구독
   const { state } = useOutletContext();
   const { target, lastResult } = state;
-
+  const audioRef = useRef(null);
   const BASE_IMAGE_PATH = "/images/exercise";
 
   const getBgClass = (side) => {
@@ -20,6 +21,23 @@ export default function HeadGame() {
       : "bg-white opacity-20";
   };
 
+  useEffect(() => {
+    const audioPath = "/sound/exercise.mp3";
+    if (audioPath) {
+      audioRef.current = new Audio(audioPath);
+      audioRef.current.play().catch((error) => {
+        console.log("[FAILED] playing exercise music", error);
+      });
+    }
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+    };
+  }, []);
   return (
     <div className="w-full h-full flex gap-4">
       {["right", "left"].map((side) => (

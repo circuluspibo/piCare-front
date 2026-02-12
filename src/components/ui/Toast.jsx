@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import confetti from "canvas-confetti";
 import { Circle, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function Toast(props) {
   const { title, description, type } = props;
-
+  const audioRef = useRef(null);
   useEffect(() => {
     // confetti의 떨어지는 시간(지속 시간)은 직접적으로 옵션으로 제공되지 않지만,
     // gravity 값을 조정하여 떨어지는 속도를 조절할 수 있습니다.
@@ -46,10 +47,41 @@ export function Toast(props) {
     }
   }, []);
 
+  // 오디오 재생
+  useEffect(() => {
+    const audioMap = {
+      success: "/sound/pass.mp3",
+      error: "/sound/fail.mp3",
+    };
+
+    const audioPath = audioMap[type];
+
+    if (audioPath) {
+      audioRef.current = new Audio(audioPath);
+
+      audioRef.current.play().catch((err) => {
+        console.log(`[FAILED] playing ${type}`, err);
+      });
+    }
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+    };
+  }, [type]);
   return (
-    <div className="flex items-center bg-white rounded-lg w-full md:w-[calc(100vw/3)] lg:w-[calc(100vw/4)] shadow-2xl">
+    <div
+      className={cn(
+        `flex items-center rounded-xl w-full md:w-[calc(100vw/3)] lg:w-[calc(100vw/4)] shadow-2xl`,
+        type === "success"
+          ? "bg-emerald-50 text-emerald-500"
+          : "bg-rose-50 text-rose-500",
+      )}
+    >
       <div
-        className={`flex gap-4 items-center p-4 w-full rounded-lg shadow-lg text-${type}-content bg-${type}`}
+        className={`flex gap-4 items-center p-4 w-full rounded-lg shadow-lg `}
       >
         {type === "success" && (
           <Circle className="w-10 h-10 font-extrabold" strokeWidth={2.75} />

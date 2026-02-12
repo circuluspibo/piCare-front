@@ -305,14 +305,16 @@ export default function PianoTraining() {
       </aside>
 
       {/* 결과 다이얼로그에서 getFeedbackMsg() 호출 */}
-      <ResultDialog
-        isOpen={isFinish}
-        onClose={onComplete}
-        feedbackMsg={getFeedbackMsg}
-        successCount={scores.filter((s) => s.isPass).length}
-        time={totalElapsedTime}
-        onConfirm={onComplete}
-      />
+      {isFinish && (
+        <ResultDialog
+          isOpen={isFinish}
+          onClose={onComplete}
+          feedbackMsg={getFeedbackMsg}
+          successCount={scores.filter((s) => s.isPass).length}
+          time={totalElapsedTime}
+          onConfirm={onComplete}
+        />
+      )}
     </div>
   );
 }

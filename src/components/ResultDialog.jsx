@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,25 @@ export default function ResultDialog({
   secondaryBtnText,
   onSecondaryClick,
 }) {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    const audioPath = "/sound/complete.mp3";
+    if (audioPath) {
+      audioRef.current = new Audio(audioPath);
+      audioRef.current.play().catch((err) => {
+        console.log("[FAILED] playing complete mp3", err);
+      });
+    }
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+    };
+  }, [isOpen]);
   return (
     <Dialog isOpen={isOpen} onClose={onClose} title={title}>
       <div className="text-center flex flex-col items-center gap-6">

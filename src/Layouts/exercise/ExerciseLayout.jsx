@@ -116,25 +116,26 @@ export default function ExerciseLayout() {
           </button>
         </div>
       </Dialog>
-
-      <ResultDialog
-        isOpen={state.isFinish}
-        onClose={() => actions.setIsFinish(false)}
-        feedbackMsg={
-          state.totalScores.filter((s) => s.isPass).length >= 15
-            ? "완벽해요!"
-            : "참 잘하셨어요!"
-        }
-        successCount={state.totalScores.filter((s) => s.isPass).length}
-        time={state.finalTime}
-        secondaryBtnText="다시하기"
-        onSecondaryClick={() => actions.runCountdown()}
-        confirmText="활동 선택"
-        onConfirm={() => {
-          actions.setIsFinish(false);
-          navigate("/exercise");
-        }}
-      />
+      {state.isFinish && (
+        <ResultDialog
+          isOpen={state.isFinish}
+          onClose={() => actions.setIsFinish(false)}
+          feedbackMsg={
+            state.totalScores.filter((s) => s.isPass).length >= 15
+              ? "완벽해요!"
+              : "참 잘하셨어요!"
+          }
+          successCount={state.totalScores.filter((s) => s.isPass).length}
+          time={state.finalTime}
+          secondaryBtnText="다시하기"
+          onSecondaryClick={() => actions.runCountdown()}
+          confirmText="활동 선택"
+          onConfirm={() => {
+            actions.setIsFinish(false);
+            navigate("/exercise");
+          }}
+        />
+      )}
     </div>
   );
 }

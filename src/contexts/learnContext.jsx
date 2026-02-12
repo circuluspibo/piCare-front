@@ -281,7 +281,7 @@ export const LearnProvider = ({ children }) => {
           ),
           {
             position: "top-center",
-            duration: 1000,
+            duration: 1500,
             onAutoClose: () => handleSessionEnd(response),
           },
         );
@@ -347,18 +347,20 @@ export const LearnProvider = ({ children }) => {
   return (
     <LearnContext.Provider value={value}>
       {children}
-      <ResultDialog
-        isOpen={isResultOpen}
-        onClose={() => setIsResultOpen(false)}
-        feedbackMsg={resultData.feedbackMsg}
-        successCount={resultData.successCount}
-        time={resultData.time}
-        confirmText="메인화면으로 돌아가기"
-        onConfirm={() => {
-          setIsResultOpen(false);
-          navigate(`/learn/${CHARACTER}`);
-        }}
-      />
+      {isResultOpen && (
+        <ResultDialog
+          isOpen={isResultOpen}
+          onClose={() => setIsResultOpen(false)}
+          feedbackMsg={resultData.feedbackMsg}
+          successCount={resultData.successCount}
+          time={resultData.time}
+          confirmText="메인화면으로 돌아가기"
+          onConfirm={() => {
+            setIsResultOpen(false);
+            navigate(`/learn/${CHARACTER}`);
+          }}
+        />
+      )}
     </LearnContext.Provider>
   );
 };
