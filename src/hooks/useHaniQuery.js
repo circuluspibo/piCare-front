@@ -130,6 +130,15 @@ export const usePostAttemptMutation = () => {
           variables.target,
         ],
       });
+      queryClient.invalidateQueries({
+        queryKey: [
+          "learning",
+          "content",
+          variables.characterId,
+          variables.chapterId,
+          variables.method,
+        ],
+      });
     },
   });
 };

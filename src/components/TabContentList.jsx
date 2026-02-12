@@ -86,12 +86,12 @@ const TopContentList = ({
             {data?.map((item, i) => {
               const isSelected = i === currentIndex;
               const responsiveClasses = getItemClasses(item.letter);
-
+              const isComplete = item.complete;
               // 공통 베이스 스타일
               const baseStyle = `flex-shrink-0 h-14 rounded-xl font-black transition-all duration-200 flex items-center justify-center px-4 ${responsiveClasses}`;
 
               // 상태별 컬러 스타일
-              const stateStyle = !item.complete
+              const stateStyle = !isComplete
                 ? isSelected
                   ? `bg-${color}-400 text-${color}-50 shadow-md scale-105 z-10`
                   : `bg-${color}-50 border border-${color}-400 text-${color}-400 hover:bg-${color}-100`
@@ -103,7 +103,8 @@ const TopContentList = ({
                   name={`content_${item.letter}`}
                   ref={isSelected ? selectedButtonRef : null}
                   className={`${baseStyle} ${stateStyle}`}
-                  onClick={() => onSelect(i)}
+                  disabled={isComplete}
+                  onClick={() => !isComplete && onSelect(i)}
                 >
                   <span className="truncate whitespace-nowrap">
                     {item.letter}
