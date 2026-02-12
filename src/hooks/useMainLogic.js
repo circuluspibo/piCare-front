@@ -98,7 +98,7 @@ export function useMainLogic({
     const timer = setInterval(fetchHB, HB_INTERVAL);
     fetchHB();
     return () => clearInterval(timer);
-  }, [updateHumanInfo, compareAndLog, controlEngine]);
+  }, []);
 
   // 비디오 컨트롤러
   const toggleVideoFeed = useCallback(async () => {
