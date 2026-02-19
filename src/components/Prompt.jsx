@@ -1,9 +1,9 @@
-import { useRef, useCallback, useEffect } from "react";
+import { useRef, useCallback, useEffect, useContext } from "react";
 import MicToggleButton from "./magicui/listening-indicator";
 import Dialog from "./Dialog";
 import { useVoiceChat } from "@/contexts/VoiceChatContext";
 import { cn } from "@/lib/utils";
-import { ThreeDot } from "react-loading-indicators";
+import { GlobalContext } from "@/contexts/GlobalContext";
 
 export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
   const scrollRef = useRef(null);
@@ -19,6 +19,7 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
     currentLang,
   } = useVoiceChat();
 
+  const { personaId } = useContext(GlobalContext);
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
     return new Date(timestamp).toLocaleTimeString(currentLang, {
@@ -81,7 +82,7 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
             className={cn(
               "w-full flex flex-col",
               // ✅ 유저는 오른쪽(end), AI는 왼쪽(start) 정렬
-              msg.role === "user" ? "items-end" : "items-start"
+              msg.role === "user" ? "items-end" : "items-start",
             )}
           >
             <div
@@ -90,7 +91,7 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
                 // ✅ 역할에 따른 색상 및 말풍선 꼬리(모서리) 처리
                 msg.role === "user"
                   ? "bg-blue-500 text-white rounded-tr-none" // 유저: 파랑
-                  : "bg-white text-gray-800 border border-gray-100 rounded-tl-none" // AI: 흰색
+                  : "bg-white text-gray-800 border border-gray-100 rounded-tl-none", // AI: 흰색
               )}
             >
               <p
@@ -130,10 +131,16 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
       </div>
 
       {/* 3. 로딩/생각 중 다이얼로그 */}
-      <Dialog isOpen={isThinking} onClose={() => {}} title="생각 중...">
+      <Dialog isOpen={true} onClose={() => {}} title="생각 중...">
+        {/* <Dialog isOpen={isThinking} onClose={() => {}} title="생각 중..."> */}
         <div className="text-center px-10 py-5 flex flex-col items-center">
-          <div className="flex space-x-2 mb-8">
-                 <ThreeDot variant="bounce" color="#3174cc" size="large" text="" textColor=""/>
+          <div className="relative flex items-center justify-center">
+            {/* 바닥 그림자: 로봇이 뜰 때 같이 변하게 하면 입체감이 살아납니다 */}
+            <img
+              src={`/images/persona/${personaId}_thinking.png`}
+              alt="thinking robot"
+              className="w-52 h-52 object-contain animate-bounce relative z-10 duration-1000 rounded-2xl"
+            />
           </div>
           <p className="text-3xl font-black text-gray-700 break-keep">
             질문을 이해하고 있어요...
