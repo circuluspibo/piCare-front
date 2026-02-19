@@ -94,7 +94,7 @@ const TopContentList = ({
               const stateStyle = !isComplete
                 ? isSelected
                   ? `bg-${color}-400 text-${color}-50 shadow-md scale-105 z-10`
-                  : `bg-${color}-50 border border-${color}-400 text-${color}-400 hover:bg-${color}-100`
+                  : `bg-${color}-50 border border-${color}-400 text-${color}-400`
                 : `bg-gray-50 border border-gray-300 text-gray-400 opacity-60`;
 
               return (

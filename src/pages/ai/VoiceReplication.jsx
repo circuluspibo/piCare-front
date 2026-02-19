@@ -2,10 +2,11 @@ import React, { useState, useRef, useContext, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
-import { RotateCcw, Headphones } from "lucide-react";
+import { RotateCcw, Headphones, ArrowBigLeft } from "lucide-react";
 import { postVoice2Wav } from "@/api/gpuService";
 import { getTtsBlob } from "@/api/cpuService";
 import { GlobalContext } from "@/contexts/GlobalContext";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const USER_SCRIPT_LIST = [
   "사랑하는 우리 가족들아, 오늘도 건강하고 웃음 가득한 하루 보내렴. 언제나 너희를 응원하고 아주 많이 사랑한다.",
@@ -27,6 +28,11 @@ export default function VoiceReplication() {
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const mediaRecorderRef = useRef(null);
   const audioChunkRef = useRef([]);
+
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const pathParts = pathname.split("/").filter(Boolean);
+  const previous = pathParts[0];
 
   const { humanInfo } = useContext(GlobalContext);
   const targetVoice = useMemo(() => {
@@ -185,6 +191,23 @@ export default function VoiceReplication() {
 
       {/* RIGHT SECTION: Controls (1/3 영역) */}
       <div className="flex-1 flex flex-col gap-3 h-full">
+        {/* 1. 뒤로가기 버튼 */}
+        <button
+          onClick={() => navigate(`/${previous}`)}
+          className={cn(
+            "w-full bg-slate-50 rounded-2xl",
+            "flex items-center justify-center py-3 shadow-md",
+            "active:translate-y-1 active:border-b-[2px] transition-all group",
+          )}
+        >
+          <ArrowBigLeft
+            className="size-12 text-blue-500 transition-transform group-hover:scale-110"
+            fill="currentColor"
+          />
+          <span className="text-3xl font-black text-slate-700 ml-2">
+            뒤로가기
+          </span>
+        </button>
         {/* 1. 상단 안내창: 비중을 높여(flex-[1.2]) 로봇과 설명을 더 강조 */}
         <div className="flex-[1.2] bg-white rounded-2xl p-4 shadow-md border-b-[8px] border-slate-200 flex flex-col items-center justify-center text-center gap-3">
           {/* 로봇 프로필 이미지: 크기를 키워 시인성 확보 */}

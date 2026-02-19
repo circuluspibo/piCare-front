@@ -11,7 +11,7 @@ const PersonaContainer = React.forwardRef(
         // 상위 컴포넌트(Main)에서 flex-col을 이미 적용했으므로 단순화
         className={cn(
           "flex flex-col items-center justify-start w-full h-full rounded-l-xl",
-          className
+          className,
         )}
         ref={ref}
         {...props}
@@ -19,7 +19,7 @@ const PersonaContainer = React.forwardRef(
         {children}
       </div>
     );
-  }
+  },
 );
 PersonaContainer.displayName = "PersonaContainer";
 
@@ -35,7 +35,7 @@ const PersonaToggle = ({ selectedGender, onToggle }) => {
           "px-4 py-2 text-xl font-bold transition-colors shadow-md",
           isMale
             ? "bg-blue-500 text-white rounded-l-lg"
-            : "bg-gray-200 text-gray-700 rounded-l-lg hover:bg-gray-300"
+            : "bg-gray-200 text-gray-700 rounded-l-lg",
         )}
       >
         남자
@@ -46,7 +46,7 @@ const PersonaToggle = ({ selectedGender, onToggle }) => {
           "px-4 py-2 text-xl font-bold transition-colors shadow-md",
           !isMale
             ? "bg-pink-500 text-white rounded-r-lg"
-            : "bg-gray-200 text-gray-700 rounded-r-lg hover:bg-gray-300"
+            : "bg-gray-200 text-gray-700 rounded-r-lg",
         )}
       >
         여자
@@ -62,7 +62,7 @@ const thumbnailVariants = cva(
     variants: {
       isSelected: {
         true: "shadow-1xl scale-[0.95]", // 확대 비율을 줄여 잘림 방지s
-        false: "border-gray-300 hover:border-gray-400 scale-100",
+        false: "border-gray-300 scale-100",
       },
       // 성별에 따른 테두리 색상만 변경
       gender: {
@@ -86,7 +86,7 @@ const thumbnailVariants = cva(
         className: "ring-4", // 선택된 여성일 경우 핑크색 링 추가
       },
     ],
-  }
+  },
 );
 // Persona
 // PersonaThumbnail
@@ -99,7 +99,7 @@ const PersonaThumbnail = React.forwardRef(
         className={cn(
           // w-16 h-16으로 고정하여 완벽한 원형 유지
           "w-20 h-20 flex items-center justify-center rounded-full shadow-inner overflow-hidden border-2",
-          thumbnailVariants({ isSelected, gender, className })
+          thumbnailVariants({ isSelected, gender, className }),
         )}
         ref={ref}
         {...props}
@@ -115,7 +115,7 @@ const PersonaThumbnail = React.forwardRef(
         </div>
       </button>
     );
-  }
+  },
 );
 PersonaThumbnail.displayName = "PersonaThumbnail";
 

@@ -162,7 +162,7 @@ const LearnByListen = ({
               className={`flex flex-col items-center justify-center gap-6 p-8 rounded-2xl transition-all ${
                 isPlaying
                   ? "bg-cyan-100 text-teal-500"
-                  : "bg-cyan-500 text-white animate-focus hover:bg-teal-600"
+                  : "bg-cyan-500 text-white animate-focus"
               }`}
             >
               <p className="text-9xl">🔊</p>

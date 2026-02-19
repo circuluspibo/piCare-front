@@ -1,12 +1,10 @@
 import { cn } from "@/lib/utils";
-import { useEffect, useRef } from "react";
 import { useOutletContext } from "react-router-dom"; // context 추가
 
 export default function FlagGame() {
   // 부모 Layout이 쏜 state를 직접 구독합니다.
   const { state } = useOutletContext();
   const { target, lastResult } = state;
-  const audioRef = useRef(null);
 
   const BASE_IMAGE_PATH = "/images/exercise";
 
@@ -29,23 +27,6 @@ export default function FlagGame() {
       : "bg-white opacity-20 border-transparent";
   };
 
-  useEffect(() => {
-    const audioPath = "/sound/exercise.mp3";
-    if (audioPath) {
-      audioRef.current = new Audio(audioPath);
-      audioRef.current.play().catch((error) => {
-        console.log("[FAILED] playing exercise music", error);
-      });
-    }
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current = null;
-      }
-    };
-  }, []);
   return (
     <div className="w-full h-full flex gap-4">
       {["right", "left"].map((side) => (

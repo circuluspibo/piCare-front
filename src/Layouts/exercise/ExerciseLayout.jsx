@@ -45,48 +45,19 @@ export default function ExerciseLayout() {
           </span>
         </div>
       )}
-
-      {/* 헤더 섹션 */}
-      <header className="flex flex-row items-center justify-between pb-2 border-b mb-4">
-        <div className="flex items-center text-4xl font-black cursor-pointer">
-          <ArrowBigLeft
-            className="size-14 mr-2 cursor-pointer hover:scale-110 transition-transform"
-            onClick={(e) => {
-              e.stopPropagation();
-              isMenu ? navigate("/") : navigate("/exercise");
-            }}
-          />
-          <h1>
-            {isMenu
-              ? "오늘의 신체 훈련"
-              : GAME_INFO[modeKey]?.title || "훈련 중"}
-          </h1>
-        </div>
-
-        {/* 게임 중일 때만 인식 상태 표시 */}
-        {!isMenu && (
-          <div
-            className={cn(
-              "px-10 py-3 rounded-full text-3xl text-white transition-colors",
-              state.isPoseVisible ? "bg-green-500" : "bg-red-500 animate-pulse",
-            )}
-          >
-            {state.isPoseVisible ? "인식 성공" : "인식 불가"}
-          </div>
-        )}
-      </header>
-
       {/* 메인 영역 */}
       <main className="flex flex-grow overflow-hidden relative gap-4 p-2">
         <Outlet context={{ state, actions }} />
 
         {/* 오른쪽: 엔진 상태 모니터링 (메뉴가 아닐 때만 노출) */}
         {!isMenu && (
-          <aside className="flex w-1/3 flex-col gap-2 animate-in slide-in-from-right duration-500">
+          <aside className="flex w-2/5 flex-col gap-2 animate-in slide-in-from-right duration-500">
             {/* 점수판 */}
             <ScoreBoard total={20} scores={state.totalScores} />
             {/* 실시간 AI 카메라 */}
-            <div className="flex-1 relative bg-[#1A1A1A] rounded-2xl overflow-hidden group">
+            <div
+              className={`flex-1 relative rounded-2xl overflow-hidden group border-4 ${state.isPoseVisible ? "border-green-500" : "border-red-500"}`}
+            >
               <video ref={videoRef} autoPlay playsInline className="hidden" />
               <canvas
                 ref={canvasRef}

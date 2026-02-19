@@ -32,6 +32,8 @@ export function useExerciseEngine(gameMode) {
   const actionsRef = useRef({}); // 순환 참조 해결용
   const onResultsRef = useRef(null);
 
+  const cooldownRef = useRef(false);
+
   // 최신 상태 실시간 동기화
   useEffect(() => {
     stateRef.current = state;
@@ -91,12 +93,19 @@ export function useExerciseEngine(gameMode) {
   const calc = useCallback(
     (side) => {
       const current = stateRef.current;
+
       if (
+        cooldownRef.current ||
         current.cameraError ||
         current.isFinish ||
         (isPoseDetectedRef.current && side !== "timeout")
       )
         return;
+
+      cooldownRef.current = true;
+      setTimeout(() => {
+        cooldownRef.current = false;
+      }, 3000);
 
       isPoseDetectedRef.current = true;
       if (intvRef.current) clearInterval(intvRef.current);
@@ -326,6 +335,13 @@ export function useExerciseEngine(gameMode) {
     initTimeRef.current = null;
     isPoseDetectedRef.current = false;
   }, []);
+
+  // 게임 나가면 꺼지도록 설정
+  useEffect(() => {
+    if (!gameMode) {
+      resetGame();
+    }
+  }, [gameMode]);
 
   return {
     state,

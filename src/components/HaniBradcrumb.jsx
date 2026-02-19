@@ -36,7 +36,7 @@ export default function HaniBreadcrumb() {
     <div className="flex w-full justify-between items-center">
       <div className="inline-flex items-center">
         <Link
-          className="p-1 mr-1 w-12 h-12 bg-transparent rounded-full opacity-65 hover:opacity-100 hover:bg-white/50"
+          className="p-1 mr-1 w-12 h-12 bg-transparent rounded-full opacity-65"
           to={`/learn/${character}/${chapter}?target=${target}`}
         >
           <ChevronLeft className="w-10 h-10" />

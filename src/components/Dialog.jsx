@@ -46,7 +46,7 @@ export default function Dialog({
                 }}
                 // 기본 스타일과 props로 받은 style을 병합
                 className={`font-bold py-2 px-4 rounded transition duration-200 ${
-                  action.style || "bg-blue-600 text-white hover:bg-blue-700"
+                  action.style || "bg-blue-600 text-white"
                 }`}
               >
                 {action.text}

@@ -6,9 +6,7 @@ import React, {
   useRef,
 } from "react";
 import { cn } from "@/lib/utils";
-import Dialog from "@/components/Dialog";
 import { fireInfoConfetti } from "@/components/magicui/connfetti";
-import { IconRenderer } from "@/components/ui/IconRenderer";
 import { useOutletContext } from "react-router-dom";
 import ScoreBoard from "@/components/ui/ScoreBoard";
 import ResultDialog from "@/components/ResultDialog";
@@ -48,12 +46,10 @@ export default function ColorTraining() {
 
   const startTimeRef = useRef(null);
   const totalStartRef = useRef(null);
-
   const audio = useMemo(
     () => ({
       pass: new Audio("/sound/pass.mp3"),
       fail: new Audio("/sound/fail.mp3"),
-      complete: new Audio("/sound/complete.mp3"),
     }),
     [],
   );
@@ -97,10 +93,7 @@ export default function ColorTraining() {
           0,
         );
         setTotalElapsedTime(duration);
-        setTimeout(() => {
-          setIsFinish(true);
-          audio.complete.play().catch(() => {});
-        }, 800);
+        setIsFinish(true);
       } else {
         setTimeout(startNextRound, 800);
       }
@@ -118,16 +111,16 @@ export default function ColorTraining() {
   }, [isFinish]);
 
   return (
-    <div className="flex h-full gap-4 animate-in fade-in duration-500 font-extrabold p-2 bg-white">
+    <div className="flex h-full gap-4 animate-in fade-in duration-500 font-extrabold py-2 bg-white">
       {/* LEFT: 텍스처 팔레트 영역 */}
-      <section className="w-2/3 flex-1 flex items-center justify-center relative overflow-hidden">
+      <section className="w-3/4 flex-1 flex items-center justify-center relative overflow-hidden">
         <div className="relative w-full h-full bg-orange-100 rounded-[180px_250px_140px_300px] rotate-2 flex items-center justify-center">
           <div className="absolute top-14 left-16 w-16 h-20 rotate-[30deg] bg-white rounded-full shadow-[inset_4px_4px_10px_rgba(0,0,0,0.1)]" />
           <div className="relative w-full h-full">
             {gameData.grid.map((color, i) => {
               const angle = (i * (360 / 9) - 10) * (Math.PI / 180);
-              const rx = 195;
-              const ry = 135;
+              const rx = 240;
+              const ry = 160;
               const x = Math.cos(angle) * rx;
               const y = Math.sin(angle) * ry;
 
@@ -143,8 +136,8 @@ export default function ColorTraining() {
                   }}
                   disabled={isProcessing}
                   className={cn(
-                    "absolute w-[90px] h-[90px] transition-all duration-300 border-none shadow-[4px_8px_15px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(0,0,0,0.2)]",
-                    "hover:scale-110 active:scale-95 before:absolute before:top-3 before:left-4 before:w-7 before:h-4 before:bg-white/30 before:rounded-full before:blur-[1px]",
+                    "absolute w-[100px] h-[90px] transition-all duration-300 border-none shadow-[4px_8px_15px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(0,0,0,0.2)]",
+                    "active:scale-95 before:absolute before:top-3 before:left-4 before:w-7 before:h-4 before:bg-white/30 before:rounded-full before:blur-[1px]",
                     wrongIdx === i &&
                       "animate-shake ring-[10px] ring-rose-200/50",
                     isProcessing && "opacity-90 pointer-events-none",
@@ -157,7 +150,7 @@ export default function ColorTraining() {
       </section>
 
       {/* RIGHT: 정보창 */}
-      <aside className="w-1/3 flex flex-col gap-4">
+      <aside className="w-1/4 flex flex-col gap-4">
         {/** SECTION: 점수판 */}
         <ScoreBoard total={10} scores={scores} />
         <div className="flex-1 flex flex-col rounded-2xl bg-slate-50 items-center justify-center gap-6 p-6 shadow-inner">
@@ -175,14 +168,16 @@ export default function ColorTraining() {
       </aside>
 
       {/* 결과 다이얼로그에서 getFeedbackMsg() 호출 */}
-      <ResultDialog
-        isOpen={isFinish}
-        onClose={onComplete}
-        feedbackMsg={getFeedbackMsg}
-        successCount={scores.filter((s) => s.isPass).length}
-        time={totalElapsedTime}
-        onConfirm={onComplete}
-      />
+      {isFinish && (
+        <ResultDialog
+          isOpen={isFinish}
+          onClose={onComplete}
+          feedbackMsg={getFeedbackMsg}
+          successCount={scores.filter((s) => s.isPass).length}
+          time={totalElapsedTime}
+          onConfirm={onComplete}
+        />
+      )}
     </div>
   );
 }

@@ -34,11 +34,7 @@ export default function Character() {
             className="w-1/6 tp:w-1/4 border rounded-2xl"
           >
             <Card
-              className={`flex flex-col flex-grow gap-2 justify-center items-center p-4 cursor-pointer md:p-6 tl6:p-8 ${
-                selectedCard?.name === item.name
-                  ? "bg-gradient-to-t from-sky-100 to-white shadow-2xl"
-                  : "hover:shadow-xl"
-              }`}
+              className={`flex flex-col flex-grow gap-2 justify-center items-center p-4 cursor-pointer md:p-6 tl6:p-8 bg-gradient-to-t from-sky-100 to-white shadow-2xl`}
               onClick={() => onCardClick(item)}
             >
               <div className="text-7xl">{item.icon}</div>

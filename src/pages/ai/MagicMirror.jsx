@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { Camera, RotateCcw, UserCircle2 } from "lucide-react";
+import { ArrowBigLeft, Camera, RotateCcw, UserCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { postFace2Img } from "@/api/gpuService";
 import { getHeartbeat, getStartCollection } from "@/api/npuService";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function MagicMirror() {
   const videoRef = useRef(null);
@@ -16,6 +17,11 @@ export default function MagicMirror() {
 
   const [count, setCount] = useState(null);
   const [isShutter, setIsShutter] = useState(false);
+
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const pathParts = pathname.split("/").filter(Boolean);
+  const previous = pathParts[0];
 
   // 1. 카메라 제어 최적화 및 메모리 누수 방지
   const stopCamera = useCallback(() => {
@@ -98,7 +104,7 @@ export default function MagicMirror() {
       img.onload = () => {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high'
+        ctx.imageSmoothingQuality = "high";
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       };
@@ -175,7 +181,7 @@ export default function MagicMirror() {
     <div className="flex items-center justify-center w-full h-full overflow-hidden gap-10">
       {/* LEFT: Mirror Frame (기존 스타일 보존) */}
       <div
-        className="relative flex-shrink-0 w-8/12 h-full cursor-pointer transition-transform duration-500 hover:scale-[1.005]"
+        className="relative flex-shrink-0 w-8/12 h-full cursor-pointer transition-transform duration-500"
         onClick={handleMirrorClick}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-[#c4a484] via-[#8b5a2b] to-[#5d3a1a] rounded-2xl p-4 border-t-[4px] border-l-[4px] border-white/30">
@@ -239,18 +245,34 @@ export default function MagicMirror() {
       {/* RIGHT: Sophisticated UI Area (보완된 디자인) */}
       <div className="w-4/12 h-full flex flex-col justify-between py-2">
         {/* 상단: 타이틀 및 안내 섹션 */}
+        {/* 1. 뒤로가기 버튼 */}
+        <button
+          onClick={() => navigate(`/${previous}`)}
+          className={cn(
+            "w-full bg-slate-50 rounded-2xl",
+            "flex items-center justify-center py-3 shadow-md",
+            "active:translate-y-1 active:border-b-[2px] transition-all group",
+          )}
+        >
+          <ArrowBigLeft
+            className="size-12 text-blue-500 transition-transform group-hover:scale-110"
+            fill="currentColor"
+          />
+          <span className="text-3xl font-black text-slate-700 ml-2">
+            뒤로가기
+          </span>
+        </button>
         <div className="flex flex-col gap-6">
           {/* 고급스러운 명판(Plaque) 스타일의 메시지 박스 */}
           <div className="bg-[#fffdfa] border-2 border-[#e5e0d8] border-b-[6px] rounded-[2.5rem] p-10 shadow-md flex flex-col items-center text-center transition-all">
             <p className="text-2xl font-bold text-[#5d3a1a]/70 leading-relaxed break-keep tracking-tight">
               {isProcessing
                 ? "거울 속의 시간을\n거꾸로 돌리고 있습니다..."
-                : !isActive 
-                ? "왼쪽의 마법 거울을 터치하여\n새로운 나를 만나보세요."
-                : isResultMode
-                  ? "마법이 완성되었습니다.\n정말 멋진 모습이네요!"
-                  : "준비가 되셨다면 아래의\n젊어지기 버튼을 눌러주세요."
-              }
+                : !isActive
+                  ? "왼쪽의 마법 거울을 터치하여\n새로운 나를 만나보세요."
+                  : isResultMode
+                    ? "마법이 완성되었습니다.\n정말 멋진 모습이네요!"
+                    : "준비가 되셨다면 아래의\n젊어지기 버튼을 눌러주세요."}
             </p>
           </div>
         </div>
@@ -281,7 +303,7 @@ export default function MagicMirror() {
               <RotateCcw
                 size={48}
                 strokeWidth={4}
-                className="group-hover:rotate-[-45deg] transition-transform"
+                className="transition-transform"
               />
               <span>다시 하기</span>
             </button>

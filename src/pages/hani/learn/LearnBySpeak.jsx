@@ -105,7 +105,7 @@ export default function LearnBySpeak({
             <button
               onClick={playSound}
               disabled={isPlaying}
-              className="bg-lime-500 rounded-2xl text-4xl py-4 px-8 font-bold hover:bg-lime-600 transition-colors disabled:bg-gray-200"
+              className="bg-lime-500 rounded-2xl text-4xl py-4 px-8 font-bold transition-colors disabled:bg-gray-200"
             >
               {isPlaying ? "🔊 재생 중..." : "🔊 소리 듣기"}
             </button>
@@ -118,7 +118,7 @@ export default function LearnBySpeak({
           <button
             onClick={onStartRecord}
             disabled={isPlaying}
-            className="flex flex-col items-center justify-center gap-10 py-8 text-3xl font-bold bg-lime-500 rounded-2xl animate-focus hover:bg-lime-600 w-full disabled:opacity-50"
+            className="flex flex-col items-center justify-center gap-10 py-8 text-3xl font-bold bg-lime-500 rounded-2xl animate-focus w-full disabled:opacity-50"
           >
             <p className="text-9xl">🎙️</p>
             <p>말하기</p>
@@ -144,7 +144,7 @@ export default function LearnBySpeak({
               onClick={checkPronunciation}
               disabled={""}
               className={`flex items-center justify-center gap-2 text-2xl font-bold py-3 px-6 rounded-xl w-full transition 
-                    "bg-blue-500 text-white hover:bg-blue-600"
+                    "bg-blue-500 text-white"
                   `}
             >
               <AudioLines /> 제출하기

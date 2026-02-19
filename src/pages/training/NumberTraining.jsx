@@ -35,7 +35,6 @@ export default function NumberTraining() {
     () => ({
       pass: new Audio("/sound/pass.mp3"),
       fail: new Audio("/sound/fail.mp3"),
-      complete: new Audio("/sound/complete.mp3"),
     }),
     [],
   );
@@ -46,7 +45,15 @@ export default function NumberTraining() {
     setIsEvaluating(false);
   }, []);
 
-  const handleSelect = (idx) => {
+  // 2. 숫자 음성 재생 함수 (재사용 가능)
+  const playNumberSound = useCallback((num) => {
+    const numAudio = new Audio(`/sound/number/${num}.mp3`);
+    numAudio.play().catch((err) => console.log("Audio play failed:", err));
+  }, []);
+
+  const handleSelect = (num, idx) => {
+    // 클릭하자마자 숫자 음성 재생
+    playNumberSound(num);
     if (isEvaluating || userSequence.includes(idx)) return;
     const nextSeq = [...userSequence, idx];
     setUserSequence(nextSeq);
@@ -100,7 +107,7 @@ export default function NumberTraining() {
   }, [isFinish]);
 
   return (
-    <div className="flex w-full h-full gap-4 animate-in fade-in duration-500 font-extrabold p-3 bg-white">
+    <div className="flex w-full h-full gap-4 animate-in fade-in duration-500 font-extrabold py-2 bg-white">
       {/* 1. 좌측: 쿨톤 계산기 본체 (Piano 스타일 통일) */}
       <section className="flex-[2.8] flex flex-col items-stretch justify-center p-6 bg-slate-100 rounded-[40px] shadow-inner border-[8px] border-slate-200/50">
         {/* 대형 전광판: 시니어를 위한 큰 글씨와 충분한 공간 */}
@@ -127,7 +134,7 @@ export default function NumberTraining() {
             return (
               <button
                 key={i}
-                onClick={() => handleSelect(i)}
+                onClick={() => handleSelect(num, i)}
                 className={cn(
                   "relative text-5xl font-black transition-all duration-100 flex items-center justify-center",
                   "rounded-[28px] border-b-[10px] shadow-lg",

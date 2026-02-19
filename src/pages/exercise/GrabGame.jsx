@@ -1,12 +1,10 @@
 import { cn } from "@/lib/utils";
-import { useEffect, useRef } from "react";
 import { useOutletContext } from "react-router-dom";
 
 export default function GrabGame() {
   // 엔진 상태 구독
   const { state } = useOutletContext();
   const { target, lastResult, totalScores } = state;
-  const audioRef = useRef(null);
 
   const isShowingResult = lastResult.target !== null;
   const currentCount = isShowingResult
@@ -34,24 +32,6 @@ export default function GrabGame() {
       ? "bg-red-100 border-red-500 shadow-md scale-[1.03]"
       : "bg-white opacity-20";
   };
-
-  useEffect(() => {
-    const audioPath = "/sound/exercise.mp3";
-    if (audioPath) {
-      audioRef.current = new Audio(audioPath);
-      audioRef.current.play().catch((error) => {
-        console.log("[FAILED] playing exercise music", error);
-      });
-    }
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current = null;
-      }
-    };
-  }, []);
 
   return (
     <div className="w-full h-full flex gap-4">

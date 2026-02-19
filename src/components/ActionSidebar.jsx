@@ -47,7 +47,6 @@ export default function ActionSidebar({
         </span>
       </div>
 
-      
       {/* NOTE: 임시 주석 AI 모드 스위치 */}
       {/* <div className="flex items-center justify-between bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
         <span
@@ -68,7 +67,7 @@ export default function ActionSidebar({
           onClick={() => onMenuClick(v)}
           className={cn(
             "flex flex-1 flex-col justify-center text-xl font-black rounded-2xl border-b-[8px] active:border-b-0 active:translate-y-1 shadow-sm transition-all",
-            `bg-${v.color}-200 text-${v.color}-800 border-${v.color}-300 hover:bg-${v.color}-300`,
+            `bg-${v.color}-200 text-${v.color}-800 border-${v.color}-300`,
           )}
         >
           <IconRenderer icon={v.icon} style={{ width: 60, height: 60 }} />

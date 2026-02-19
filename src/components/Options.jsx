@@ -38,10 +38,6 @@ const Options = ({
           <button
             key={`${id}-${idx}`}
             onClick={() => handleClick(choice)}
-            style={{
-              "--hover-bg": colors[color]["200"],
-              "--hover-border": colors[color]["500"],
-            }}
             className={cn(
               `bg-${color}-50 border-neutral-300 flex justify-center items-center p-2 w-full font-extrabold leading-none text-center rounded-lg border shadow-sm cursor-pointer`,
               selected === choice

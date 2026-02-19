@@ -5,7 +5,14 @@ import Dialog from "@/components/Dialog";
 import { ThreeDot } from "react-loading-indicators";
 import { getPrepare, postTxt2Img } from "@/api/gpuService";
 import useVoiceChat from "@/hooks/useVoiceChat";
-import { Paintbrush, ChevronUp, ChevronDown, Trash } from "lucide-react";
+import {
+  Paintbrush,
+  ChevronUp,
+  ChevronDown,
+  Trash,
+  ArrowBigLeft,
+} from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const SUBJECTS = [
   // --- 동물 ---
@@ -157,6 +164,10 @@ export default function DrawByVoice() {
 
   const stopDrawing = () => setIsDrawing(false);
 
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const pathParts = pathname.split("/").filter(Boolean);
+  const previous = pathParts[0];
   return (
     <div className="flex w-full h-full gap-4 overflow-hidden items-stretch">
       <div
@@ -214,13 +225,29 @@ export default function DrawByVoice() {
           </div>
         </div> */}
       <div className="w-1/3 flex flex-col gap-3 h-full">
-        {/* 1. 주제 선택 섹션 (높이 비중 확대) */}
+        {/* 1. 뒤로가기 버튼 */}
+        <button
+          onClick={() => navigate(`/${previous}`)}
+          className={cn(
+            "w-full bg-slate-50 rounded-2xl",
+            "flex items-center justify-center py-3 shadow-md",
+            "active:translate-y-1 active:border-b-[2px] transition-all group",
+          )}
+        >
+          <ArrowBigLeft
+            className="size-12 text-blue-500 transition-transform group-hover:scale-110"
+            fill="currentColor"
+          />
+          <span className="text-3xl font-black text-slate-700 ml-2">
+            뒤로가기
+          </span>
+        </button>
         <div className="flex-[3] bg-white flex flex-col overflow-hidden rounded-[2rem] shadow-lg border-2 border-amber-50">
           <button
             onClick={() =>
               setSubjectIdx((p) => (p > 0 ? p - 1 : SUBJECTS.length - 1))
             }
-            className="h-10 flex items-center justify-center text-slate-300 hover:text-amber-500 hover:bg-amber-50 active:bg-amber-100 transition-all shrink-0"
+            className="h-10 flex items-center justify-center text-slate-300 active:bg-amber-100 transition-all shrink-0"
           >
             <ChevronUp size={48} strokeWidth={4} />
           </button>
@@ -240,7 +267,7 @@ export default function DrawByVoice() {
             onClick={() =>
               setSubjectIdx((p) => (p < SUBJECTS.length - 1 ? p + 1 : 0))
             }
-            className="h-10 flex items-center justify-center text-slate-300 hover:text-amber-500 hover:bg-amber-50 active:bg-amber-100 transition-all shrink-0"
+            className="h-10 flex items-center justify-center text-slate-300 active:bg-amber-100 transition-all shrink-0"
           >
             <ChevronDown size={48} strokeWidth={4} />
           </button>
@@ -270,7 +297,7 @@ export default function DrawByVoice() {
                   canvasRef.current.height,
                 )
               }
-              className="w-28 bg-rose-50 rounded-xl border-b-[8px] border-rose-200 flex items-center justify-center text-rose-500 active:translate-y-1 active:border-b-0 transition-all shadow-sm hover:bg-rose-100"
+              className="w-28 bg-rose-50 rounded-xl border-b-[8px] border-rose-200 flex items-center justify-center text-rose-500 active:translate-y-1 active:border-b-0 transition-all shadow-sm"
               title="전체 지우기"
             >
               <Trash size={44} strokeWidth={3} />
@@ -279,7 +306,7 @@ export default function DrawByVoice() {
             {/* 그리기 버튼: 메인 액션 버튼으로 가장 크게 강조 */}
             <button
               onClick={handleManualGenerate}
-              className="flex-1 bg-emerald-600 border-b-[8px] border-emerald-800 text-white rounded-xl flex items-center justify-center gap-2 active:translate-y-1 active:border-b-0 transition-all shadow-xl hover:bg-emerald-500"
+              className="flex-1 bg-emerald-600 border-b-[8px] border-emerald-800 text-white rounded-xl flex items-center justify-center gap-2 active:translate-y-1 active:border-b-0 transition-all shadow-xl"
             >
               <Paintbrush size={44} />
               <span className="text-4xl font-black">그리기</span>

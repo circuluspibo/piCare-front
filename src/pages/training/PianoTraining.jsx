@@ -45,7 +45,6 @@ export default function PianoTraining() {
       snd8: new Audio("/sound/piano/sound8.mp3"),
       pass: new Audio("/sound/pass.mp3"),
       fail: new Audio("/sound/fail.mp3"),
-      complete: new Audio("/sound/complete.mp3"),
     };
   }
   const playSequence = useCallback(async (sequence) => {
@@ -187,7 +186,7 @@ export default function PianoTraining() {
     if (isFinish) fireInfoConfetti();
   }, [isFinish]);
   return (
-    <div className="flex h-full gap-4 animate-in fade-in duration-500 font-extrabold p-2">
+    <div className="flex h-full gap-4 animate-in fade-in duration-500 font-extrabold py-2">
       <section className="flex-[3] h-full flex flex-col gap-6">
         <div className="flex-1 bg-slate-800 rounded-xl p-12 flex items-stretch gap-2 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-12 bg-gradient-to-b from-black/50 to-transparent" />
@@ -199,7 +198,6 @@ export default function PianoTraining() {
               className={cn(
                 "flex-1 flex flex-col items-center justify-end pb-10 rounded-b-[2rem] transition-all duration-150 relative",
                 "bg-white border-x border-slate-200 shadow-[0_10px_0_0_#e2e8f0]",
-                "hover:bg-slate-50",
                 activeKey === key.id && "translate-y-2 shadow-none bg-blue-50",
                 (isPlayingTarget || isEvaluating) &&
                   "cursor-default active:translate-y-0 shadow-[0_10px_0_0_#e2e8f0]",
@@ -295,7 +293,7 @@ export default function PianoTraining() {
           {!isPlayingTarget && !isEvaluating && (
             <button
               onClick={handleReplay}
-              className="flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl hover:bg-black transition-all shadow-lg active:scale-95"
+              className="flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl transition-all shadow-lg active:scale-95"
             >
               <PlayCircle className="size-6" />
               <span className="text-2xl font-black">다시 듣기</span>

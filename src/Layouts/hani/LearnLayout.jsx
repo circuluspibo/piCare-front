@@ -67,7 +67,7 @@ export default function LearnLayout() {
         <header className="flex flex-col items-start pb-4 border-b border-stone-200 mb-4">
           <div className="flex items-center text-4xl font-black cursor-pointer">
             <ArrowBigLeft
-              className="size-14 mr-2 cursor-pointer hover:scale-110 transition-transform"
+              className="size-14 mr-2 cursor-pointer transition-transform"
               onClick={(e) => {
                 e.stopPropagation();
                 navigate(isMenu.route);

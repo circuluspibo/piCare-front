@@ -89,7 +89,7 @@ export default function ResultDialog({
           {secondaryBtnText && (
             <button
               onClick={onSecondaryClick}
-              className="py-6 bg-slate-100 text-3xl font-black rounded-3xl hover:bg-slate-200 transition-all"
+              className="py-6 bg-slate-100 text-3xl font-black rounded-3xl transition-all"
             >
               {secondaryBtnText}
             </button>
@@ -98,7 +98,7 @@ export default function ResultDialog({
             onClick={onConfirm || onClose}
             className={cn(
               "py-6 text-white text-3xl font-black rounded-3xl shadow-xl transition-all active:scale-95",
-              "bg-slate-900 hover:bg-black",
+              "bg-slate-900",
             )}
           >
             {confirmText}
