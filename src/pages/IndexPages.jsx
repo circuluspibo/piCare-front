@@ -16,6 +16,7 @@ import Dialog from "@/components/Dialog";
 import { IconRenderer } from "@/components/ui/IconRenderer";
 import { PersonaContainer, PersonaThumbnail } from "@/components/ui/persona";
 import ActionSidebar from "@/components/ActionSidebar";
+import { postSystemVolumn } from "@/api/picareService";
 
 export default function Main() {
   const { updatePersona, updateHumanInfo, personaId } =
@@ -70,6 +71,25 @@ export default function Main() {
     playTtsSentence(PERSONA_INTRODUCE[p.id], p.voice);
   };
 
+  const [isVolumeDialogOpen, setIsVolumeDialogOpen] = useState(false);
+  const [currentVolume, setCurrentVolume] = useState(50); // 기본값 50
+
+  const handleVolumeChange = async (newVolume) => {
+    const level = Math.max(0, Math.min(100, newVolume)); // 0~100 제한
+    setCurrentVolume(level);
+    try {
+      const success = await postSystemVolumn(level);
+      if (!success) throw new Error("failed");
+    } catch (error) {
+      console.error("Volume API Error:", error);
+    }
+  };
+
+  // 다이얼로그 전환 핸들러
+  const openVolumeControl = () => {
+    setIsWeatherDialogOpen(false); // 날씨 창 끄기
+    setIsVolumeDialogOpen(true); // 볼륨 창 켜기
+  };
   return (
     <>
       {/* 캡처용 숨겨진 비디오 (자동 모드 및 비디오 피드 공유) */}
@@ -161,6 +181,7 @@ export default function Main() {
               "flex-[0.8] flex flex-col items-center justify-center p-4 rounded-3xl shadow-inner border border-white/50",
               `bg-${weatherStatus.color}-200`,
             )}
+            onClick={openVolumeControl}
           >
             <IconRenderer
               icon={weatherStatus.icon}
@@ -230,6 +251,50 @@ export default function Main() {
           <p className="text-lg font-bold leading-tight break-keep">
             {weatherStatus.desc}
           </p>
+        </div>
+      </Dialog>
+      {/* 볼륨 조절 다이얼로그 */}
+      <Dialog
+        isOpen={isVolumeDialogOpen}
+        onClose={() => setIsVolumeDialogOpen(false)}
+        title="시스템 볼륨 조절"
+        titleStyle="text-2xl font-black text-center text-gray-800 mb-6"
+      >
+        <div className="flex flex-col items-center gap-8 py-4">
+          <div className="flex items-center justify-center gap-10 w-full">
+            {/* 감소 버튼 */}
+            <button
+              onClick={() => handleVolumeChange(currentVolume - 10)}
+              className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center active:bg-gray-200 transition-colors shadow-sm"
+            >
+              <IconRenderer icon="Minus" className="w-8 h-8 text-gray-600" />
+            </button>
+
+            {/* 볼륨 표시 수치 */}
+            <div className="flex flex-col items-center min-w-[100px]">
+              <span className="text-5xl font-black text-gray-800">
+                {currentVolume}%
+              </span>
+              <span className="text-gray-400 font-bold">Volume</span>
+            </div>
+
+            {/* 증가 버튼 */}
+            <button
+              onClick={() => handleVolumeChange(currentVolume + 10)}
+              className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center active:bg-black transition-colors shadow-lg"
+            >
+              <IconRenderer icon="Plus" className="w-8 h-8 text-white" />
+            </button>
+          </div>
+
+          <div className="w-full px-6">
+            <button
+              onClick={() => setIsVolumeDialogOpen(false)}
+              className="w-full py-3 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition-all"
+            >
+              닫기
+            </button>
+          </div>
         </div>
       </Dialog>
     </>
