@@ -29,3 +29,17 @@ export const postInteraction = async (payload) => {
     console.log("[FAILED] REQ postInteraction MSG: ", error);
   }
 };
+
+export const postSystemVolumn = async (payload) => {
+  try {
+    const { status } = await picareApi.post("/v1/system_volume", {
+      level: payload,
+    });
+    if (status !== 200) throw new Error(status);
+    console.log("[SUCCESS] REQ postSystemVolumn");
+    return true;
+  } catch (error) {
+    console.log("[FAILED] REQ postSystemVolumn MSG: ", error);
+    return false;
+  }
+};
