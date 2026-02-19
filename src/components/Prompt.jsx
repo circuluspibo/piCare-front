@@ -131,8 +131,7 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
       </div>
 
       {/* 3. 로딩/생각 중 다이얼로그 */}
-      <Dialog isOpen={true} onClose={() => {}} title="생각 중...">
-        {/* <Dialog isOpen={isThinking} onClose={() => {}} title="생각 중..."> */}
+      <Dialog isOpen={isThinking} onClose={() => {}} title="생각 중...">
         <div className="text-center px-10 py-5 flex flex-col items-center">
           <div className="relative flex items-center justify-center">
             {/* 바닥 그림자: 로봇이 뜰 때 같이 변하게 하면 입체감이 살아납니다 */}
