@@ -14,7 +14,7 @@ export default function NotFound() {
             <div className="flex items-center justify-center mt-4">
               <a
                 href="/"
-                className="rounded-md bg-primary px-3.5 py-2.5 text-sm font-semibold text-white shadow hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="rounded-md bg-primary px-3.5 py-2.5 text-sm font-semibold text-white shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 홈으로
               </a>

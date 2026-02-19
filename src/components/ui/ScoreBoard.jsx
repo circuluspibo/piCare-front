@@ -20,7 +20,7 @@ export default function ScoreBoard({ total = 5, scores = [], className }) {
         )}
       >
         <ArrowBigLeft
-          className="size-12 text-blue-500 transition-transform group-hover:scale-110"
+          className="size-12 text-blue-500 transition-transform"
           fill="currentColor"
         />
         <span className="text-3xl font-black text-slate-700 ml-2">
