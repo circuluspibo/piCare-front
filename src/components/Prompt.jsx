@@ -1,4 +1,11 @@
-import { useRef, useCallback, useEffect, useContext } from "react";
+import {
+  useRef,
+  useCallback,
+  useEffect,
+  useContext,
+  useState,
+  useMemo,
+} from "react";
 import MicToggleButton from "./magicui/listening-indicator";
 import Dialog from "./Dialog";
 import { useVoiceChat } from "@/contexts/VoiceChatContext";
@@ -11,6 +18,7 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
   // Hooks
   const {
     isRecording,
+    isThinking,
     messages,
     fullResponse,
     handleStartRecording,
@@ -42,16 +50,6 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, []);
-
-  // EventHandler
-  const onStopClick = () => {
-    handleStopRecording();
-  };
-  const isThinking =
-    !isRecording &&
-    messages.length > 0 &&
-    messages[messages.length - 1].role === "user" &&
-    fullResponse === "";
 
   useEffect(() => {
     scrollToBottom();
