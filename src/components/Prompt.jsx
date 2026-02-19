@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useContext } from "react";
+import { useRef, useCallback, useEffect, useContext, useMemo } from "react";
 import MicToggleButton from "./magicui/listening-indicator";
 import Dialog from "./Dialog";
 import { useVoiceChat } from "@/contexts/VoiceChatContext";
@@ -20,6 +20,20 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
   } = useVoiceChat();
 
   const { personaId } = useContext(GlobalContext);
+
+  const isThinking = useMemo(() => {
+    // 1. 녹음 중일 때는 절대 '생각 중'이 아님
+    if (isRecording) return false;
+
+    // 2. 메시지가 없으면 '생각 중'이 아님
+    if (messages.length === 0) return false;
+
+    const lastMessage = messages[messages.length - 1];
+
+    // 3. 마지막 메시지가 유저이고, 아직 AI 응답(fullResponse)이 시작되지 않았을 때만 true
+    return lastMessage.role === "user" && !fullResponse;
+  }, [isRecording, messages, fullResponse]);
+
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
     return new Date(timestamp).toLocaleTimeString(currentLang, {
@@ -42,16 +56,6 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, []);
-
-  // EventHandler
-  const onStopClick = () => {
-    handleStopRecording();
-  };
-  const isThinking =
-    !isRecording &&
-    messages.length > 0 &&
-    messages[messages.length - 1].role === "user" &&
-    fullResponse === "";
 
   useEffect(() => {
     scrollToBottom();
@@ -131,6 +135,7 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
       </div>
 
       {/* 3. 로딩/생각 중 다이얼로그 */}
+
       <Dialog isOpen={isThinking} onClose={() => {}} title="생각 중...">
         <div className="text-center px-10 py-5 flex flex-col items-center">
           <div className="relative flex items-center justify-center">
