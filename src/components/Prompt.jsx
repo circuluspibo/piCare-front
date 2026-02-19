@@ -18,6 +18,7 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
   // Hooks
   const {
     isRecording,
+    isThinking,
     messages,
     fullResponse,
     handleStartRecording,
@@ -49,40 +50,6 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, []);
-
-  // 2. 이벤트 핸들러 래핑
-  const [justFinishedRecording, setJustFinishedRecording] = useState(false);
-  const onStart = useCallback(() => {
-    setJustFinishedRecording(false); // 새로 시작하면 초기화
-    handleStartRecording();
-  }, [handleStartRecording]);
-
-  const onStop = useCallback(() => {
-    setJustFinishedRecording(true); // 녹음 중단 버튼 누른 즉시 true
-    handleStopRecording();
-  }, [handleStopRecording]);
-
-  // 3. 응답이 시작되면(fullResponse가 생기면) 상태 해제
-  useEffect(() => {
-    if (fullResponse) {
-      setJustFinishedRecording(false);
-    }
-  }, [fullResponse]);
-
-  // 4. 최종 isThinking 계산 (useMemo)
-  const isThinking = useMemo(() => {
-    // 녹음 중이면 로딩창 안 띄움
-    if (isRecording) return false;
-
-    // AI 응답이 이미 나오고 있다면 로딩창 안 띄움
-    if (fullResponse) return false;
-
-    // 녹음이 막 끝났거나, 마지막 메시지가 유저인데 아직 AI 응답이 없을 때
-    const lastMsg = messages[messages.length - 1];
-    const isLastMessageUser = lastMsg?.role === "user";
-
-    return justFinishedRecording || isLastMessageUser;
-  }, [isRecording, fullResponse, messages, justFinishedRecording]);
 
   useEffect(() => {
     scrollToBottom();
@@ -153,8 +120,8 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
       {/* 2. 하단 컨트롤 영역 (마이크 버튼) */}
       <div className="flex justify-center pt-3 bg-white/50 backdrop-blur-sm rounded-b-xl">
         <MicToggleButton
-          onStart={onStart}
-          onStop={onStop}
+          onStart={handleStartRecording}
+          onStop={handleStopRecording}
           isListening={isRecording}
           micText={micText}
           iconSize="size-24"

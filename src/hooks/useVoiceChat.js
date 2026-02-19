@@ -15,6 +15,7 @@ export default function useVoiceChat({ enableTTS }) {
     useContext(GlobalContext);
 
   const [isRecording, setIsRecording] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   const [gumStream, setGumStream] = useState(null);
 
   const [messages, setMessages] = useState([]); // {id, role: 'user | 'ai', text, timestamp },
@@ -117,6 +118,8 @@ export default function useVoiceChat({ enableTTS }) {
       const textToSearch = autoPrompt || message;
 
       setFullResponse("");
+
+      setIsThinking(true);
       if (!force) setIsGpuLocked(true); // 직접 호출할 때만 잠금
 
       let accumulatedResponse = "";
@@ -132,6 +135,9 @@ export default function useVoiceChat({ enableTTS }) {
         while (true) {
           const { done, value } = await reader.read();
 
+          if (accumulatedResponse === "" && !done) {
+            setIsThinking(false);
+          }
           if (done) {
             const remainingText = accumulatedResponse
               .slice(lastSentenceEnd)
@@ -145,6 +151,7 @@ export default function useVoiceChat({ enableTTS }) {
             sendLogToServer(message, koreanResponse);
             addMessage("ai", koreanResponse);
             setFullResponse("");
+            setIsThinking(false);
             break;
           }
 
@@ -165,6 +172,7 @@ export default function useVoiceChat({ enableTTS }) {
         }
       } catch (error) {
         console.log("[FAILED] REQ sendMessage MSG: ", error);
+        setIsThinking(false);
       } finally {
         if (!force) setIsGpuLocked(false); // 직접 호출할 때만 해제
       }
@@ -245,6 +253,7 @@ export default function useVoiceChat({ enableTTS }) {
     messages,
     fullResponse,
     isPlayingTts,
+    isThinking,
     handleStartRecording,
     handleStopRecording,
     sendMessage,
