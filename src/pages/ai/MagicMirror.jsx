@@ -1,8 +1,13 @@
-import React, { useEffect, useRef, useState, useCallback, useContext } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useContext,
+} from "react";
 import { ArrowBigLeft, Camera, RotateCcw, UserCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { postFace2Img } from "@/api/gpuService";
-import { getHeartbeat, getStartCollection } from "@/api/npuService";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GlobalContext } from "@/contexts/GlobalContext";
 
@@ -76,9 +81,6 @@ export default function MagicMirror() {
     setIsResultMode(true);
 
     try {
-
-
-
       // 퀄리티 최적화된 Blob 추출
       const blob = await new Promise((resolve) =>
         canvasRef.current.toBlob(resolve, "image/jpeg", 1.0),
@@ -89,7 +91,7 @@ export default function MagicMirror() {
       // link.download = `test_${Date.now()}.jpg`;
       // link.click();
       const file = new File([blob], "mirror.jpg", { type: "image/jpeg" });
-      console.log('Before : HumainInfo = ', humanInfo);
+      console.log("Before : HumainInfo = ", humanInfo);
       const gender = humanInfo.gender === "M" ? "male" : "female";
       const systemPrompt = `Solo: 1.5, Age: ${humanInfo.age}, Gender: ${gender}, Style: Selfie, Detail: 10 Years younger version and better facial skin of input file`;
       const res = await postFace2Img(file, systemPrompt);
@@ -175,10 +177,6 @@ export default function MagicMirror() {
   useEffect(() => {
     return () => stopCamera();
   }, [stopCamera]);
-
-  useEffect(() => {
-    const 
-  }, [])
   return (
     <div className="flex items-center justify-center w-full h-full overflow-hidden gap-10">
       {/* LEFT: Mirror Frame (기존 스타일 보존) */}
