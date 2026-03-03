@@ -91,7 +91,7 @@ export default function MagicMirror() {
       // link.download = `test_${Date.now()}.jpg`;
       // link.click();
       const file = new File([blob], "mirror.jpg", { type: "image/jpeg" });
-      console.log("Before : HumainInfo = ", humanInfo);
+      alert("Before : HumainInfo = ", humanInfo);
       const gender = humanInfo.gender === "M" ? "male" : "female";
       const systemPrompt = `Solo: 1.5, Age: ${humanInfo.age}, Gender: ${gender}, Style: Selfie, Detail: 10 Years younger version and better facial skin of input file`;
       const res = await postFace2Img(file, systemPrompt);
