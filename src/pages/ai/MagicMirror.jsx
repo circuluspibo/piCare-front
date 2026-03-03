@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useContext } from "react";
 import { ArrowBigLeft, Camera, RotateCcw, UserCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { postFace2Img } from "@/api/gpuService";
 import { getHeartbeat, getStartCollection } from "@/api/npuService";
 import { useLocation, useNavigate } from "react-router-dom";
+import { GlobalContext } from "@/contexts/GlobalContext";
 
 export default function MagicMirror() {
   const videoRef = useRef(null);
@@ -20,6 +21,8 @@ export default function MagicMirror() {
 
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { humanInfo } = useContext(GlobalContext);
+
   const pathParts = pathname.split("/").filter(Boolean);
   const previous = pathParts[0];
 
@@ -73,11 +76,8 @@ export default function MagicMirror() {
     setIsResultMode(true);
 
     try {
-      await getStartCollection();
-      const hbResp = await getHeartbeat();
-      const human = hbResp?.data?.human;
 
-      if (!human) throw new Error("Human data missing");
+
 
       // 퀄리티 최적화된 Blob 추출
       const blob = await new Promise((resolve) =>
@@ -88,11 +88,10 @@ export default function MagicMirror() {
       // link.href = URL.createObjectURL(blob);
       // link.download = `test_${Date.now()}.jpg`;
       // link.click();
-
       const file = new File([blob], "mirror.jpg", { type: "image/jpeg" });
-      const gender = human.gender === "M" ? "man" : "woman";
-      const systemPrompt = `(Solo:1.5), ${human.age} ${gender}, 10 year younger version of this ${gender}, clear skin, high quality, photorealistic, cinematic lighting`;
-
+      console.log('Before : HumainInfo = ', humanInfo);
+      const gender = humanInfo.gender === "M" ? "male" : "female";
+      const systemPrompt = `Solo: 1.5, Age: ${humanInfo.age}, Gender: ${gender}, Style: Selfie, Detail: 10 Years younger version and better facial skin of input file`;
       const res = await postFace2Img(file, systemPrompt);
 
       stopCamera();
@@ -177,6 +176,9 @@ export default function MagicMirror() {
     return () => stopCamera();
   }, [stopCamera]);
 
+  useEffect(() => {
+    const 
+  }, [])
   return (
     <div className="flex items-center justify-center w-full h-full overflow-hidden gap-10">
       {/* LEFT: Mirror Frame (기존 스타일 보존) */}
