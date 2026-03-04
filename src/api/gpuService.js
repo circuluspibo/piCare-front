@@ -106,7 +106,7 @@ export const postFace2Img = async (file, prompt) => {
     prompt,
     model: "real",
     seed: 0,
-    lang: "ko",
+    lang: "en",
   };
 
   try {

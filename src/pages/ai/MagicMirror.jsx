@@ -1,9 +1,15 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useContext,
+} from "react";
 import { ArrowBigLeft, Camera, RotateCcw, UserCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { postFace2Img } from "@/api/gpuService";
-import { getHeartbeat, getStartCollection } from "@/api/npuService";
 import { useLocation, useNavigate } from "react-router-dom";
+import { GlobalContext } from "@/contexts/GlobalContext";
 
 export default function MagicMirror() {
   const videoRef = useRef(null);
@@ -23,6 +29,7 @@ export default function MagicMirror() {
   const pathParts = pathname.split("/").filter(Boolean);
   const previous = pathParts[0];
 
+  const { humanInfo } = useContext(GlobalContext);
   // 1. 카메라 제어 최적화 및 메모리 누수 방지
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -73,12 +80,6 @@ export default function MagicMirror() {
     setIsResultMode(true);
 
     try {
-      await getStartCollection();
-      const hbResp = await getHeartbeat();
-      const human = hbResp?.data?.human;
-
-      if (!human) throw new Error("Human data missing");
-
       // 퀄리티 최적화된 Blob 추출
       const blob = await new Promise((resolve) =>
         canvasRef.current.toBlob(resolve, "image/jpeg", 1.0),
@@ -90,9 +91,9 @@ export default function MagicMirror() {
       // link.click();
 
       const file = new File([blob], "mirror.jpg", { type: "image/jpeg" });
-      const gender = human.gender === "M" ? "man" : "woman";
-      const systemPrompt = `(Solo:1.5), ${human.age} ${gender}, 10 year younger version of this ${gender}, clear skin, high quality, photorealistic, cinematic lighting`;
-
+      const gender = humanInfo.gender === "M" ? "male" : "female";
+      const systemPrompt = `(Solo: 1.5), (Age: ${humanInfo.age}), (Gender: ${gender}), (Style: Selfie), (Condition: 10 Years younger version and better facial skin of input file)`;
+      // const systemPrompt = `The origin file is ${humanInfo.age} years old ${gender}, Picture 10 years younger version of the origin, with selfie style`;
       const res = await postFace2Img(file, systemPrompt);
 
       stopCamera();
