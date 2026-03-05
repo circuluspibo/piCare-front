@@ -3,7 +3,6 @@ import { useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 
 export const useTracker = () => {
-  const location = useLocation();
   const { currentTrackerRef, saveLogToDB } = useLog();
   const idleTimerRef = useRef(null);
 
@@ -20,7 +19,8 @@ export const useTracker = () => {
 
   // 페이지 진입 시 데이터 초기화 또는 복구
   useEffect(() => {
-    const pageId = location.pathname.split("/").pop() || "main";
+    const location = window.location.pathname;
+    const pageId = location.split("/").pop() || "main";
 
     // [변경] 기존에 같은 페이지를 하던 기록이 '미완료' 상태로 전역 Ref에 남아있는지 확인
     const isReturning =

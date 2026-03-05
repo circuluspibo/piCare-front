@@ -23,7 +23,7 @@ export const LogProvider = ({ children }) => {
     if (page === "/") {
       content = data.speechLog.join(" ");
     } else {
-      content = JSON.stringify(JSON.parse(data));
+      content = JSON.stringify(data);
     }
     await postInteraction({
       hwId: "697b07b3251e185c8626a8ad",
