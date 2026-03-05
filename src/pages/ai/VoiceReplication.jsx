@@ -40,11 +40,23 @@ export default function VoiceReplication() {
 
   const { humanInfo } = useContext(GlobalContext);
   const targetVoice = useMemo(() => {
-    if (!humanInfo) return 42;
+    if (!humanInfo) return 48; // 기본값: 성인 남성
+
     const { age, gender } = humanInfo;
     const isMale = gender === "M";
-    if (age > 50) return isMale ? 42 : 65;
-    return isMale ? 48 : 7;
+    const numericAge = parseInt(age, 10);
+
+    if (isMale) {
+      // 남성 케이스
+      if (numericAge < 19) return 25; // 남자 어린이
+      if (numericAge < 65) return 48; // 성인 남성
+      return 42; // 할아버지
+    } else {
+      // 여성 케이스
+      if (numericAge < 19) return 22; // 여자 어린이
+      if (numericAge < 65) return 7; // 성인 여성
+      return 65; // 할머니
+    }
   }, [humanInfo]);
 
   // 타이머 로직: 구 버전의 직관적인 인덱스 기반 강조 적용
