@@ -72,7 +72,7 @@ export const useTracker = () => {
     },
     recordSpeech: (text) => {
       if (!currentTrackerRef.current) return;
-      currentTrackerRef.current.speechLog.push({ text, timestamp: Date.now() });
+      currentTrackerRef.current.speechLog.push(text);
     },
     getFinalReport: () => {
       const data = currentTrackerRef.current;

@@ -21,7 +21,7 @@ export const LogProvider = ({ children }) => {
     const page = data.currentPage;
     let content = "";
     if (page === "main") {
-      content = data.speechLog;
+      content = data.speechLog.join(" ");
     } else {
       content = JSON.stringify(data);
     }
