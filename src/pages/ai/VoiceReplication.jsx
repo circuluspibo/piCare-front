@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
 import { RotateCcw, Headphones, ArrowBigLeft } from "lucide-react";
-import { postVoice2Wav } from "@/api/gpuService";
+import { postStt, postVoice2Wav } from "@/api/gpuService";
 import { getTtsBlob } from "@/api/cpuService";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -95,7 +95,13 @@ export default function VoiceReplication() {
           const targetBlob = new Blob(audioChunkRef.current, {
             type: "audio/wav",
           });
-          const sourceBlob = await getTtsBlob(currentScript, targetVoice);
+          const recognizedText = await postStt(targetBlob);
+          const finalPrompt =
+            recognizedText && recognizedText.trim().length > 0
+              ? recognizedText
+              : currentScript;
+
+          const sourceBlob = await getTtsBlob(finalPrompt, targetVoice);
           const response = await postVoice2Wav(targetBlob, sourceBlob);
 
           setResultAudio(response);
