@@ -95,7 +95,7 @@ export default function VoiceReplication() {
           const targetBlob = new Blob(audioChunkRef.current, {
             type: "audio/wav",
           });
-          const recognizedText = await postStt(targetBlob);
+          const recognizedText = await postStt(targetBlob, "ko");
           const finalPrompt =
             recognizedText && recognizedText.trim().length > 0
               ? recognizedText
