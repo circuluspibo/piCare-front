@@ -1,32 +1,58 @@
 import { useLearnContext } from "@/contexts/learnContext";
 import LearnByRead from "./learn/LearnByRead";
-import LearnBySpeak from "./learn/LearnBySpeak";
 import LearnByListen from "./learn/LearnByListen";
 import LearnByWrite from "./learn/LearnByWrite";
+import { useTracker } from "@/hooks/useTracker";
+import { useEffect, useRef } from "react";
 
 export default function Learn() {
   const {
     item,
     target,
-    isDataLoading,
     contentData,
-    currentQuestion,
     currentItemIdx,
-    currentLearningCnt,
+    isDataLoading,
     isSessionLoading,
     sendAnswer,
     method,
     isSubmitting,
+    resultData, // [추가] Context에서 계산된 최종 결과 데이터
   } = useLearnContext();
 
-  // NOTE: 사용자 풀이 결과 전송
-  const handleAnswer = (attemptPayload) => {
-    // attemptPayload에는 user, correct, isCorrect, responseTime, concentration이 들어있음
+  const { recordTouch, recordScore, save, resetIdleTimer } = useTracker();
+  const isSavedRef = useRef(false); // 중복 저장 방지용
+
+  // [핵심 변경] 최종 결과(resultData)가 업데이트되면 트래커에 기록하고 저장
+  useEffect(() => {
+    // resultData.time이 0보다 크다는 것은 세션이 종료되어 시간이 계산되었다는 의미
+    if (resultData && resultData.time > 0 && !isSavedRef.current) {
+      const totalQuestions = contentData?.contents?.length || 0;
+
+      // 1. 서버에서 계산된 정확한 전체 시간과 최종 성공 개수로 업데이트
+      recordScore(totalQuestions, resultData.successCount, resultData.time);
+
+      // 2. 트래커 최종 저장 (isCompleted = true)
+      save();
+
+      isSavedRef.current = true;
+      console.log(
+        "학습 완료: 전체 소요 시간으로 트래커 저장 완료",
+        resultData.time,
+      );
+    }
+  }, [resultData, contentData, recordScore, save]);
+
+  const handleAnswer = async (attemptPayload) => {
+    // 이제 개별 문항에서는 점수만 실시간 업데이트 (시간은 0으로 보냄)
+    const totalQty = contentData?.contents?.length || 0;
+    const currentSuccess = attemptPayload.isCorrect
+      ? currentItemIdx + 1
+      : currentItemIdx;
+
+    recordScore(totalQty, currentSuccess, 0);
     sendAnswer(attemptPayload);
-    // console.log("sendAnswer = ", attemptPayload);
   };
 
-  // NOTE: 데이터가 로딩 중일 때 빈 화면(또는 로딩바)을 보여줍니다.
   if (isDataLoading || isSessionLoading) {
     return (
       <div className="flex items-center justify-center h-full text-2xl">
@@ -34,29 +60,28 @@ export default function Learn() {
       </div>
     );
   }
-  // NOTE: 데이터 로딩은 끝났는데 item이 없는 경우 (예외 처리)
-  if (!item) {
-    return <div>학습 컨텐츠를 찾을 수 없습니다.</div>;
-  }
+
+  if (!item) return <div>학습 컨텐츠를 찾을 수 없습니다.</div>;
 
   const commonProps = {
     item,
     target,
     handleAnswer,
     currentItemIdx,
-    currentQuestion,
-    currentLearningCnt,
     contents: contentData?.contents,
     isSubmitting,
+    onInteraction: () => {
+      recordTouch();
+      resetIdleTimer();
+    },
   };
+
   return (
     <>
       {item && (
         <>
           {method === "read" && <LearnByRead {...commonProps} />}
           {method === "listen" && <LearnByListen {...commonProps} />}
-          {/** 말하기는 오프라인에 backend 구현필요 */}
-          {/* {method === "speak" && <LearnBySpeak {...commonProps} />} */}
           {method === "write" && <LearnByWrite {...commonProps} />}
         </>
       )}

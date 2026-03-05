@@ -1,11 +1,4 @@
-import {
-  useRef,
-  useCallback,
-  useEffect,
-  useContext,
-  useState,
-  useMemo,
-} from "react";
+import { useRef, useCallback, useEffect, useContext } from "react";
 import MicToggleButton from "./magicui/listening-indicator";
 import Dialog from "./Dialog";
 import { useVoiceChat } from "@/contexts/VoiceChatContext";
@@ -79,14 +72,12 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
             key={msg.id}
             className={cn(
               "w-full flex flex-col",
-              // ✅ 유저는 오른쪽(end), AI는 왼쪽(start) 정렬
               msg.role === "user" ? "items-end" : "items-start",
             )}
           >
             <div
               className={cn(
                 "p-4 rounded-3xl max-w-[85%] shadow-md",
-                // ✅ 역할에 따른 색상 및 말풍선 꼬리(모서리) 처리
                 msg.role === "user"
                   ? "bg-blue-500 text-white rounded-tr-none" // 유저: 파랑
                   : "bg-white text-gray-800 border border-gray-100 rounded-tl-none", // AI: 흰색
@@ -102,8 +93,6 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
             </span>
           </div>
         ))}
-
-        {/* ✅ AI 실시간 스트리밍 답변 영역 (항상 좌측) */}
         {fullResponse && (
           <div className="w-full flex flex-col items-start animate-in fade-in duration-300">
             <div className="bg-white p-4 rounded-3xl rounded-tl-none border border-gray-100 shadow-md">

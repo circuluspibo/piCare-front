@@ -14,6 +14,7 @@ export default function LearnByRead({
   currentLearningCnt,
   contents,
   isSubmitting,
+  onInteraction,
 }) {
   // 선택 옵션 생성
   const [options, setOptions] = useState([]);
@@ -46,6 +47,7 @@ export default function LearnByRead({
     generateChoices();
   }, [item?.letter, currentQuestion, startQuestion, generateChoices]);
   const handleSelect = (choice) => {
+    onInteraction();
     const data = submitAnswer(choice, item.letter);
     // console.log("data = ", data);
     if (!data.isCorrect) {
