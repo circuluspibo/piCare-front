@@ -20,7 +20,7 @@ export const LogProvider = ({ children }) => {
     console.log("프로그램 일지 전송 : ", data);
     const page = data.currentPage;
     let content = "";
-    if (page === "/") {
+    if (page === "main") {
       content = data.speechLog.join(" ");
     } else {
       content = JSON.stringify(data);
