@@ -222,9 +222,16 @@ export const LearnProvider = ({ children }) => {
         response.session?.status === "ended" || response.status === "ended";
 
       if (isEnded) {
+        const start = response.session?.startTime; // "2026-03-05T06:07:39.728Z"
+        const end = response.session?.endTime; // "2026-03-05T06:10:41.644Z"
+
+        const totalSeconds =
+          start && end
+            ? Math.floor((new Date(end) - new Date(start)) / 1000)
+            : Math.round(response.session?.totalTime) || 0;
         setResultData({
           successCount: currentItemIdx + 1,
-          time: Math.round(response.session?.totalTime) || 0,
+          time: totalSeconds,
           feedbackMsg: "모든 학습을 완료했습니다! 🎉",
         });
         setIsResultOpen(true);
@@ -325,6 +332,7 @@ export const LearnProvider = ({ children }) => {
       getMethodData,
       getNextStep,
       sendAnswer,
+      resultData,
     }),
     [
       chapter,
@@ -341,6 +349,7 @@ export const LearnProvider = ({ children }) => {
       getMethodData,
       getNextStep,
       sendAnswer,
+      resultData,
     ],
   );
 

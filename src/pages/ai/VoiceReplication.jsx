@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
 import { RotateCcw, Headphones, ArrowBigLeft } from "lucide-react";
-import { postVoice2Wav } from "@/api/gpuService";
+import { postStt, postVoice2Wav } from "@/api/gpuService";
 import { getTtsBlob } from "@/api/cpuService";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTracker } from "@/hooks/useTracker";
 
 const USER_SCRIPT_LIST = [
   "사랑하는 우리 가족들아, 오늘도 건강하고 웃음 가득한 하루 보내렴. 언제나 너희를 응원하고 아주 많이 사랑한다.",
@@ -22,6 +23,9 @@ export default function VoiceReplication() {
   const [currentScript, setCurrentScript] = useState(
     () => USER_SCRIPT_LIST[Math.floor(Math.random() * USER_SCRIPT_LIST.length)],
   );
+  const { recordTouch, recordScore, recordSpeech, save, resetIdleTimer } =
+    useTracker();
+  const processStartTimeRef = useRef(null);
 
   const audioRef = useRef(null);
   const timerRef = useRef(null);
@@ -36,11 +40,23 @@ export default function VoiceReplication() {
 
   const { humanInfo } = useContext(GlobalContext);
   const targetVoice = useMemo(() => {
-    if (!humanInfo) return 42;
+    if (!humanInfo) return 48; // 기본값: 성인 남성
+
     const { age, gender } = humanInfo;
     const isMale = gender === "M";
-    if (age > 50) return isMale ? 42 : 65;
-    return isMale ? 48 : 7;
+    const numericAge = parseInt(age, 10);
+
+    if (isMale) {
+      // 남성 케이스
+      if (numericAge < 19) return 25; // 남자 어린이
+      if (numericAge < 65) return 48; // 성인 남성
+      return 42; // 할아버지
+    } else {
+      // 여성 케이스
+      if (numericAge < 19) return 22; // 여자 어린이
+      if (numericAge < 65) return 7; // 성인 여성
+      return 65; // 할머니
+    }
   }, [humanInfo]);
 
   // 타이머 로직: 구 버전의 직관적인 인덱스 기반 강조 적용
@@ -62,6 +78,9 @@ export default function VoiceReplication() {
   }, [stage, currentScript]);
 
   const handleStart = async () => {
+    recordTouch();
+    resetIdleTimer();
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
@@ -78,18 +97,37 @@ export default function VoiceReplication() {
   };
 
   const handleStop = () => {
+    recordTouch();
+    processStartTimeRef.current = Date.now();
+
     if (mediaRecorderRef.current && stage === "recording") {
       mediaRecorderRef.current.onstop = async () => {
         setStage("loading");
         try {
           const targetBlob = new Blob(audioChunkRef.current, {
-            type: "audio/wav",
+            type: "audio/ogg;codecs=opus",
           });
-          const sourceBlob = await getTtsBlob(currentScript, targetVoice);
+          const formData = new FormData();
+          formData.append("file", targetBlob, "voice.ogg");
+          const recognizedText = await postStt(formData, "ko");
+          const finalPrompt =
+            recognizedText && recognizedText.trim().length > 0
+              ? recognizedText
+              : currentScript;
+
+          const sourceBlob = await getTtsBlob(finalPrompt, targetVoice);
           const response = await postVoice2Wav(targetBlob, sourceBlob);
 
           setResultAudio(response);
           setStage("result");
+
+          const duration = processStartTimeRef.current
+            ? Math.floor((Date.now() - processStartTimeRef.current) / 1000)
+            : 0;
+
+          recordScore(1, 1, duration);
+          recordSpeech(currentScript);
+          await save();
         } catch (err) {
           console.error(err);
           setStage("idle");
@@ -100,6 +138,7 @@ export default function VoiceReplication() {
     }
   };
   const handleReset = () => {
+    recordTouch();
     setStage("idle");
     setResultAudio(null);
     setHighlightIndex(-1);
@@ -154,7 +193,10 @@ export default function VoiceReplication() {
     ));
   };
   return (
-    <div className="flex w-full h-full gap-4 overflow-hidden">
+    <div
+      className="flex w-full h-full gap-4 overflow-hidden"
+      onClickCapture={resetIdleTimer}
+    >
       {/* LEFT SECTION: Main Display Area (2/3) */}
       <div className="flex-[2] relative bg-amber-50 rounded-2xl border-2 border-slate-100 overflow-hidden flex flex-col">
         <div className="flex-1 flex items-center justify-center relative p-6">
@@ -274,6 +316,7 @@ export default function VoiceReplication() {
             <div className="flex-1 flex flex-col gap-4">
               <Button
                 onClick={() => {
+                  recordTouch(); // [변경] 재생 버튼 클릭 활동 기록
                   setIsPlaying(true);
                   audioRef.current.play();
                 }}

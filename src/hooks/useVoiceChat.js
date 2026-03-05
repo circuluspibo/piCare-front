@@ -5,11 +5,10 @@ import { GlobalContext } from "@/contexts/GlobalContext";
 import { PERSONA_SYSTEMS } from "@/utils/PersonaSystem";
 import { getTxt2Chat, postStt } from "@/api/gpuService";
 import { getTts } from "@/api/cpuService";
-import { useDialogAnalyze } from "./useAnalyze";
+import { useTracker } from "./useTracker";
 
 export default function useVoiceChat({ enableTTS }) {
-  const { sendLogToServer } = useDialogAnalyze();
-
+  const { recordSpeech, save } = useTracker();
   const mediaRecorderRef = useRef(null);
   const { currentLang, personaId, personaVoice, isGpuLocked, setIsGpuLocked } =
     useContext(GlobalContext);
@@ -148,7 +147,9 @@ export default function useVoiceChat({ enableTTS }) {
               /[^ㄱ-ㅎㅏ-ㅣ가-힣\s]/g,
               "",
             );
-            sendLogToServer(message, koreanResponse);
+
+            recordSpeech(message);
+            await save();
             addMessage("ai", koreanResponse);
             setFullResponse("");
             setIsThinking(false);
@@ -182,7 +183,6 @@ export default function useVoiceChat({ enableTTS }) {
       currentLang,
       addToTtsQueue,
       addMessage,
-      sendLogToServer,
       isGpuLocked,
       setIsGpuLocked,
     ],

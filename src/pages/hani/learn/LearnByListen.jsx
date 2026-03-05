@@ -13,6 +13,7 @@ const LearnByListen = ({
   currentItemIdx, // 이름 통일
   currentLearningCount,
   isSubmitting,
+  onInteraction,
 }) => {
   const [options, setOptions] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -50,6 +51,7 @@ const LearnByListen = ({
   };
 
   const handleSelect = (choice) => {
+    onInteraction();
     document.dispatchEvent(new Event("stop-sound"));
 
     // 모니터링 데이터 생성
@@ -76,6 +78,7 @@ const LearnByListen = ({
   };
 
   const playSound = async () => {
+    onInteraction();
     if (isPlaying) return;
     setIsPlaying(true);
     setPlayed(false);

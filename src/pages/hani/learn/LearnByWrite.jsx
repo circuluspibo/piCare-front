@@ -13,6 +13,7 @@ const LearnByWrite = ({
   handleAnswer,
   currentItemIdx,
   isSubmitting,
+  onInteraction,
 }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [hint, setHint] = useState(true);
@@ -56,6 +57,7 @@ const LearnByWrite = ({
 
   const handleSubmit = async () => {
     if (busy || isPredicting || isSubmitting) return;
+    onInteraction();
     setBusy(true);
 
     let worker = null;
@@ -138,6 +140,7 @@ const LearnByWrite = ({
   };
 
   const clearCanvas = () => {
+    onInteraction();
     if (ctxRef.current && canvasRef.current) {
       ctxRef.current.clearRect(
         0,
@@ -147,7 +150,12 @@ const LearnByWrite = ({
       );
     }
   };
-
+  const handleDrawStart = (e) => {
+    onInteraction();
+    ctxRef.current.beginPath();
+    ctxRef.current.moveTo(getPos(e).x, getPos(e).y);
+    setIsDrawing(true);
+  };
   const isWorking = busy || isPredicting || isSubmitting;
 
   return (
@@ -200,11 +208,7 @@ const LearnByWrite = ({
           <canvas
             ref={canvasRef}
             className="absolute inset-0 z-10 touch-none cursor-crosshair"
-            onMouseDown={(e) => {
-              ctxRef.current.beginPath();
-              ctxRef.current.moveTo(getPos(e).x, getPos(e).y);
-              setIsDrawing(true);
-            }}
+            onMouseDown={handleDrawStart}
             onMouseMove={(e) => {
               if (isDrawing) {
                 ctxRef.current.lineTo(getPos(e).x, getPos(e).y);

@@ -28,7 +28,7 @@ export const useHeartbeatLog = () => {
       try {
         await postInteraction({
           hwId: "697b07b3251e185c8626a8ad",
-          type: "faceAnalyze",
+          type: "heartbeat",
           content: JSON.stringify(essentialData),
         });
       } catch (err) {
