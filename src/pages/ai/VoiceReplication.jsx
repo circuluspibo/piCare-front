@@ -93,9 +93,11 @@ export default function VoiceReplication() {
         setStage("loading");
         try {
           const targetBlob = new Blob(audioChunkRef.current, {
-            type: "audio/wav",
+            type: "audio/ogg;codecs=opus",
           });
-          const recognizedText = await postStt(targetBlob, "ko");
+          const formData = new FormData();
+          formData.append("file", targetBlob, "voice.ogg");
+          const recognizedText = await postStt(formData, "ko");
           const finalPrompt =
             recognizedText && recognizedText.trim().length > 0
               ? recognizedText
