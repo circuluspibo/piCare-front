@@ -1,5 +1,4 @@
 import React from "react";
-import { ArrowBigLeft } from "lucide-react";
 import { Outlet } from "react-router-dom";
 
 export default function AiLayout() {

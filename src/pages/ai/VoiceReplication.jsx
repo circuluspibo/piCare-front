@@ -7,6 +7,7 @@ import { postVoice2Wav } from "@/api/gpuService";
 import { getTtsBlob } from "@/api/cpuService";
 import { GlobalContext } from "@/contexts/GlobalContext";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTracker } from "@/hooks/useTracker";
 
 const USER_SCRIPT_LIST = [
   "사랑하는 우리 가족들아, 오늘도 건강하고 웃음 가득한 하루 보내렴. 언제나 너희를 응원하고 아주 많이 사랑한다.",
@@ -22,6 +23,9 @@ export default function VoiceReplication() {
   const [currentScript, setCurrentScript] = useState(
     () => USER_SCRIPT_LIST[Math.floor(Math.random() * USER_SCRIPT_LIST.length)],
   );
+  const { recordTouch, recordScore, recordSpeech, save, resetIdleTimer } =
+    useTracker();
+  const processStartTimeRef = useRef(null);
 
   const audioRef = useRef(null);
   const timerRef = useRef(null);
@@ -62,6 +66,9 @@ export default function VoiceReplication() {
   }, [stage, currentScript]);
 
   const handleStart = async () => {
+    recordTouch();
+    resetIdleTimer();
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
@@ -78,6 +85,9 @@ export default function VoiceReplication() {
   };
 
   const handleStop = () => {
+    recordTouch();
+    processStartTimeRef.current = Date.now();
+
     if (mediaRecorderRef.current && stage === "recording") {
       mediaRecorderRef.current.onstop = async () => {
         setStage("loading");
@@ -90,6 +100,14 @@ export default function VoiceReplication() {
 
           setResultAudio(response);
           setStage("result");
+
+          const duration = processStartTimeRef.current
+            ? Math.floor((Date.now() - processStartTimeRef.current) / 1000)
+            : 0;
+
+          recordScore(1, 1, duration);
+          recordSpeech(currentScript);
+          await save();
         } catch (err) {
           console.error(err);
           setStage("idle");
@@ -100,6 +118,7 @@ export default function VoiceReplication() {
     }
   };
   const handleReset = () => {
+    recordTouch();
     setStage("idle");
     setResultAudio(null);
     setHighlightIndex(-1);
@@ -154,7 +173,10 @@ export default function VoiceReplication() {
     ));
   };
   return (
-    <div className="flex w-full h-full gap-4 overflow-hidden">
+    <div
+      className="flex w-full h-full gap-4 overflow-hidden"
+      onClickCapture={resetIdleTimer}
+    >
       {/* LEFT SECTION: Main Display Area (2/3) */}
       <div className="flex-[2] relative bg-amber-50 rounded-2xl border-2 border-slate-100 overflow-hidden flex flex-col">
         <div className="flex-1 flex items-center justify-center relative p-6">
@@ -274,6 +296,7 @@ export default function VoiceReplication() {
             <div className="flex-1 flex flex-col gap-4">
               <Button
                 onClick={() => {
+                  recordTouch(); // [변경] 재생 버튼 클릭 활동 기록
                   setIsPlaying(true);
                   audioRef.current.play();
                 }}

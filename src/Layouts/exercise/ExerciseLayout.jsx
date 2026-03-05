@@ -1,23 +1,18 @@
 import { useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { ArrowBigLeft, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import Dialog from "@/components/Dialog";
-import { cn } from "@/lib/utils";
 import { fireInfoConfetti } from "@/components/magicui/connfetti";
 import { useExerciseEngine } from "@/hooks/useExerciseEngine";
 import ScoreBoard from "@/components/ui/ScoreBoard";
 import ResultDialog from "@/components/ResultDialog";
-
-const GAME_INFO = {
-  FLAG: { title: "깃발 들기 훈련" },
-  HEAD: { title: "손바닥 피하기 훈련" },
-  GRAB: { title: "사과 잡기 훈련" },
-};
+import { useTracker } from "@/hooks/useTracker";
 
 export default function ExerciseLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
+  const { recordTouch, recordScore, save, resetIdleTimer } = useTracker();
   // 1. 현재 경로에서 마지막 단어 추출
   const pathParts = pathname.split("/").filter(Boolean);
   const currentPath = pathParts[pathParts.length - 1];
@@ -32,11 +27,38 @@ export default function ExerciseLayout() {
   useEffect(() => {
     if (state.isFinish) {
       fireInfoConfetti();
+      const successCount = state.totalScores.filter((s) => s.isPass).length;
+      recordScore(
+        state.totalScores.length,
+        successCount,
+        Number(state.finalTime),
+      );
     }
-  }, [state.isFinish]);
+  }, [state.isFinish, recordScore, state.totalScores, state.finalTime]);
 
+  const handleGlobalTouch = () => {
+    if (!isMenu) recordTouch();
+  };
+
+  useEffect(() => {
+    // 1. 사람이 카메라에 포착되어 있거나
+    // 2. 점수가 올라갔을 때 (움직임 성공)
+    if (state.isPoseVisible || state.totalScores.length > 0) {
+      resetIdleTimer();
+    }
+  }, [state.isPoseVisible, state.totalScores.length, resetIdleTimer]);
+
+  // [변경] 카운트다운 중에도 활동으로 간주하여 리셋
+  useEffect(() => {
+    if (state.countdown !== null) {
+      resetIdleTimer();
+    }
+  }, [state.countdown, resetIdleTimer]);
   return (
-    <div className="flex flex-col h-full p-2 bg-white overflow-hidden relative font-extrabold text-slate-900">
+    <div
+      onClick={handleGlobalTouch}
+      className="flex flex-col h-full p-2 bg-white overflow-hidden relative font-extrabold text-slate-900"
+    >
       {/* 카운트다운 Overlay */}
       {state.countdown !== null && (
         <div className="absolute inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center">
@@ -101,7 +123,9 @@ export default function ExerciseLayout() {
           secondaryBtnText="다시하기"
           onSecondaryClick={() => actions.runCountdown()}
           confirmText="활동 선택"
-          onConfirm={() => {
+          onConfirm={async () => {
+            // [변경] 비동기 save 호출 후 완료 처리
+            await save();
             actions.setIsFinish(false);
             navigate("/exercise");
           }}

@@ -6,10 +6,11 @@ import React, {
   useRef,
 } from "react";
 import { cn } from "@/lib/utils";
-import { fireInfoConfetti } from "@/components/magicui/connfetti";
 import { useOutletContext } from "react-router-dom";
 import ScoreBoard from "@/components/ui/ScoreBoard";
 import ResultDialog from "@/components/ResultDialog";
+import { fireInfoConfetti } from "@/components/magicui/connfetti";
+import { useTracker } from "@/hooks/useTracker";
 
 const COLORS = [
   "#D32F2F",
@@ -37,6 +38,7 @@ const createGameData = () => {
 
 export default function ColorTraining() {
   const { onComplete } = useOutletContext();
+  const { recordTouch, recordScore, save } = useTracker();
   const [gameData, setGameData] = useState(() => createGameData());
   const [scores, setScores] = useState([]);
   const [isFinish, setIsFinish] = useState(false);
@@ -54,7 +56,6 @@ export default function ColorTraining() {
     [],
   );
 
-  // [중요] 여기에서 메시지를 생성합니다.
   const getFeedbackMsg = () => {
     const passCnt = scores.filter((s) => s.isPass).length;
     if (passCnt >= 8) return "꽃사슴 같은 눈썰미네요!";
@@ -72,6 +73,9 @@ export default function ColorTraining() {
   const handleSelect = useCallback(
     (selectedColor, idx) => {
       if (isProcessing || isFinish) return;
+      // 터치 이벤트 체크
+      recordTouch();
+
       setIsProcessing(true);
       const isCorrect = selectedColor === gameData.target;
       const roundSpendTime = Date.now() - (startTimeRef.current || Date.now());
@@ -92,13 +96,26 @@ export default function ColorTraining() {
         const duration = ((Date.now() - totalStartRef.current) / 1000).toFixed(
           0,
         );
+
+        const successCount = nextScores.filter((s) => s.isPass).length;
+        recordScore(TOTAL_ROUNDS, successCount, Number(duration));
+
         setTotalElapsedTime(duration);
         setIsFinish(true);
       } else {
         setTimeout(startNextRound, 800);
       }
     },
-    [gameData.target, isFinish, isProcessing, scores, startNextRound, audio],
+    [
+      gameData.target,
+      isFinish,
+      isProcessing,
+      scores,
+      startNextRound,
+      audio,
+      recordTouch,
+      recordScore,
+    ],
   );
 
   useEffect(() => {
@@ -172,10 +189,13 @@ export default function ColorTraining() {
         <ResultDialog
           isOpen={isFinish}
           onClose={onComplete}
-          feedbackMsg={getFeedbackMsg}
+          feedbackMsg={getFeedbackMsg()}
           successCount={scores.filter((s) => s.isPass).length}
           time={totalElapsedTime}
-          onConfirm={onComplete}
+          onConfirm={async () => {
+            await save();
+            onComplete();
+          }}
         />
       )}
     </div>

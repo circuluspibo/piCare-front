@@ -5,17 +5,21 @@ import React, {
   useCallback,
   useContext,
 } from "react";
-import { ArrowBigLeft, Camera, RotateCcw, UserCircle2 } from "lucide-react";
+import { ArrowBigLeft, Camera, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { postFace2Img } from "@/api/gpuService";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GlobalContext } from "@/contexts/GlobalContext";
+import { useTracker } from "@/hooks/useTracker";
 
 export default function MagicMirror() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const timerRef = useRef(null);
+  const captureStartTimeRef = useRef(null);
+
+  const { recordTouch, recordScore, save, resetIdleTimer } = useTracker();
 
   const [isActive, setIsActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -65,6 +69,7 @@ export default function MagicMirror() {
   };
 
   const handleReset = () => {
+    recordTouch();
     setIsResultMode(false);
     startCamera();
   };
@@ -73,6 +78,7 @@ export default function MagicMirror() {
   const processCapture = async () => {
     if (!canvasRef.current) return;
 
+    captureStartTimeRef.current = Date.now();
     setIsShutter(true);
     setTimeout(() => setIsShutter(false), 150);
 
@@ -102,12 +108,18 @@ export default function MagicMirror() {
       const ctx = canvas.getContext("2d");
       const img = new Image();
       img.src = res;
-      img.onload = () => {
+      img.onload = async () => {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const duration = captureStartTimeRef.current
+          ? Math.floor((Date.now() - captureStartTimeRef.current) / 1000)
+          : 0;
+        recordScore(1, 1, duration);
+        await save();
       };
     } catch (error) {
       console.error("[FAILED] processCapture:", error);
@@ -120,6 +132,10 @@ export default function MagicMirror() {
 
   const handleMagicMirror = () => {
     if (isProcessing || count !== null) return;
+
+    recordTouch();
+    resetIdleTimer();
+
     setCount(3);
     timerRef.current = setInterval(() => {
       setCount((prev) => {
@@ -134,6 +150,7 @@ export default function MagicMirror() {
   };
 
   const handleMirrorClick = () => {
+    recordTouch();
     if (isProcessing) return;
     if (!isActive) startCamera();
     else {

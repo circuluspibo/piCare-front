@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Music, PlayCircle, CheckCircle2, XCircle } from "lucide-react"; // XCircle 추가
-import Dialog from "@/components/Dialog";
 import { cn } from "@/lib/utils";
-import { fireInfoConfetti } from "@/components/magicui/connfetti";
 import { useOutletContext } from "react-router-dom";
 import ScoreBoard from "@/components/ui/ScoreBoard";
 import ResultDialog from "@/components/ResultDialog";
+import { fireInfoConfetti } from "@/components/magicui/connfetti";
+import { useTracker } from "@/hooks/useTracker";
 
 const TOTAL_ROUNDS = 5;
 const PIANO_KEYS = [
@@ -29,6 +29,7 @@ export default function PianoTraining() {
   const [isEvaluating, setIsEvaluating] = useState(false); // 판정 중 입력 방지
   const [activeKey, setActiveKey] = useState(null);
   const [totalElapsedTime, setTotalElapsedTime] = useState(0);
+  const { recordTouch, recordScore, save } = useTracker();
 
   const totalStartRef = useRef(null);
   const soundsRef = useRef(null);
@@ -85,6 +86,7 @@ export default function PianoTraining() {
       // 재생 중이거나, 판정 중이거나, 종료 상태면 클릭 무시
       if (isPlayingTarget || isFinish || isEvaluating) return;
 
+      recordTouch();
       const sound = soundsRef.current[keyId];
       if (sound) {
         sound.pause();
@@ -122,13 +124,16 @@ export default function PianoTraining() {
           setScores(nextScores);
 
           if (nextScores.length >= TOTAL_ROUNDS) {
-            setTotalElapsedTime(
-              ((Date.now() - totalStartRef.current) / 1000).toFixed(0),
-            );
-            setTimeout(() => {
-              setIsFinish(true);
-              soundsRef.current.complete.play().catch(() => {});
-            }, 1000);
+            // [변경] 최종 시간 및 스코어 기록
+            const duration = (
+              (Date.now() - totalStartRef.current) /
+              1000
+            ).toFixed(0);
+            const successCount = nextScores.filter((s) => s.isPass).length;
+            recordScore(TOTAL_ROUNDS, successCount, Number(duration));
+
+            setTotalElapsedTime(duration);
+            setIsFinish(true);
           } else {
             setTimeout(startNewRound, 1200);
           }
@@ -144,13 +149,23 @@ export default function PianoTraining() {
       soundsRef,
       scores,
       startNewRound,
+      recordTouch,
+      recordScore,
     ],
   );
 
   const handleReplay = useCallback(() => {
     if (isPlayingTarget || isEvaluating || isFinish) return;
     playSequence(targetSequence); // 기존 문제 리플레이
-  }, [isPlayingTarget, isEvaluating, isFinish, playSequence, targetSequence]);
+    recordTouch();
+  }, [
+    isPlayingTarget,
+    isEvaluating,
+    isFinish,
+    playSequence,
+    targetSequence,
+    recordTouch,
+  ]);
   const getFeedbackMsg = () => {
     const passCnt = scores.filter((s) => s.isPass).length;
     if (passCnt >= 8) return "음악가 수준이에요!";
@@ -307,10 +322,13 @@ export default function PianoTraining() {
         <ResultDialog
           isOpen={isFinish}
           onClose={onComplete}
-          feedbackMsg={getFeedbackMsg}
+          feedbackMsg={getFeedbackMsg()}
           successCount={scores.filter((s) => s.isPass).length}
           time={totalElapsedTime}
-          onConfirm={onComplete}
+          onConfirm={async () => {
+            await save();
+            onComplete();
+          }}
         />
       )}
     </div>

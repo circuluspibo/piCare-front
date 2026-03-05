@@ -41,6 +41,7 @@ import QueryProvider from "./provider/QueryProvider";
 import { LearnProvider } from "./contexts/learnContext";
 import Method from "./pages/hani/Method";
 import Learn from "./pages/hani/Learn";
+import { LogProvider } from "./contexts/LogContext";
 
 /** * 1. 라우터 설정 분리
  * createBrowserRouter를 사용하면 최신 데이터 API를 사용할 수 있어 성능상 이점이 있습니다.
@@ -101,11 +102,13 @@ const App = () => {
   return (
     <QueryProvider>
       <GlobalContextProvider>
-        <VoiceChatProvider>
-          <Suspense fallback={<Loading />}>
-            <RouterProvider router={router} />
-          </Suspense>
-        </VoiceChatProvider>
+        <LogProvider>
+          <VoiceChatProvider>
+            <Suspense fallback={<Loading />}>
+              <RouterProvider router={router} />
+            </Suspense>
+          </VoiceChatProvider>
+        </LogProvider>
       </GlobalContextProvider>
     </QueryProvider>
   );

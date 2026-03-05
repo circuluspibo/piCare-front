@@ -48,6 +48,7 @@ export default function ResultDialog({
             className={cn(
               "flex-1 p-6 rounded-3xl text-center",
               "bg-emerald-50 border-2 border-emerald-100",
+              "min-h-[160px]",
             )}
           >
             <p className={cn("text-2xl font-bold mb-1", "text-emerald-600")}>
@@ -67,12 +68,17 @@ export default function ResultDialog({
             className={cn(
               "flex-1 p-6 rounded-3xl text-center",
               "bg-blue-50 border-2 border-blue-100",
+              "min-h-[160px]",
             )}
           >
             <p className={cn("text-2xl font-bold mb-1", "text-blue-600")}>
               소요 시간
             </p>
-            <p className={cn("text-6xl md:text-7xl font-black text-blue-600")}>
+            <p
+              className={cn(
+                `${time.toString().length > 3 ? "text-5xl" : "text-6xl"} font-black text-blue-600`,
+              )}
+            >
               {time}
               <span className={cn("text-3xl", "ml-1")}>초</span>
             </p>

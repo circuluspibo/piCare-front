@@ -13,6 +13,7 @@ import {
   ArrowBigLeft,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTracker } from "@/hooks/useTracker";
 
 const SUBJECTS = [
   // --- 동물 ---
@@ -51,12 +52,20 @@ export default function DrawByVoice() {
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const parentRef = useRef(null);
+  const generateStartTimeRef = useRef(null);
 
   const [subjectIdx, setSubjectIdx] = useState(0);
   const [sketchModel, setSketchModel] = useState("real");
   const [loading, setLoading] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [activePrompt, setActivePrompt] = useState(""); // 현재 생성 중인 키워드 저장용
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const pathParts = pathname.split("/").filter(Boolean);
+  const previous = pathParts[0];
+
+  const { recordTouch, recordScore, recordSpeech, save, resetIdleTimer } =
+    useTracker();
 
   const {
     isRecording,
@@ -75,11 +84,12 @@ export default function DrawByVoice() {
       setLoading(true);
       setActivePrompt(prompt);
 
+      generateStartTimeRef.current = Date.now();
       try {
         const res = await postTxt2Img(prompt, sketchModel);
         const img = new Image();
         img.src = res;
-        img.onload = () => {
+        img.onload = async () => {
           if (!ctxRef.current || !canvasRef.current) return;
           ctxRef.current.clearRect(
             0,
@@ -94,6 +104,12 @@ export default function DrawByVoice() {
             canvasRef.current.width,
             canvasRef.current.height,
           );
+
+          const duration = generateStartTimeRef.current
+            ? Math.floor((Date.now() - generateStartTimeRef.current) / 1000)
+            : 0;
+          recordScore(1, 1, duration);
+          await save();
         };
       } catch (e) {
         console.error("그림 생성 실패:", e);
@@ -102,7 +118,7 @@ export default function DrawByVoice() {
         resetVoiceChat();
       }
     },
-    [sketchModel, resetVoiceChat],
+    [sketchModel, resetVoiceChat, recordScore, save],
   );
 
   // 2. 음성 인식 완료 감지 시 자동 생성
@@ -110,13 +126,17 @@ export default function DrawByVoice() {
     if (messages.length > 0 && !isRecording) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === "user") {
+        recordSpeech(lastMessage.text);
+        resetIdleTimer();
         generateImage(lastMessage.text);
       }
     }
-  }, [messages, isRecording, generateImage]);
+  }, [messages, isRecording, recordSpeech, resetIdleTimer, generateImage]);
 
   // 3. [현재 로직] '그리기' 버튼 클릭 시 선택된 주제로 생성
   const handleManualGenerate = () => {
+    recordTouch();
+    resetIdleTimer();
     generateImage(SUBJECTS[subjectIdx]);
   };
 
@@ -145,6 +165,7 @@ export default function DrawByVoice() {
 
   // 드로잉 핸들러
   const startDrawing = (e) => {
+    recordTouch(); // 드로잉 시작을 터치로 간주
     setIsDrawing(true);
     const rect = canvasRef.current.getBoundingClientRect();
     const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
@@ -163,11 +184,6 @@ export default function DrawByVoice() {
   };
 
   const stopDrawing = () => setIsDrawing(false);
-
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
-  const pathParts = pathname.split("/").filter(Boolean);
-  const previous = pathParts[0];
   return (
     <div className="flex w-full h-full gap-4 overflow-hidden items-stretch">
       <div

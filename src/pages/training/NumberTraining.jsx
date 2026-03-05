@@ -5,12 +5,12 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import Dialog from "@/components/Dialog";
-import { cn } from "@/lib/utils";
-import { fireInfoConfetti } from "@/components/magicui/connfetti";
 import { useOutletContext } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import ScoreBoard from "@/components/ui/ScoreBoard";
 import ResultDialog from "@/components/ResultDialog";
+import { fireInfoConfetti } from "@/components/magicui/connfetti";
+import { useTracker } from "@/hooks/useTracker";
 
 const TOTAL_ROUNDS = 5;
 const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -29,6 +29,8 @@ export default function NumberTraining() {
   const [isFinish, setIsFinish] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [totalElapsedTime, setTotalElapsedTime] = useState(0);
+
+  const { recordTouch, recordScore, save } = useTracker();
 
   const totalStartRef = useRef(null);
   const audio = useMemo(
@@ -52,6 +54,8 @@ export default function NumberTraining() {
   }, []);
 
   const handleSelect = (num, idx) => {
+    recordTouch();
+
     // 클릭하자마자 숫자 음성 재생
     playNumberSound(num);
     if (isEvaluating || userSequence.includes(idx)) return;
@@ -80,13 +84,14 @@ export default function NumberTraining() {
       setScores(nextScores);
 
       if (nextScores.length >= TOTAL_ROUNDS) {
-        setTotalElapsedTime(
-          ((Date.now() - totalStartRef.current) / 1000).toFixed(0),
+        const duration = ((Date.now() - totalStartRef.current) / 1000).toFixed(
+          0,
         );
-        setTimeout(() => {
-          setIsFinish(true);
-          audio.complete.play().catch(() => {});
-        }, 800);
+        const successCount = nextScores.filter((s) => s.isPass).length;
+        recordScore(TOTAL_ROUNDS, successCount, Number(duration));
+
+        setTotalElapsedTime(duration);
+        setIsFinish(true);
       } else {
         setTimeout(startNextRound, 1200);
       }
@@ -214,7 +219,10 @@ export default function NumberTraining() {
           feedbackMsg={getFeedbackMsg}
           successCount={scores.filter((s) => s.isPass).length}
           time={totalElapsedTime}
-          onConfirm={onComplete}
+          onConfirm={async () => {
+            await save();
+            onComplete();
+          }}
         />
       )}
     </div>
