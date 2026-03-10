@@ -21,9 +21,16 @@ export const LogProvider = ({ children }) => {
     const page = data.currentPage;
     let content = "";
     if (page === "main") {
-      content = data.speechLog.pop() || data.speechLog;
+      // main일 때는 마지막 speechLog만 추출해서 객체화
+      const lastLog = Array.isArray(data.speechLog)
+        ? data.speechLog[data.speechLog.length - 1]
+        : data.speechLog;
+
+      content = { content: lastLog };
     } else {
-      content = JSON.stringify(data);
+      // main이 아닐 때는 data 전체를 content로 넘기되,
+      // 불필요한 중복을 피하기 위해 복사본을 만드는 것이 안전합니다.
+      content = { ...data };
     }
     await postInteraction({
       hwId: "697b07b3251e185c8626a8ad",
