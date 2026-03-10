@@ -34,7 +34,7 @@ export default function ExerciseLayout() {
         Number(state.finalTime),
       );
     }
-  }, [state.isFinish, recordScore, state.totalScores, state.finalTime]);
+  }, [state.isFinish]);
 
   const handleGlobalTouch = () => {
     if (!isMenu) recordTouch();
@@ -124,7 +124,6 @@ export default function ExerciseLayout() {
           onSecondaryClick={() => actions.runCountdown()}
           confirmText="활동 선택"
           onConfirm={async () => {
-            // [변경] 비동기 save 호출 후 완료 처리
             await save();
             actions.setIsFinish(false);
             navigate("/exercise");
