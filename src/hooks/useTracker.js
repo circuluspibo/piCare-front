@@ -1,6 +1,5 @@
 import { useLog } from "@/contexts/LogContext";
 import { useEffect, useRef, useCallback } from "react";
-import { useLocation } from "react-router-dom";
 
 export const useTracker = () => {
   const { currentTrackerRef, saveLogToDB } = useLog();
