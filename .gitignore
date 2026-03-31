@@ -24,3 +24,6 @@ dist-ssr
 *.sln
 *.sw?
 *.sh
+public/mediapipe/
+public/tesseract/
+public/tessdata/

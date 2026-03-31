@@ -82,7 +82,19 @@ const LearnByWrite = ({
         }
       } else {
         const { createWorker } = await import("tesseract.js");
-        worker = await createWorker("kor");
+        worker = await createWorker("kor", 1, {
+          // Worker 스크립트 경로
+          workerPath: "/tesseract/dist/worker.min.js",
+
+          // WASM 코어 경로 (파일명 없이 디렉토리만 지정)
+          corePath: "/tesseract/core",
+
+          // 언어 데이터 경로 (파일명 없이 디렉토리만 지정)
+          langPath: "/tessdata",
+
+          // 네트워크 요청 완전 차단 — 로컬에 없으면 에러로 알 수 있게
+          cacheMethod: "readOnly",
+        });
         const {
           data: { text },
         } = await worker.recognize(canvasRef.current);
@@ -160,7 +172,7 @@ const LearnByWrite = ({
 
   return (
     <div className="grid h-full grid-cols-12 gap-4 p-2">
-      <div className="col-span-4 flex items-center justify-center bg-white border rounded-3xl">
+      <div className="flex items-center justify-center col-span-4 bg-white border rounded-3xl">
         {item.type !== "letter" ? (
           <img
             src={getAsset({ content: item.letter })}
@@ -185,13 +197,13 @@ const LearnByWrite = ({
         )}
       </div>
 
-      <div className="col-span-8 flex flex-col gap-4">
-        <div className="p-4 text-2xl font-black text-center bg-write-200 text-write-800 rounded-2xl border-b-4 border-write-300">
+      <div className="flex flex-col col-span-8 gap-4">
+        <div className="p-4 text-2xl font-black text-center border-b-4 bg-write-200 text-write-800 rounded-2xl border-write-300">
           {`"${item.letter}"${JOSA().c(item.letter, "을/를")} 직접 써보세요.`}
         </div>
 
         <div
-          className="relative flex-1 bg-white border-4 border-dashed border-gray-100 rounded-3xl overflow-hidden"
+          className="relative flex-1 overflow-hidden bg-white border-4 border-gray-100 border-dashed rounded-3xl"
           ref={parentRef}
         >
           {hint && (
@@ -231,7 +243,7 @@ const LearnByWrite = ({
             onTouchEnd={() => setIsDrawing(false)}
           />
 
-          <div className="absolute right-4 bottom-4 z-20 flex flex-col gap-2">
+          <div className="absolute z-20 flex flex-col gap-2 right-4 bottom-4">
             <button
               onClick={() => setHint(!hint)}
               className={`w-16 h-16 text-3xl bg-white border-2 rounded-2xl shadow-lg ${hint ? "border-amber-300 bg-amber-50" : "border-gray-200"}`}
@@ -240,14 +252,14 @@ const LearnByWrite = ({
             </button>
             <button
               onClick={clearCanvas}
-              className="w-16 h-16 text-3xl bg-white border-2 border-red-100 rounded-2xl shadow-lg text-red-400"
+              className="w-16 h-16 text-3xl text-red-400 bg-white border-2 border-red-100 shadow-lg rounded-2xl"
             >
               ❌
             </button>
             <button
               onClick={handleSubmit}
               disabled={isWorking}
-              className="w-16 h-16 text-3xl bg-white border-2 border-green-200 rounded-2xl shadow-lg text-green-500 flex items-center justify-center disabled:opacity-50"
+              className="flex items-center justify-center w-16 h-16 text-3xl text-green-500 bg-white border-2 border-green-200 shadow-lg rounded-2xl disabled:opacity-50"
             >
               {isWorking ? (
                 <Loader2Icon className="animate-spin text-rose-400" />

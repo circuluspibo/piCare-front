@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "copy:mediapipe": "node scripts/copy-mediapipe.js",
+    "copy:tesseract": "node scripts/copy-tesseract.js",
+    "postinstall": "node scripts/copy-mediapipe.js && node scripts/copy-tesseract.js"
   },
   "dependencies": {
     "@mediapipe/camera_utils": "^0.3.1675466862",

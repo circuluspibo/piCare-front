@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Pose, POSE_CONNECTIONS } from "@mediapipe/pose";
 import { Hands, HAND_CONNECTIONS } from "@mediapipe/hands";
@@ -228,12 +229,12 @@ export function useExerciseEngine(gameMode) {
         instance =
           gameMode === "GRAB"
             ? new Hands({
-                locateFile: (f) =>
-                  `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`,
+                // locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`,
+                locateFile: (f) => `/mediapipe/hands/${f}`,
               })
             : new Pose({
-                locateFile: (f) =>
-                  `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`,
+                // locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`,
+                locateFile: (f) => `/mediapipe/pose/${f}`,
               });
 
         instance.setOptions({

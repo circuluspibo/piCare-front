@@ -38,8 +38,10 @@ export default defineConfig({
       registerType: "autoUpdate",
       workbox: {
         // 정적파일 캐싱
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp}"],
-
+        globPatterns: [
+          "**/*.{js,css,html,ico,png,svg,webp,wasm,data,bin}",
+          "tessdata/kor.traineddata",
+        ],
         // Runtime caching
         runtimeCaching: [
           {
@@ -54,7 +56,7 @@ export default defineConfig({
             },
           },
         ],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
+        maximumFileSizeToCacheInBytes: 20 * 1024 * 1024, // 5 MB
       },
       includeAssets: ["favicon.ico", "180.png", "192.png", "512.png"],
 
