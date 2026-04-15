@@ -23,7 +23,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-*.sh
+*.tar
 public/mediapipe/
 public/tesseract/
 public/tessdata/

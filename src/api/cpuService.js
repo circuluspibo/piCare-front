@@ -5,6 +5,18 @@ const CPU_BASE_URL = import.meta.env.VITE_CPU_BASE_URL;
 // 인스턴스 및 인터셉터 적용
 const cpuApi = axios.create({ baseURL: CPU_BASE_URL });
 
+// NOTE: CPU 엔진에서 기기 고유 UUID 조회
+export const getDeviceUuid = async () => {
+  try {
+    const { data, status } = await cpuApi.get("/");
+    if (status !== 200) throw new Error(status);
+    return data.uuid ?? null;
+  } catch (error) {
+    console.log("[FAILED] REQ getDeviceUuid MSG : ", error);
+    return null;
+  }
+};
+
 // API
 // NOTE: 입력한 텍스트를 음성으로 생성 API
 export const getTts = async (text, targetVoice, currentLang) => {

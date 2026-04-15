@@ -120,7 +120,7 @@ export default function Main() {
             <img
               src={
                 showVideoFeed
-                  ? "http://127.0.0.1:59531/video_feed"
+                  ? `${import.meta.env.VITE_NPU_BASE_URL}/video_feed`
                   : `/images/persona/${selectedPersona.id}.png`
               }
               alt="Persona"

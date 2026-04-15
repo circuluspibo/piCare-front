@@ -1,9 +1,12 @@
+/* eslint-disable react-refresh/only-export-components */
 import { postInteraction } from "@/api/picareService";
 import React, { createContext, useContext, useRef } from "react";
+import { GlobalContext } from "@/contexts/GlobalContext";
 
 const LogContext = createContext(null);
 
 export const LogProvider = ({ children }) => {
+  const { hwId } = useContext(GlobalContext);
   // 현재 활성화된 훈련의 실시간 데이터
   const currentTrackerRef = useRef({
     currentPage: "",
@@ -33,7 +36,7 @@ export const LogProvider = ({ children }) => {
       content = { ...data };
     }
     await postInteraction({
-      hwId: "697b07b3251e185c8626a8ad",
+      hwId,
       type: page,
       content,
     });

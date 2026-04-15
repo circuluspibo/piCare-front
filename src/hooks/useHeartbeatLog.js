@@ -1,7 +1,9 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useContext } from "react";
 import { postInteraction } from "@/api/picareService";
+import { GlobalContext } from "@/contexts/GlobalContext";
 
 export const useHeartbeatLog = () => {
+  const { hwId } = useContext(GlobalContext);
   const prevHeartbeatRef = useRef(null);
 
   const compareAndLog = useCallback(async (newData) => {
@@ -27,16 +29,16 @@ export const useHeartbeatLog = () => {
 
       try {
         await postInteraction({
-          hwId: "697b07b3251e185c8626a8ad",
+          hwId,
           type: "heartbeat",
-          content: JSON.stringify(essentialData),
+          content: essentialData,
         });
       } catch (err) {
         console.log("[FAILED] REQ useHeartbeatLog MSG: ", err);
       }
     }
     prevHeartbeatRef.current = curr;
-  }, []);
+  }, [hwId]);
 
   return { compareAndLog };
 };

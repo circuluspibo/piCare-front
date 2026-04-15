@@ -1,4 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
 import { PERSONAS } from "@/assets/data/personaData";
+import { getDeviceUuid } from "@/api/cpuService";
 import { createContext, useCallback, useEffect, useRef, useState } from "react";
 
 const DEFAULT = PERSONAS[0];
@@ -10,10 +12,11 @@ const generateSid = () =>
   `${new Date().toISOString().slice(2, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8)}`;
 // Context 생성
 export const GlobalContext = createContext({
-  currentLang: "ko", // 기본값을 실제 사용하려는 초기값으로 설정하거나, 빈 값으로 설정합니다.
+  currentLang: "ko",
   personaId: "grandpa",
   personaVoice: 0,
   sId: "",
+  hwId: null,
   humanInfo: null,
   isGpuLocked: false,
   updatePersona: () => {},
@@ -23,11 +26,18 @@ export const GlobalContext = createContext({
 
 export const GlobalContextProvider = ({ children }) => {
   const [personaId, setPersonaId] = useState(DEFAULT.id);
-  const [currentLang, setCurrentLang] = useState("ko");
+  const [currentLang] = useState("ko");
   const [personaVoice, setPersonaVoice] = useState(DEFAULT.voice);
   const [sId, setSid] = useState(generateSid());
   const [humanInfo, setHumanInfo] = useState(null);
+  const [hwId, setHwId] = useState(null);
   const timerRef = useRef(null);
+
+  useEffect(() => {
+    getDeviceUuid().then((uuid) => {
+      if (uuid) setHwId(uuid);
+    });
+  }, []);
 
   // GPU 관리
   const [isGpuLocked, setIsGpuLocked] = useState(false);
@@ -80,6 +90,7 @@ export const GlobalContextProvider = ({ children }) => {
     personaVoice,
     humanInfo,
     sId,
+    hwId,
     updatePersona,
     updateHumanInfo,
     isGpuLocked,
