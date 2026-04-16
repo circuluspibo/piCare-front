@@ -1,6 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
 import { PERSONAS } from "@/assets/data/personaData";
-import { getDeviceUuid } from "@/api/cpuService";
 import { createContext, useCallback, useEffect, useRef, useState } from "react";
 
 const DEFAULT = PERSONAS[0];
@@ -16,7 +15,6 @@ export const GlobalContext = createContext({
   personaId: "grandpa",
   personaVoice: 0,
   sId: "",
-  hwId: null,
   humanInfo: null,
   isGpuLocked: false,
   updatePersona: () => {},
@@ -30,23 +28,7 @@ export const GlobalContextProvider = ({ children }) => {
   const [personaVoice, setPersonaVoice] = useState(DEFAULT.voice);
   const [sId, setSid] = useState(generateSid());
   const [humanInfo, setHumanInfo] = useState(null);
-  const [hwId, setHwId] = useState(null);
   const timerRef = useRef(null);
-
-  useEffect(() => {
-    let timer;
-    const tryFetch = () => {
-      getDeviceUuid().then((uuid) => {
-        if (uuid) {
-          setHwId(uuid);
-        } else {
-          timer = setTimeout(tryFetch, 5000);
-        }
-      });
-    };
-    tryFetch();
-    return () => clearTimeout(timer);
-  }, []);
 
   // GPU 관리
   const [isGpuLocked, setIsGpuLocked] = useState(false);
@@ -99,7 +81,6 @@ export const GlobalContextProvider = ({ children }) => {
     personaVoice,
     humanInfo,
     sId,
-    hwId,
     updatePersona,
     updateHumanInfo,
     isGpuLocked,
