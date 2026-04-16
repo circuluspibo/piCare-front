@@ -34,9 +34,18 @@ export const GlobalContextProvider = ({ children }) => {
   const timerRef = useRef(null);
 
   useEffect(() => {
-    getDeviceUuid().then((uuid) => {
-      if (uuid) setHwId(uuid);
-    });
+    let timer;
+    const tryFetch = () => {
+      getDeviceUuid().then((uuid) => {
+        if (uuid) {
+          setHwId(uuid);
+        } else {
+          timer = setTimeout(tryFetch, 5000);
+        }
+      });
+    };
+    tryFetch();
+    return () => clearTimeout(timer);
   }, []);
 
   // GPU 관리

@@ -8,6 +8,7 @@ const picareApi = axios.create({ baseURL: BASE_URL });
 // API
 // NOTE: 사용 훈련 데이터
 export const postFeature = async (payload) => {
+  console.log("[PAYLOAD] postFeature:", JSON.stringify(payload));
   try {
     const { status } = await picareApi.post("/v1/feature_log", payload);
     if (status !== 200) throw new Error(status);
@@ -20,6 +21,7 @@ export const postFeature = async (payload) => {
 
 // NOTE: 상호작용 데이터
 export const postInteraction = async (payload) => {
+  console.log("[PAYLOAD] postInteraction:", JSON.stringify(payload));
   try {
     const { status } = await picareApi.post("/v1/interaction_log", payload);
     if (status !== 200) throw new Error(status);
