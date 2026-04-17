@@ -101,13 +101,13 @@ src/main.jsx
 
 | 파일·디렉토리 | 역할 |
 |---|---|
-| `src/contexts/GlobalContext` | 페르소나, 세션 ID, GPU 락, 센서 데이터 전역 상태 |
+| `src/contexts/GlobalContext` | 페르소나, 세션 ID, GPU 락, 센서 데이터 전역 상태. hwId는 관리하지 않음 (piCare-back에서 주입) |
 | `src/contexts/VoiceChatContext` | 음성 파이프라인 (STT → LLM → TTS → 재생 큐) |
 | `src/utils/PersonaSystem.js` | 6종 페르소나별 LLM 프롬프트 및 TTS 음성 ID 정의 |
 | `src/hooks/useMainLogic` | 메인 페이지: NPU 자동 감지 루프, 환경 모니터링 |
 | `src/hooks/useExerciseEngine` | MediaPipe 손·자세 감지 기반 운동 게임 엔진 |
 | `src/hooks/useHaniOCR` | Tesseract.js 한글 OCR (`LearnByWrite` 전용) |
-| `src/hooks/useHeartbeatLog` | 90초 주기 하트비트 로그 전송 |
+| `src/hooks/useHeartbeatLog` | NPU 데이터 변화 감지 시 heartbeat 로그 전송. hwId 의존성 없이 마운트 즉시 동작 |
 | `src/hooks/useTracker` | 사용 분석 이벤트 기록 |
 | `src/assets/data/personaData.js` | 페르소나 메타데이터 |
 | `src/assets/data/haniCharacters.js` | 한글 학습 모듈용 자모 목록 |
@@ -147,6 +147,7 @@ piCare-front/
 ## 7. 주요 제약 / 주의사항
 
 - NPU 영상 피드 URL: `IndexPages.jsx`에서 `VITE_NPU_BASE_URL` 환경 변수로 관리됨
+- **hwId는 front에서 관리하지 않음**: 모든 로그의 `hwId`는 piCare-back(포트 4000)이 CPU 서비스에서 로드한 값을 자동 주입. `picareService.js`의 payload에 hwId를 포함시키지 말 것
 - `isGpuLocked`가 컴포넌트 비정상 언마운트 시 해제되지 않을 수 있음
 - TTS Blob URL이 언마운트 시 revoke되지 않아 메모리 누수 가능
 - `/ai/*` 페이지에 GPU 락이 없어 홈 페이지 GPU 사용과 충돌 가능

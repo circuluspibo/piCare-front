@@ -98,7 +98,7 @@ src/
 │   ├── ui/               # 버튼, 카드, 토스트 등 기본 요소
 │   └── magicui/          # 애니메이션 효과 컴포넌트
 ├── contexts/             # 전역 상태
-│   ├── GlobalContext.jsx      # 페르소나, 세션 ID, GPU 잠금, 기기 UUID(hwId)
+│   ├── GlobalContext.jsx      # 페르소나, 세션 ID, GPU 잠금 (hwId는 piCare-back에서 관리)
 │   ├── VoiceChatContext.jsx   # STT→LLM→TTS 파이프라인
 │   ├── LogContext.jsx         # 사용 로그 수집
 │   └── learnContext.jsx       # 또박한글 학습 진도
@@ -277,12 +277,12 @@ ssh picare@192.168.1.XXX
 
 | Context            | 역할                                                                        |
 | ------------------ | --------------------------------------------------------------------------- |
-| `GlobalContext`    | 현재 페르소나 ID/음성, 세션 ID(5분 타임아웃), GPU 잠금 상태, 기기 UUID(hwId) |
+| `GlobalContext`    | 현재 페르소나 ID/음성, 세션 ID(5분 타임아웃), GPU 잠금 상태 |
 | `VoiceChatContext` | STT → LLM 스트리밍 → TTS 재생 전체 파이프라인 제공                           |
 | `LogContext`       | 기능 사용 로그를 piCare Back으로 전송                                        |
 | `LearnContext`     | 또박한글 학습의 글자·챕터·방법 선택 상태 관리                               |
 
-> `hwId`는 앱 시작 시 CPU 엔진(`GET /`)에서 기기 UUID를 받아와 `GlobalContext`에 저장됩니다. 이후 모든 로그 전송 시 포함됩니다.
+> `hwId`는 front에서 관리하지 않습니다. 모든 로그의 `hwId`는 piCare-back(포트 4000)이 CPU 서비스에서 로드한 값을 자동으로 주입합니다.
 
 ### 주요 Hook
 
@@ -349,6 +349,145 @@ sudo iptables -L OUTPUT -n -v
 ### TTS 큐 처리 중 메모리 누수 가능성
 
 `useVoiceChat`에서 TTS 오디오를 재생하는 도중 컴포넌트가 언마운트될 경우, 생성된 Blob URL이 해제되지 않을 수 있습니다. 언마운트 시 큐 초기화 및 `URL.revokeObjectURL` 호출 보장이 필요합니다.
+
+### 인터넷 미연결 시 로그 유실 (미구현)
+
+현재 로그 전송 실패 시 재시도나 로컬 저장 없이 그냥 버려집니다.
+
+**현재 흐름**
+```
+front → piCare-back (로컬, 항상 도달)
+piCare-back → 외부 DB (인터넷 필요) → 실패 시 500 반환 → console.log 출력 후 끝
+```
+
+`GlobalContext.jsx`에 `localStorage.removeItem('pending_logs')` 주석 흔적이 있어 기획은 존재했으나 미구현 상태입니다.
+
+**개선 방향**
+- piCare-back에서 전송 실패한 로그를 SQLite 또는 파일로 임시 저장
+- 인터넷 복구 시 자동으로 재전송하는 큐 처리 추가
+
+---
+
+## 14. 로그 수집 구조
+
+모든 로그는 piCare-back(포트 4000)을 통해 외부 DB API로 중계됩니다. `hwId`는 piCare-back이 CPU 서비스에서 로드한 값을 자동으로 주입하며, front에서 별도로 관리하지 않습니다.
+
+---
+
+### 1. Heartbeat 로그
+
+| 항목 | 내용 |
+|---|---|
+| **API** | `POST /v1/interaction_log` |
+| **트리거** | `useMainLogic`이 90초마다 NPU에서 데이터를 폴링하여 `compareAndLog()` 호출 |
+| **전송 조건** | 이전 데이터 대비 아래 중 하나라도 변경된 경우에만 전송 |
+| **변경 감지 항목** | `cnt_live` (감지된 사람 수), `cnt_object` (감지된 사물 수), `human.emotion` (감정 상태) |
+
+**전송 payload**
+```json
+{
+  "type": "heartbeat",
+  "content": {
+    "cnt_live": 1,
+    "cnt_object": 2,
+    "human": { "emotion": "happy", ... },
+    "env": { "temp": 24.5, "humidity": 55, "air": "G" }
+  }
+}
+```
+
+> 데이터 변화가 없으면 아무것도 전송하지 않음. 변화가 잦으면 90초보다 짧은 간격으로 여러 번 전송될 수 있음.
+
+---
+
+### 2. Activity 로그 (훈련 완료)
+
+| 항목 | 내용 |
+|---|---|
+| **API** | `POST /v1/interaction_log` |
+| **트리거** | `useTracker`의 `save()` 호출 시 — 각 훈련/학습 페이지에서 활동 완료 시점에 호출 |
+| **type 값** | 현재 페이지 경로의 마지막 세그먼트 (예: `learn-word`, `exercise-flag`, `training-color`) |
+
+**전송 payload**
+```json
+{
+  "type": "learn-word",
+  "content": {
+    "currentPage": "learn-word",
+    "startTime": 1713200000000,
+    "endTime": 1713200300000,
+    "idleCount": 1,
+    "exitCount": 0,
+    "touchCount": 12,
+    "scores": { "total": 10, "success": 8, "time": 300 },
+    "speechLog": ["가", "나"],
+    "performance": "상",
+    "engagement": "중",
+    "satisfaction": "상",
+    "isCompleted": true
+  }
+}
+```
+
+**평가 기준**
+| 지표 | 상 | 중 | 하 |
+|---|---|---|---|
+| `performance` (수행도) | 정답률 ≥ 80% | 50~80% | < 50% |
+| `engagement` (참여도) | 이탈 0회, 무반응 0회, 완료 | 이탈 1회 또는 무반응 ≥ 1회 | 이탈 ≥ 2회 또는 무반응 ≥ 5회 |
+| `satisfaction` (만족도) | 완료 + speechLog ≥ 2개 | 완료 + speechLog < 2개 | 미완료 |
+
+> **main 페이지 예외**: `type: "main"` 일 때는 `speechLog`의 마지막 항목만 `{ content: lastLog }` 형태로 전송
+
+---
+
+### 3. 하드웨어 상태 로그 (Cron — piCare-back)
+
+| 항목 | 내용 |
+|---|---|
+| **API** | `POST /v1/status_log` |
+| **트리거** | piCare-back Cron — 매 정시(`0 * * * *`) 자동 실행 |
+| **수집 주체** | piCare-back (`bash` 명령어로 직접 수집, front 무관) |
+
+**수집 항목**: 시스템 (CPU, 메모리, 디스크, 온도, 타임존), 디바이스 (USB 수/시간, 트래픽), 네트워크 (IP, Wi-Fi SSID/신호/채널, ISP, ping)
+
+---
+
+### 4. 전원 활동 로그 (Cron — piCare-back)
+
+| 항목 | 내용 |
+|---|---|
+| **API** | `POST /v1/activity_log` |
+| **트리거** | piCare-back Cron — 매 정시(`0 * * * *`) 자동 실행 |
+| **수집 주체** | piCare-back (`bash` 명령어로 직접 수집, front 무관) |
+
+**수집 항목**: 부팅 시각, 가동 시간, 이전 종료 시각, 이전 종료 후 경과 시간
+
+---
+
+### 5. Feature 로그
+
+| 항목 | 내용 |
+|---|---|
+| **API** | `POST /v1/feature_log` |
+| **현재 상태** | `postFeature()` 함수가 `src/api/picareService.js`에 정의되어 있으나 **현재 호출하는 곳 없음 (미사용)** |
+
+---
+
+### 로그 흐름 요약
+
+```
+[front - IndexPages]
+  NPU 폴링 (90초) → 변화 감지 → POST /v1/interaction_log (heartbeat)
+
+[front - 각 훈련 페이지]
+  save() 호출 → POST /v1/interaction_log (activity, type = 페이지명)
+
+[piCare-back - Cron]
+  매 정시 → POST /v1/status_log   (하드웨어 상태)
+  매 정시 → POST /v1/activity_log (전원 활동)
+
+↓ 모두 piCare-back이 hwId 주입 후 외부 DB API로 중계
+```
 
 ### AI 페이지 간 GPU 점유 충돌
 
