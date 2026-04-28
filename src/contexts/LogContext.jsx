@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { postInteraction } from "@/api/picareService";
-import React, { createContext, useRef } from "react";
+import React, { createContext, useContext, useRef } from "react";
 
 const LogContext = createContext(null);
 
