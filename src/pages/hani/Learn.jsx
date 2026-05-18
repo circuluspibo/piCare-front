@@ -4,6 +4,7 @@ import LearnByListen from "./learn/LearnByListen";
 import LearnByWrite from "./learn/LearnByWrite";
 import { useTracker } from "@/hooks/useTracker";
 import { useEffect, useRef } from "react";
+import { postFeature } from "@/api/picareService";
 
 export default function Learn() {
   const {
@@ -20,7 +21,23 @@ export default function Learn() {
   } = useLearnContext();
 
   const { recordTouch, recordScore, save, resetIdleTimer } = useTracker();
-  const isSavedRef = useRef(false); // 중복 저장 방지용
+  const isSavedRef = useRef(false);
+  const featureStartRef = useRef(null);
+
+  // method 확정 시 feature_log start 전송
+  useEffect(() => {
+    if (method) {
+      featureStartRef.current = Date.now();
+      postFeature({ featureId: `learn_${method}`, command: "start" });
+    }
+    // 중단 이탈 시 complete 전송 (isSavedRef로 정상 완료와 중복 방지)
+    return () => {
+      if (!isSavedRef.current && featureStartRef.current && method) {
+        const duration = Math.round((Date.now() - featureStartRef.current) / 1000);
+        postFeature({ featureId: `learn_${method}`, command: "complete", duration });
+      }
+    };
+  }, [method]);
 
   // [핵심 변경] 최종 결과(resultData)가 업데이트되면 트래커에 기록하고 저장
   useEffect(() => {
@@ -34,13 +51,19 @@ export default function Learn() {
       // 2. 트래커 최종 저장 (isCompleted = true)
       save();
 
+      // 3. feature_log complete 전송
+      if (method && featureStartRef.current) {
+        const duration = Math.round((Date.now() - featureStartRef.current) / 1000);
+        postFeature({ featureId: `learn_${method}`, command: "complete", duration });
+      }
+
       isSavedRef.current = true;
       console.log(
         "학습 완료: 전체 소요 시간으로 트래커 저장 완료",
         resultData.time,
       );
     }
-  }, [resultData, contentData, recordScore, save]);
+  }, [resultData, contentData, recordScore, save, method]);
 
   const handleAnswer = async (attemptPayload) => {
     // 이제 개별 문항에서는 점수만 실시간 업데이트 (시간은 0으로 보냄)
