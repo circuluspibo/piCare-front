@@ -32,6 +32,10 @@ export const postInteraction = async (payload) => {
   }
 };
 
+export const postClientLog = (message, level = "info") => {
+  picareApi.post("/v1/client_log", { level, message }).catch(() => {});
+};
+
 export const postSystemVolumn = async (payload) => {
   try {
     const { status } = await picareApi.post("/v1/system_volume", {

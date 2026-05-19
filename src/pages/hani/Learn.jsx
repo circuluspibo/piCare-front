@@ -34,7 +34,7 @@ export default function Learn() {
     return () => {
       if (!isSavedRef.current && featureStartRef.current && method) {
         const duration = Math.round((Date.now() - featureStartRef.current) / 1000);
-        postFeature({ featureId: `learn_${method}`, command: "complete", duration });
+        postFeature({ featureId: `learn_${method}`, command: "exit", duration });
       }
     };
   }, [method]);

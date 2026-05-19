@@ -12,7 +12,7 @@ export default function ExerciseLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  const { recordTouch, recordScore, save, resetIdleTimer } = useTracker();
+  const { recordTouch, recordScore, save, restart, resetIdleTimer } = useTracker(pathname);
   // 1. 현재 경로에서 마지막 단어 추출
   const pathParts = pathname.split("/").filter(Boolean);
   const currentPath = pathParts[pathParts.length - 1];
@@ -25,14 +25,17 @@ export default function ExerciseLayout() {
   const { state, videoRef, canvasRef, actions } = useExerciseEngine(modeKey);
 
   useEffect(() => {
+    if (state.totalScores.length > 0) {
+      const successCount = state.totalScores.filter((s) => s.isPass).length;
+      recordScore(state.totalScores.length, successCount, Number(state.finalTime || 0));
+    }
+  }, [state.totalScores.length]);
+
+  useEffect(() => {
     if (state.isFinish) {
       fireInfoConfetti();
       const successCount = state.totalScores.filter((s) => s.isPass).length;
-      recordScore(
-        state.totalScores.length,
-        successCount,
-        Number(state.finalTime),
-      );
+      recordScore(state.totalScores.length, successCount, Number(state.finalTime));
     }
   }, [state.isFinish]);
 
@@ -121,7 +124,10 @@ export default function ExerciseLayout() {
           successCount={state.totalScores.filter((s) => s.isPass).length}
           time={state.finalTime}
           secondaryBtnText="다시하기"
-          onSecondaryClick={() => actions.runCountdown()}
+          onSecondaryClick={() => {
+            restart();
+            actions.runCountdown();
+          }}
           confirmText="활동 선택"
           onConfirm={async () => {
             await save();

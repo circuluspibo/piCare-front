@@ -124,6 +124,13 @@ export default function ColorTraining() {
   }, []);
 
   useEffect(() => {
+    if (scores.length > 0 && !isFinish) {
+      const successCount = scores.filter((s) => s.isPass).length;
+      recordScore(scores.length, successCount, 0);
+    }
+  }, [scores.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     if (isFinish) fireInfoConfetti();
   }, [isFinish]);
 
