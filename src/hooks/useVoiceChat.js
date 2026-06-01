@@ -124,6 +124,8 @@ export default function useVoiceChat({ enableTTS }) {
       let accumulatedResponse = "";
       let lastSentenceEnd = 0;
 
+      if (message) recordSpeech({ role: "user", text: message, timestamp: Date.now() });
+
       try {
         const res = await getTxt2Chat(textToSearch, currentSystem, currentLang);
 
@@ -148,9 +150,13 @@ export default function useVoiceChat({ enableTTS }) {
               "",
             );
 
-            recordSpeech(message);
+            recordSpeech({ role: "ai", text: koreanResponse, timestamp: Date.now() });
             await save();
-            addMessage("ai", koreanResponse);
+            const normalizedResponse = accumulatedResponse
+              .replace(/([^\n])(#{1,6} )/g, "$1\n\n$2")
+              .replace(/([^\n])(\d+\. )/g, "$1\n\n$2")
+              .replace(/([^\n])([-*] )/g, "$1\n\n$2");
+            addMessage("ai", normalizedResponse);
             setFullResponse("");
             setIsThinking(false);
             break;
@@ -208,6 +214,7 @@ export default function useVoiceChat({ enableTTS }) {
         const formData = new FormData();
         formData.append("file", audioBlob, "voice.ogg");
 
+        setIsThinking(true);
         try {
           const res = await postStt(formData, currentLang);
           const cleanedText = res.replace(/[^ㄱ-ㅎㅏ-ㅣ가-힣\s]/g, "").trim();
@@ -216,10 +223,15 @@ export default function useVoiceChat({ enableTTS }) {
             addMessage("user", cleanedText);
             if (enableTTS) {
               await sendMessage(cleanedText);
+            } else {
+              setIsThinking(false);
             }
+          } else {
+            setIsThinking(false);
           }
         } catch (error) {
           console.log("[FAILED] REQ postStt MSG: ", error);
+          setIsThinking(false);
         }
       };
 

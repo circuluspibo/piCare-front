@@ -1,40 +1,54 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { postInteraction } from "@/api/picareService";
 
+const AMBIENT_INTERVAL_MS = 5 * 60 * 1000;
+const EMOTION_COOLDOWN_MS = 30 * 1000;
+
 export const useHeartbeatLog = () => {
-  const prevHeartbeatRef = useRef(null);
+  const latestDataRef = useRef(null);
+  const prevEmotionRef = useRef(null);
+  const lastEmotionLogRef = useRef(0);
 
-  const compareAndLog = useCallback(async (newData) => {
-    if (!prevHeartbeatRef.current) {
-      prevHeartbeatRef.current = newData;
-      return;
-    }
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const curr = latestDataRef.current;
+      if (!curr) return;
+      postInteraction({
+        type: "ambient",
+        content: {
+          cntLive: curr.cnt_live,
+          cntObject: curr.cnt_object,
+          env: curr.env,
+        },
+      }).catch(() => {});
+    }, AMBIENT_INTERVAL_MS);
 
-    const prev = prevHeartbeatRef.current;
-    const curr = newData;
+    return () => clearInterval(timer);
+  }, []);
 
-    const isLiveCountChanged = prev.cnt_live !== curr.cnt_live;
-    const isObjectCountChanged = prev.cnt_object !== curr.cnt_object;
-    const isEmotionChanged = prev.human?.emotion !== curr.human?.emotion;
+  const compareAndLog = useCallback((newData) => {
+    latestDataRef.current = newData;
 
-    if (isLiveCountChanged || isObjectCountChanged || isEmotionChanged) {
-      const essentialData = {
-        cnt_live: curr.cnt_live,
-        cnt_object: curr.cnt_object,
-        human: curr.human,
-        env: curr.env,
-      };
+    const currEmotion = newData.human?.emotion;
+    if (!currEmotion || currEmotion === prevEmotionRef.current) return;
 
-      try {
-        await postInteraction({
-          type: "heartbeat",
-          content: essentialData,
-        });
-      } catch (err) {
-        console.log("[FAILED] REQ useHeartbeatLog MSG: ", err);
-      }
-    }
-    prevHeartbeatRef.current = curr;
+    const now = Date.now();
+    if (now - lastEmotionLogRef.current < EMOTION_COOLDOWN_MS) return;
+
+    const human = newData.human;
+    postInteraction({
+      type: "emotion",
+      content: {
+        emotion: currEmotion,
+        cntLive: newData.cnt_live,
+        position: human?.position,
+        gender: human?.gender,
+        age: human?.age,
+      },
+    }).catch(() => {});
+
+    prevEmotionRef.current = currEmotion;
+    lastEmotionLogRef.current = now;
   }, []);
 
   return { compareAndLog };

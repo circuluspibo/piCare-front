@@ -39,26 +39,36 @@ export const useTracker = (overridePathname) => {
   const getFinalReport = useCallback(() => {
     const data = currentTrackerRef.current;
     const { total, success } = data.scores;
+    const isExercise = ['flag', 'head', 'grab'].includes(data.currentPage);
 
     const accuracy = total > 0 ? (success / total) * 100 : 0;
     let performance = "하";
     if (accuracy >= 80) performance = "상";
     else if (accuracy >= 50) performance = "중";
 
-    let engagement = "상";
-    if (data.exitCount >= 2 || data.idleCount >= 5) {
-      engagement = "하";
-    } else if (
-      data.exitCount >= 1 ||
-      data.idleCount >= 1 ||
-      !data.isCompleted
-    ) {
-      engagement = "중";
+    let engagement;
+    if (isExercise) {
+      // 제스처 기반: 터치 없음 → 시도 횟수와 이탈로 판단
+      if (data.exitCount >= 2 || total === 0) engagement = "하";
+      else if (data.exitCount >= 1 || !data.isCompleted) engagement = "중";
+      else engagement = "상";
+    } else {
+      if (data.exitCount >= 2 || data.idleCount >= 5) engagement = "하";
+      else if (data.exitCount >= 1 || data.idleCount >= 1 || !data.isCompleted) engagement = "중";
+      else engagement = "상";
     }
 
-    let satisfaction = "상";
-    if (!data.isCompleted) satisfaction = "하";
-    else if (data.speechLog.length < 2) satisfaction = "중";
+    let satisfaction;
+    if (isExercise) {
+      // 운동: 완료 여부 + 정확도로 판단
+      if (!data.isCompleted) satisfaction = "하";
+      else if (accuracy < 40) satisfaction = "중";
+      else satisfaction = "상";
+    } else {
+      if (!data.isCompleted) satisfaction = "하";
+      else if (data.speechLog.length < 2) satisfaction = "중";
+      else satisfaction = "상";
+    }
 
     return {
       ...data,

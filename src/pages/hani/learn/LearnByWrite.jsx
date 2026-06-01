@@ -83,17 +83,11 @@ const LearnByWrite = ({
       } else {
         const { createWorker } = await import("tesseract.js");
         worker = await createWorker("kor", 1, {
-          // Worker 스크립트 경로
           workerPath: "/tesseract/dist/worker.min.js",
-
-          // WASM 코어 경로 (파일명 없이 디렉토리만 지정)
           corePath: "/tesseract/core",
-
-          // 언어 데이터 경로 (파일명 없이 디렉토리만 지정)
           langPath: "/tessdata",
-
-          // 네트워크 요청 완전 차단 — 로컬에 없으면 에러로 알 수 있게
           cacheMethod: "readOnly",
+          gzip: false,
         });
         const {
           data: { text },

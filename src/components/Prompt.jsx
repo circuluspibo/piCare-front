@@ -1,9 +1,25 @@
 import { useRef, useCallback, useEffect, useContext } from "react";
+import ReactMarkdown from "react-markdown";
 import MicToggleButton from "./magicui/listening-indicator";
 import Dialog from "./Dialog";
 import { useVoiceChat } from "@/contexts/VoiceChatContext";
 import { cn } from "@/lib/utils";
 import { GlobalContext } from "@/contexts/GlobalContext";
+
+const markdownComponents = {
+  h1: ({ children }) => <h1 className="text-3xl font-black mb-2">{children}</h1>,
+  h2: ({ children }) => <h2 className="text-2xl font-bold mb-2">{children}</h2>,
+  h3: ({ children }) => <h3 className="text-xl font-bold mb-1">{children}</h3>,
+  p: ({ children }) => <p className="mb-1 leading-relaxed">{children}</p>,
+  ul: ({ children }) => <ul className="list-disc pl-5 mb-1 space-y-1">{children}</ul>,
+  ol: ({ children }) => <ol className="list-decimal pl-5 mb-1 space-y-1">{children}</ol>,
+  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+  strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+  em: ({ children }) => <em className="italic">{children}</em>,
+  code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-sm font-mono">{children}</code>,
+  blockquote: ({ children }) => <blockquote className="border-l-4 border-gray-300 pl-3 italic text-gray-600 my-1">{children}</blockquote>,
+  hr: () => <hr className="my-2 border-gray-200" />,
+};
 
 export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
   const scrollRef = useRef(null);
@@ -27,16 +43,9 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
+      timeZone: "Asia/Seoul",
     });
   };
-
-  const parseMarkdown = useCallback((text) => {
-    return text
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.*?)\*/g, "<em>$1</em>")
-      .replace(/`(.*?)`/g, "<code>$1</code>")
-      .replace(/\n/g, "<br>");
-  }, []);
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
@@ -83,9 +92,9 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
                   : "bg-white text-gray-800 border border-gray-100 rounded-tl-none", // AI: 흰색
               )}
             >
-              <p
-                dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.text) }}
-              />
+              <ReactMarkdown components={markdownComponents}>
+                {msg.text}
+              </ReactMarkdown>
             </div>
             {/* 시간 표시 */}
             <span className="text-xs text-gray-400 mt-2 px-1">
@@ -96,11 +105,9 @@ export default function Prompt({ text = "text-6xl", micText = "text-7xl" }) {
         {fullResponse && (
           <div className="w-full flex flex-col items-start animate-in fade-in duration-300">
             <div className="bg-white p-4 rounded-3xl rounded-tl-none border border-gray-100 shadow-md">
-              <p
-                dangerouslySetInnerHTML={{
-                  __html: parseMarkdown(fullResponse),
-                }}
-              />
+              <ReactMarkdown components={markdownComponents}>
+                {fullResponse}
+              </ReactMarkdown>
             </div>
           </div>
         )}
