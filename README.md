@@ -19,6 +19,7 @@
 11. [외부 의존 서비스](#11-외부-의존-서비스)
 12. [오프라인 테스트](#12-오프라인-테스트)
 13. [알려진 이슈 & 개선사항](#13-알려진-이슈--개선사항)
+14. [로그 수집 구조](#14-로그-수집-구조)
 
 ---
 
@@ -76,7 +77,7 @@ GPU 엔진 기반의 생성형 AI 기능입니다.
 | 스타일      | Tailwind CSS 3, Radix UI, shadcn/ui                  |
 | 상태 관리   | React Context API, TanStack Query v5                 |
 | AI / 미디어 | MediaPipe (Hands, Pose), TensorFlow.js, Tesseract.js |
-| 통신        | Axios, MQTT                                          |
+| 통신        | Axios (MQTT는 의존성에 포함되어 있으나 현재 코드에서 미사용) |
 | UI 유틸     | Lucide React, Motion, Sonner, Chart.js               |
 | PWA         | vite-plugin-pwa, Workbox                             |
 
@@ -240,7 +241,7 @@ piCare 기기는 사내 circulus Wi-Fi(192.168.1.x 대역)에 자동으로 연�
 
 ```bash
 ssh picare@192.168.1.XXX
-# password: 88888888
+# 비밀번호는 문서에 기재하지 않습니다. 팀 보안 채널 또는 담당자에게 문의하세요.
 ```
 
 > **주의:** 사내 circulus Wi-Fi(1번대 네트워크)에 연결된 상태에서만 접속 가능합니다.
@@ -292,7 +293,7 @@ ssh picare@192.168.1.XXX
 | `useMainLogic`      | 메인 홈에서 NPU 엔진 시작/중지, AI 자동 감지 루프(120초), Heartbeat(90초) 관리 |
 | `useExerciseEngine` | MediaPipe 기반 신체 자세 감지 및 게임 판정                                     |
 | `useHaniOCR`        | Tesseract.js로 필기 이미지를 한글 텍스트로 변환                                |
-| `useHeartbeatLog`   | 90초마다 NPU 데이터를 비교해 변화 시에만 로그 전송                             |
+| `useHeartbeatLog`   | `ambient`(5분 주기 환경 스냅샷) + `emotion`(감정 변화 시 30초 쿨다운) 로그 전송. emotion은 `useMainLogic`이 90초 폴링으로 넘긴 데이터로 판정 |
 | `useTracker`        | 기능별 사용 시간, 터치 횟수, 이탈 횟수, 점수 추적 및 저장                     |
 
 ---
@@ -366,6 +367,14 @@ piCare-back → 외부 DB (인터넷 필요) → 실패 시 500 반환 → conso
 - piCare-back에서 전송 실패한 로그를 SQLite 또는 파일로 임시 저장
 - 인터넷 복구 시 자동으로 재전송하는 큐 처리 추가
 
+### AI 페이지 간 GPU 점유 충돌
+
+`/ai/draw`, `/ai/mirror`, `/ai/voice` 페이지가 각각 GPU 엔진을 직접 호출하지만, 동시 점유에 대한 방어 로직이 없습니다. 메인 홈의 `isGpuLocked` 패턴을 AI 페이지에도 적용해야 합니다.
+
+### 다국어 처리 미완성
+
+`LanguageSystem.js`와 `currentLang` 상태가 존재하지만, UI 전반에 걸친 다국어 적용이 일관되지 않습니다. 언어 전환 시나리오와 지원 언어 범위를 정의해야 합니다.
+
 ---
 
 ## 14. 로그 수집 구조
@@ -374,29 +383,53 @@ piCare-back → 외부 DB (인터넷 필요) → 실패 시 500 반환 → conso
 
 ---
 
-### 1. Heartbeat 로그
+### 1. 환경/감정 로그 (`useHeartbeatLog`)
+
+`useHeartbeatLog` 훅이 두 종류의 로그를 분리해서 전송합니다. 모두 `POST /v1/interaction_log`(`postInteraction`)로 보내며, NPU 원본 데이터는 snake_case(`cnt_live`)이지만 **전송 payload는 camelCase로 변환**됩니다(`cntLive`).
+
+#### 1-1. `ambient` — 환경 스냅샷 (5분 주기)
 
 | 항목 | 내용 |
 |---|---|
-| **API** | `POST /v1/interaction_log` |
-| **트리거** | `useMainLogic`이 90초마다 NPU에서 데이터를 폴링하여 `compareAndLog()` 호출 |
-| **전송 조건** | 이전 데이터 대비 아래 중 하나라도 변경된 경우에만 전송 |
-| **변경 감지 항목** | `cnt_live` (감지된 사람 수), `cnt_object` (감지된 사물 수), `human.emotion` (감정 상태) |
+| **type** | `ambient` |
+| **트리거** | `useHeartbeatLog`의 `useEffect` 인터벌 — **5분(`AMBIENT_INTERVAL_MS`)마다** 무조건 전송 |
+| **데이터 출처** | `compareAndLog()`가 갱신해 둔 최신 NPU 데이터(`latestDataRef`) |
 
 **전송 payload**
 ```json
 {
-  "type": "heartbeat",
+  "type": "ambient",
   "content": {
-    "cnt_live": 1,
-    "cnt_object": 2,
-    "human": { "emotion": "happy", ... },
+    "cntLive": 1,
+    "cntObject": 2,
     "env": { "temp": 24.5, "humidity": 55, "air": "G" }
   }
 }
 ```
 
-> 데이터 변화가 없으면 아무것도 전송하지 않음. 변화가 잦으면 90초보다 짧은 간격으로 여러 번 전송될 수 있음.
+#### 1-2. `emotion` — 감정 변화 이벤트 (30초 쿨다운)
+
+| 항목 | 내용 |
+|---|---|
+| **type** | `emotion` |
+| **트리거** | `useMainLogic`이 90초(`HB_INTERVAL`)마다 NPU를 폴링 → `compareAndLog()` 호출 |
+| **전송 조건** | `human.emotion`이 **직전과 달라졌고**, 마지막 emotion 전송 후 **30초(`EMOTION_COOLDOWN_MS`) 이상** 지났을 때만 전송 |
+
+**전송 payload**
+```json
+{
+  "type": "emotion",
+  "content": {
+    "emotion": "happy",
+    "cntLive": 1,
+    "position": "...",
+    "gender": "...",
+    "age": "..."
+  }
+}
+```
+
+> 감정이 그대로면 emotion 로그는 전송하지 않습니다. ambient는 감정 변화와 무관하게 5분마다 고정 전송됩니다.
 
 ---
 
@@ -404,16 +437,16 @@ piCare-back → 외부 DB (인터넷 필요) → 실패 시 500 반환 → conso
 
 | 항목 | 내용 |
 |---|---|
-| **API** | `POST /v1/interaction_log` |
-| **트리거** | `useTracker`의 `save()` 호출 시 — 각 훈련/학습 페이지에서 활동 완료 시점에 호출 |
-| **type 값** | 현재 페이지 경로의 마지막 세그먼트 (예: `learn-word`, `exercise-flag`, `training-color`) |
+| **API** | `POST /v1/interaction_log` (`LogContext.saveLogToDB`) |
+| **트리거** | `useTracker`가 `saveLogToDB`를 호출하는 3개 시점 — ① `save()`(활동 완료) ② 언마운트 cleanup(미완료 + 진행 있음 or 30초 이상 체류) ③ `restart()` |
+| **type 값** | 현재 페이지 경로의 **마지막 세그먼트** (`pathname.split("/").pop()`). 예: `/exercise/flag` → `flag`, `/training/color` → `color` (접두사 없음) |
 
 **전송 payload**
 ```json
 {
-  "type": "learn-word",
+  "type": "flag",
   "content": {
-    "currentPage": "learn-word",
+    "currentPage": "flag",
     "startTime": 1713200000000,
     "endTime": 1713200300000,
     "idleCount": 1,
@@ -429,14 +462,19 @@ piCare-back → 외부 DB (인터넷 필요) → 실패 시 500 반환 → conso
 }
 ```
 
-**평가 기준**
+**평가 기준** (`getFinalReport`)
+
+`performance`는 정답률(`success / total`) 공통 기준이지만, `engagement`·`satisfaction`은 운동(`flag`/`head`/`grab`, 제스처 기반)과 그 외(터치/발화 기반)를 **별도로 판정**합니다.
+
 | 지표 | 상 | 중 | 하 |
 |---|---|---|---|
-| `performance` (수행도) | 정답률 ≥ 80% | 50~80% | < 50% |
-| `engagement` (참여도) | 이탈 0회, 무반응 0회, 완료 | 이탈 1회 또는 무반응 ≥ 1회 | 이탈 ≥ 2회 또는 무반응 ≥ 5회 |
-| `satisfaction` (만족도) | 완료 + speechLog ≥ 2개 | 완료 + speechLog < 2개 | 미완료 |
+| `performance` (수행도, 공통) | 정답률 ≥ 80% | 50~80% | < 50% |
+| `engagement` — 비운동 | 이탈 0 · 무반응 0 · 완료 | 이탈 1회 or 무반응 ≥ 1회 or 미완료 | 이탈 ≥ 2회 or 무반응 ≥ 5회 |
+| `engagement` — 운동 | 이탈 0 · 완료 · 시도 있음 | 이탈 1회 or 미완료 | 이탈 ≥ 2회 or 시도 0회(`total === 0`) |
+| `satisfaction` — 비운동 | 완료 + speechLog ≥ 2개 | 완료 + speechLog < 2개 | 미완료 |
+| `satisfaction` — 운동 | 완료 + 정확도 ≥ 40% | 완료 + 정확도 < 40% | 미완료 |
 
-> **main 페이지 예외**: `type: "main"` 일 때는 `speechLog`의 마지막 항목만 `{ content: lastLog }` 형태로 전송
+> **참고**: `LogContext.saveLogToDB`는 type에 관계없이 항상 `{ type: currentPage, content: { ...data } }` 형태로 전송합니다. (과거 `main` 타입 특수 처리가 있었으나 제거됨)
 
 ---
 
@@ -468,19 +506,27 @@ piCare-back → 외부 DB (인터넷 필요) → 실패 시 500 반환 → conso
 
 | 항목 | 내용 |
 |---|---|
-| **API** | `POST /v1/feature_log` |
-| **현재 상태** | `postFeature()` 함수가 `src/api/picareService.js`에 정의되어 있으나 **현재 호출하는 곳 없음 (미사용)** |
+| **API** | `POST /v1/feature_log` (`postFeature`) |
+| **트리거** | `useTracker`가 기능별 생애주기마다 호출 — 진입 시 `command: "start"`, 이탈 시 `"exit"`(+`duration`), 완료 시 `"complete"`(+`duration`). `restart()` 시 exit 후 새 start |
+| **featureId** | `FEATURE_ID_MAP`으로 경로 세그먼트 → 기능 ID 매핑 (예: `flag` → `exercise_flag`, `color` → `training_color`, `draw` → `ai_draw`). 매핑에 없는 페이지(메인/학습 등)는 feature_log를 보내지 않음 |
+
+**전송 payload**
+```json
+{ "featureId": "exercise_flag", "command": "complete", "duration": 120 }
+```
 
 ---
 
 ### 로그 흐름 요약
 
 ```
-[front - IndexPages]
-  NPU 폴링 (90초) → 변화 감지 → POST /v1/interaction_log (heartbeat)
+[front - useHeartbeatLog]
+  5분 인터벌            → POST /v1/interaction_log (type: ambient)
+  NPU 폴링(90초) 중 감정 변화 + 30초 쿨다운 → POST /v1/interaction_log (type: emotion)
 
-[front - 각 훈련 페이지]
-  save() 호출 → POST /v1/interaction_log (activity, type = 페이지명)
+[front - useTracker / 각 훈련 페이지]
+  save()/언마운트/restart → POST /v1/interaction_log (type = 페이지 마지막 세그먼트)
+  기능 start/exit/complete → POST /v1/feature_log (featureId + command)
 
 [piCare-back - Cron]
   매 정시 → POST /v1/status_log   (하드웨어 상태)
@@ -488,15 +534,3 @@ piCare-back → 외부 DB (인터넷 필요) → 실패 시 500 반환 → conso
 
 ↓ 모두 piCare-back이 hwId 주입 후 외부 DB API로 중계
 ```
-
-### AI 페이지 간 GPU 점유 충돌
-
-`/ai/draw`, `/ai/mirror`, `/ai/voice` 페이지가 각각 GPU 엔진을 직접 호출하지만, 동시 점유에 대한 방어 로직이 없습니다. 메인 홈의 `isGpuLocked` 패턴을 AI 페이지에도 적용해야 합니다.
-
-### 다국어 처리 미완성
-
-`LanguageSystem.js`와 `currentLang` 상태가 존재하지만, UI 전반에 걸친 다국어 적용이 일관되지 않습니다. 언어 전환 시나리오와 지원 언어 범위를 정의해야 합니다.
-
-### `feature_log` 미사용
-
-`picareService.js`의 `postFeature()`가 정의되어 있으나 실제로 호출하는 곳이 없습니다. 훈련 기능별 세분화 로그가 필요한 경우 각 페이지에 연결이 필요합니다.
